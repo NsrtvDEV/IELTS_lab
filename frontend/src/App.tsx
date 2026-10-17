@@ -5,6 +5,7 @@ import { TeacherLayout } from "./components/TeacherLayout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TEACHER_ROLES } from "./lib/config";
 import { StudentLayout } from "./components/StudentLayout";
+import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ProgressPage } from "./pages/student/ProgressPage";
@@ -27,10 +28,14 @@ function Teacher({ children }: { children: ReactNode }) {
   );
 }
 
-/** Главная: учителя и админы сразу попадают в кабинет учителя */
+/** Главная: гость видит лендинг, учителя и админы сразу попадают в кабинет учителя */
 function Home() {
-  const { user } = useAuth();
-  if (user && TEACHER_ROLES.includes(user.role)) return <Navigate to="/teacher" replace />;
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center text-ink-muted">Loading…</div>;
+  }
+  if (!user) return <LandingPage />;
+  if (TEACHER_ROLES.includes(user.role)) return <Navigate to="/teacher" replace />;
   return (
     <StudentLayout>
       <StudentHomePage />
@@ -44,14 +49,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/" element={<Home />} />
         {/* прохождение секции — на весь экран, без шапки */}
         {(["reading", "listening"] as const).map((section) => [
           <Route

@@ -9,6 +9,7 @@ from .teacher import (
     teacher_tests_router,
     teacher_uploads_router,
 )
+from .stats import router as stats_router
 from .tests import router as tests_router
 from .users import router as users_router
 
@@ -18,6 +19,7 @@ __all__ = [
     "listening_router",
     "reading_router",
     "register_router",
+    "stats_router",
     "teacher_content_router",
     "teacher_dashboard_router",
     "teacher_students_router",
