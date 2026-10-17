@@ -1,5 +1,8 @@
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -12,7 +15,10 @@ from app.routers import (
     reading_router,
     register_router,
     teacher_content_router,
+    teacher_dashboard_router,
+    teacher_students_router,
     teacher_tests_router,
+    teacher_uploads_router,
     tests_router,
     users_router,
 )
@@ -44,10 +50,18 @@ for router in (
     tests_router,
     attempts_router,
     reading_router,
+    teacher_dashboard_router,
+    teacher_students_router,
     teacher_tests_router,
     teacher_content_router,
+    teacher_uploads_router,
 ):
     app.include_router(router, prefix=API_PREFIX)
+
+
+# картинки к вопросам — публичные (это содержимое тестов, а не ответы учеников)
+Path(settings.MEDIA_ROOT, "images").mkdir(parents=True, exist_ok=True)
+app.mount("/media/images", StaticFiles(directory=Path(settings.MEDIA_ROOT, "images")), name="images")
 
 
 @app.get("/", tags=["Health"])

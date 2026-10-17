@@ -103,6 +103,7 @@ class QuestionGroupCreate(BaseModel):
     word_limit: int | None = Field(default=None, ge=1, le=10)
     allow_number: bool = False  # "... AND/OR A NUMBER"
     position: int = Field(default=0, ge=0)
+    image_url: str | None = Field(default=None, max_length=500)  # схема / карта / таблица
     meta: dict | None = None
     # общие варианты группы (заголовки для matching); для TFNG/YNNG создаются сами
     options: list[OptionIn] = []
@@ -137,6 +138,7 @@ class TeacherQuestionGroup(BaseModel):
     word_limit: int | None
     allow_number: bool
     position: int
+    image_url: str | None
     meta: dict | None
     options: list[TeacherOption]
     questions: list[TeacherQuestion]

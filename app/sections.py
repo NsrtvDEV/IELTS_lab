@@ -187,6 +187,7 @@ async def question_section_content(
 
     return QuestionSectionContent(
         section_attempt_id=sa.id,
+        attempt_id=sa.attempt_id,
         section_type=sa.section.type,
         deadline=section_deadline(sa),
         passages=list(passages),
@@ -290,8 +291,14 @@ async def question_section_result(
 
     return QuestionSectionResult(
         section_attempt_id=sa.id,
+        attempt_id=sa.attempt_id,
+        test_title=sa.attempt.test.title,
         section_type=sa.section.type,
+        submitted_at=sa.submitted_at,
         raw_score=sa.raw_score,
+        max_score=sum(r.points for r in results),
+        correct_count=sum(r.earned == r.points for r in results),
+        question_count=len(results),
         band_score=sa.band_score,
         time_spent_sec=sa.time_spent_sec,
         questions=results,

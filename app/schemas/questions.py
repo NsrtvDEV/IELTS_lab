@@ -36,6 +36,7 @@ class QuestionGroupResponse(BaseModel):
     instruction: str
     word_limit: int | None = None
     allow_number: bool
+    image_url: str | None = None
     meta: dict | None = None
     options: list[OptionResponse]  # общий список для matching
     questions: list[QuestionResponse]
@@ -65,6 +66,7 @@ class QuestionSectionContent(BaseModel):
     """Содержимое секции для прохождения — без правильных ответов."""
 
     section_attempt_id: int
+    attempt_id: int  # для выхода из теста (abandon)
     section_type: SectionType
     deadline: datetime
     passages: list[PassageResponse]
@@ -101,8 +103,14 @@ class QuestionResult(BaseModel):
 
 class QuestionSectionResult(BaseModel):
     section_attempt_id: int
+    attempt_id: int
+    test_title: str
     section_type: SectionType
-    raw_score: int | None = None
+    submitted_at: datetime | None = None
+    raw_score: int | None = None  # сумма баллов ("Choose TWO" стоит 2 балла)
+    max_score: int  # сколько баллов можно было набрать
+    correct_count: int  # вопросов отвечено полностью верно
+    question_count: int
     band_score: Decimal | None = None
     time_spent_sec: int | None = None
     questions: list[QuestionResult]

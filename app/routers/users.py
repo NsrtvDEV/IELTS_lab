@@ -53,6 +53,7 @@ async def progress(session: db_dep, current_user: current_user_dep):
         select(
             Section.type,
             TestAttempt.id,
+            SectionAttempt.id,
             IeltsTest.title,
             SectionAttempt.band_score,
             SectionAttempt.submitted_at,
@@ -69,9 +70,15 @@ async def progress(session: db_dep, current_user: current_user_dep):
     )).all()
 
     sections: dict = {}
-    for section_type, attempt_id, title, band, submitted_at in section_rows:
+    for section_type, attempt_id, sa_id, title, band, submitted_at in section_rows:
         sections.setdefault(section_type, []).append(
-            ProgressPoint(attempt_id=attempt_id, test_title=title, band=band, date=submitted_at)
+            ProgressPoint(
+                attempt_id=attempt_id,
+                section_attempt_id=sa_id,
+                test_title=title,
+                band=band,
+                date=submitted_at,
+            )
         )
 
     overall_rows = (await session.execute(

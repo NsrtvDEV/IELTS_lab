@@ -36,6 +36,7 @@ class ProfileUpdate(BaseModel):
 
 class ProgressPoint(BaseModel):
     attempt_id: int
+    section_attempt_id: int | None = None  # для ссылки на разбор секции
     test_title: str
     band: Decimal
     date: datetime

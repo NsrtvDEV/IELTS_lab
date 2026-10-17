@@ -283,7 +283,8 @@ class QuestionGroup(Base):
         Boolean, default=False, server_default=expression.false()
     )
     position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
-    # картинка диаграммы/карты, текст summary с пропусками и т.д.
+    # схема, карта, таблица или flow-chart к вопросам группы
+    image_url: Mapped[str | None] = mapped_column(String(500))
     meta: Mapped[dict | None] = mapped_column(JSONB)
 
     section: Mapped["Section"] = relationship(back_populates="question_groups")

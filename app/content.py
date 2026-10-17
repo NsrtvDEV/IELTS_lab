@@ -49,8 +49,17 @@ OPTION_TYPES = {
     QuestionType.MATCHING_FEATURES,
     QuestionType.MATCHING_SENTENCE_ENDINGS,
 }
-# ответ — буква на схеме/карте или подпись словами
-EITHER_TYPES = {QuestionType.DIAGRAM_LABEL, QuestionType.MAP_LABEL}
+# ответ — слова или выбор из списка (буквы на схеме, "choose from the box" в summary)
+EITHER_TYPES = {
+    QuestionType.DIAGRAM_LABEL,
+    QuestionType.MAP_LABEL,
+    QuestionType.SUMMARY_COMPLETION,
+    QuestionType.NOTE_COMPLETION,
+    QuestionType.TABLE_COMPLETION,
+    QuestionType.FLOW_CHART_COMPLETION,
+    QuestionType.SENTENCE_COMPLETION,
+    QuestionType.GAP_FILL,
+}
 # варианты, которые создаются сами, если учитель их не прислал
 DEFAULT_GROUP_OPTIONS = {
     QuestionType.TFNG: [("TRUE", "True"), ("FALSE", "False"), ("NOT GIVEN", "Not given")],
@@ -207,6 +216,7 @@ def group_response(group: QuestionGroup) -> TeacherQuestionGroup:
         word_limit=group.word_limit,
         allow_number=group.allow_number,
         position=group.position,
+        image_url=group.image_url,
         meta=group.meta,
         options=group.options,
         questions=[
@@ -314,6 +324,7 @@ def build_group(section: Section, data: QuestionGroupCreate) -> QuestionGroup:
         word_limit=data.word_limit,
         allow_number=data.allow_number,
         position=data.position,
+        image_url=data.image_url,
         meta=data.meta,
         options=[],
         questions=[],
