@@ -11,7 +11,7 @@ from app.content import (
 from app.database import db_dep
 from app.media import remove_unused
 from app.dependencies import teacher_dep
-from app.models import IeltsTest, Passage, QuestionGroup, Section
+from app.models import IeltsTest, Passage, QuestionGroup, Section, WritingTask
 from app.schemas.teacher import TeacherTest, TestCreate, TestUpdate
 
 router = APIRouter(prefix="/teacher/tests", tags=["Teacher: tests"])
@@ -68,6 +68,8 @@ async def delete_test(test_id: int, session: db_dep, teacher: teacher_dep):
         await session.scalars(
             select(QuestionGroup.image_url).where(QuestionGroup.section_id.in_(section_ids))
         )
+    ) + list(
+        await session.scalars(select(WritingTask.image_url).where(WritingTask.section_id.in_(section_ids)))
     )
     # секции, тексты и вопросы удаляет сама БД (ON DELETE CASCADE)
     await session.execute(delete(IeltsTest).where(IeltsTest.id == test.id))

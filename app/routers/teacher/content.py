@@ -1,7 +1,7 @@
 """Содержимое секций с вопросами (Reading, Listening): тексты/аудио и группы вопросов."""
 
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 
 from app.content import (
     build_group,
@@ -16,7 +16,8 @@ from app.content import (
 from app.database import db_dep
 from app.media import audio_duration, remove_unused
 from app.dependencies import teacher_dep
-from app.models import Passage, QuestionGroup, Section
+from app.models import Passage, QuestionGroup, Section, SectionType, WritingTask
+from app.schemas.writing import WritingTaskCreate, WritingTaskOut, WritingTaskUpdate
 from app.schemas.teacher import (
     PassageCreate,
     PassageUpdate,
@@ -180,3 +181,73 @@ async def delete_question_group(group_id: int, session: db_dep, teacher: teacher
     await session.commit()
     await remove_unused(session, [image])
 
+
+
+# ───────────────────────── Writing tasks ─────────────────────────
+
+WRITING_DEFAULTS = {1: (150, 20), 2: (250, 40)}  # минимум слов, рекомендуемые минуты
+
+
+async def editable_writing_task(session, task_id: int) -> WritingTask:
+    task = await session.get(WritingTask, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Writing task not found")
+    _, test = await get_section(session, task.section_id)
+    await ensure_editable(session, test)
+    return task
+
+
+@router.post("/sections/{section_id}/writing-tasks", response_model=WritingTaskOut, status_code=201)
+async def create_writing_task(
+    section_id: int, session: db_dep, teacher: teacher_dep, data: WritingTaskCreate
+):
+    """Task 1 (график/таблица/процесс, 150+ слов) или Task 2 (эссе, 250+ слов)."""
+    section, test = await get_section(session, section_id)
+    if section.type != SectionType.WRITING:
+        raise HTTPException(status_code=400, detail=f"{section.type} section has no writing tasks")
+    await ensure_editable(session, test)
+    exists = await session.scalar(
+        select(WritingTask.id).where(
+            WritingTask.section_id == section.id, WritingTask.task_number == data.task_number
+        )
+    )
+    if exists:
+        raise HTTPException(status_code=400, detail=f"Task {data.task_number} already exists — edit it instead")
+
+    min_words, minutes = WRITING_DEFAULTS[data.task_number]
+    task = WritingTask(
+        section_id=section.id,
+        task_number=data.task_number,
+        prompt=data.prompt,
+        image_url=data.image_url,
+        min_words=data.min_words or min_words,
+        recommended_min=data.recommended_min or minutes,
+    )
+    session.add(task)
+    await session.commit()
+    await session.refresh(task)
+    return task
+
+
+@router.patch("/writing-tasks/{task_id}", response_model=WritingTaskOut)
+async def update_writing_task(task_id: int, session: db_dep, teacher: teacher_dep, data: WritingTaskUpdate):
+    task = await editable_writing_task(session, task_id)
+    old_image = task.image_url
+    for field, value in data.model_dump(exclude_unset=True).items():
+        if field != "image_url" and value is None:
+            continue  # обязательные поля не стираем
+        setattr(task, field, value)
+    await session.commit()
+    if task.image_url != old_image:
+        await remove_unused(session, [old_image])
+    await session.refresh(task)
+    return task
+
+
+@router.delete("/writing-tasks/{task_id}", status_code=204)
+async def delete_writing_task(task_id: int, session: db_dep, teacher: teacher_dep):
+    task = await editable_writing_task(session, task_id)
+    image = task.image_url
+    await session.execute(delete(WritingTask).where(WritingTask.id == task.id))
+    await session.commit()
+    await remove_unused(session, [image])

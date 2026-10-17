@@ -1,10 +1,10 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
-  BarChart3,
   Bell,
   BookOpen,
   ChevronRight,
+  ClipboardCheck,
   ClipboardList,
   House,
   Menu,
@@ -26,7 +26,7 @@ const NAV: { label: string; icon: LucideIcon; to?: string }[] = [
   { label: "Dashboard", icon: House, to: "/teacher" },
   { label: "Students", icon: UsersRound, to: "/teacher/students" },
   { label: "Tests", icon: ClipboardList, to: "/teacher/tests" },
-  { label: "Results", icon: BarChart3 },
+  { label: "Review", icon: ClipboardCheck, to: "/teacher/review" },
   { label: "Content", icon: BookOpen },
   { label: "Messages", icon: MessageSquare },
   { label: "Settings", icon: Settings },

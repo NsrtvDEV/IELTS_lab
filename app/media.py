@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models import Passage, QuestionGroup
+from app.models import Passage, QuestionGroup, WritingTask
 
 MEDIA_PREFIX = "/media/"
 
@@ -52,5 +52,6 @@ async def remove_unused(session: AsyncSession, urls: Iterable[str | None]) -> No
             continue
         used = await session.scalar(select(func.count()).where(Passage.audio_url == url))
         used += await session.scalar(select(func.count()).where(QuestionGroup.image_url == url))
+        used += await session.scalar(select(func.count()).where(WritingTask.image_url == url))
         if not used:
             await run_in_threadpool(path.unlink, missing_ok=True)

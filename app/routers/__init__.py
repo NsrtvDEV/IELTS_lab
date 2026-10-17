@@ -5,6 +5,7 @@ from .reading import router as reading_router
 from .teacher import (
     teacher_content_router,
     teacher_dashboard_router,
+    teacher_review_router,
     teacher_students_router,
     teacher_tests_router,
     teacher_uploads_router,
@@ -12,6 +13,7 @@ from .teacher import (
 from .stats import router as stats_router
 from .tests import router as tests_router
 from .users import router as users_router
+from .writing import router as writing_router
 
 __all__ = [
     "attempts_router",
@@ -22,9 +24,11 @@ __all__ = [
     "stats_router",
     "teacher_content_router",
     "teacher_dashboard_router",
+    "teacher_review_router",
     "teacher_students_router",
     "teacher_tests_router",
     "teacher_uploads_router",
     "tests_router",
     "users_router",
+    "writing_router",
 ]

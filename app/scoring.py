@@ -20,6 +20,8 @@ from app.models import (
     SectionType,
     TestAttempt,
     UserAnswer,
+    WritingResponse,
+    WritingTask,
 )
 
 # порядок секций в полном экзамене
@@ -33,6 +35,18 @@ AUTO_GRADED = {SectionType.LISTENING, SectionType.READING}
 
 
 # ───────────────────────── Band ─────────────────────────
+
+
+def criteria_band(*scores: int) -> Decimal:
+    """Band задания Writing/Speaking: среднее целых оценок по критериям."""
+    return round_band(Decimal(sum(scores)) / len(scores))
+
+
+def writing_band(task_bands: dict[int, Decimal]) -> Decimal:
+    """Band секции Writing: Task 2 весит вдвое больше Task 1."""
+    weights = {1: 1, 2: 2}
+    total = sum(weights.get(n, 1) for n in task_bands)
+    return round_band(sum(b * weights.get(n, 1) for n, b in task_bands.items()) / total)
 
 
 def round_band(value: Decimal) -> Decimal:
@@ -245,5 +259,30 @@ async def submit_section(session: AsyncSession, section_attempt: SectionAttempt)
 
     if section_attempt.section.type in AUTO_GRADED:
         await grade_question_section(session, section_attempt)
+    elif section_attempt.section.type == SectionType.WRITING:
+        await ensure_writing_responses(session, section_attempt)  # дальше — проверка учителем
 
     await update_attempt_status(session, section_attempt.attempt)
+
+
+async def ensure_writing_responses(session: AsyncSession, section_attempt: SectionAttempt) -> None:
+    """Несданное задание Writing тоже идёт на проверку — как пустой текст."""
+    tasks = await session.scalars(
+        select(WritingTask.id).where(WritingTask.section_id == section_attempt.section_id)
+    )
+    existing = set(
+        await session.scalars(
+            select(WritingResponse.task_id).where(
+                WritingResponse.section_attempt_id == section_attempt.id
+            )
+        )
+    )
+    for task_id in tasks:
+        if task_id not in existing:
+            session.add(WritingResponse(section_attempt_id=section_attempt.id, task_id=task_id))
+    await session.execute(
+        WritingResponse.__table__.update()
+        .where(WritingResponse.section_attempt_id == section_attempt.id)
+        .values(submitted_at=section_attempt.submitted_at)
+    )
+    await session.flush()

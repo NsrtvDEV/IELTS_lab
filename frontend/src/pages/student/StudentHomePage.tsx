@@ -7,7 +7,7 @@ import {
   listPublishedTests,
   startSectionAttempt,
   type Attempt,
-  type QuestionSection,
+  type AvailableSection,
   type StudentTest,
 } from "../../api/student";
 import type { SectionType } from "../../api/teacher";
@@ -23,8 +23,8 @@ const ICONS: Record<SectionType, LucideIcon> = {
   speaking: Mic,
 };
 // какие секции уже можно проходить на сайте
-const AVAILABLE: QuestionSection[] = ["listening", "reading"];
-const isAvailable = (t: SectionType): t is QuestionSection => (AVAILABLE as SectionType[]).includes(t);
+const AVAILABLE: AvailableSection[] = ["listening", "reading", "writing"];
+const isAvailable = (t: SectionType): t is AvailableSection => (AVAILABLE as SectionType[]).includes(t);
 
 /** Последний результат по каждому тесту и секции: ключ "<test_id>:<секция>" */
 function lastResults(attempts: Attempt[]) {
@@ -64,7 +64,7 @@ export function StudentHomePage() {
     )[0];
   const results = lastResults(attempts);
 
-  async function start(testId: number, section: QuestionSection) {
+  async function start(testId: number, section: AvailableSection) {
     setStarting(`${testId}:${section}`);
     setError(null);
     try {
@@ -138,12 +138,12 @@ export function StudentHomePage() {
                                 to={`/${s.type}/${last.sectionAttemptId}/result`}
                                 className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
                               >
-                                {last.band && <Badge color="green">{last.band}</Badge>} Result
+                                {last.band ? <Badge color="green">{last.band}</Badge> : s.type === "writing" && <Badge color="amber">Checking</Badge>} Result
                               </Link>
                             )}
                             <Button
                               className="h-9"
-                              onClick={() => start(test.id, s.type as QuestionSection)}
+                              onClick={() => start(test.id, s.type as AvailableSection)}
                               loading={starting === `${test.id}:${s.type}`}
                               disabled={!!unfinished}
                             >

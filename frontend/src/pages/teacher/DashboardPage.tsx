@@ -11,7 +11,7 @@ import {
   Scale,
   Target,
   Trophy,
-  Upload,
+  PenLine,
   UserPlus,
   UsersRound,
   type LucideIcon,
@@ -321,7 +321,7 @@ function QuickActions() {
     { label: "Create test", icon: FilePlus2, to: "/teacher/tests?new=1" },
     { label: "Add student", icon: UserPlus, href: DJANGO_ADMIN_URL + "ielts/user/add/" },
     { label: "Band scales", icon: Scale, href: DJANGO_ADMIN_URL + "ielts/bandconversion/" },
-    { label: "Upload material", icon: Upload },
+    { label: "Review writing", icon: PenLine, to: "/teacher/review" },
   ];
   const cls = "flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-4 text-center text-sm font-medium text-ink transition";
   return (

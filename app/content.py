@@ -271,7 +271,11 @@ async def section_content(session: AsyncSession, section: Section) -> TeacherSec
         select(Passage).where(Passage.section_id == section.id).order_by(Passage.position)
     )
     groups = await load_groups(session, section_id=section.id)
+    tasks = await session.scalars(
+        select(WritingTask).where(WritingTask.section_id == section.id).order_by(WritingTask.task_number)
+    )
     return TeacherSectionContent(
+        writing_tasks=list(tasks),
         id=section.id,
         test_id=section.test_id,
         type=section.type,

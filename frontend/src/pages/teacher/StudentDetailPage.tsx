@@ -102,6 +102,14 @@ export function StudentDetailPage() {
                         Answers →
                       </Link>
                     )}
+                    {h.submitted_at && h.section_type === "writing" && h.status !== "abandoned" && (
+                      <Link
+                        to={`/teacher/review/writing/${h.section_attempt_id}`}
+                        className="font-semibold text-brand-600 hover:text-brand-700"
+                      >
+                        {h.band_score === null ? "Assess →" : "Essays →"}
+                      </Link>
+                    )}
                   </td>
                 </tr>
               ))}

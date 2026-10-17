@@ -6,6 +6,7 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
 from app.models import QuestionType, SectionType
+from app.schemas.writing import WritingTaskOut
 
 Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
 Label = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=10)]
@@ -155,3 +156,4 @@ class TeacherSectionContent(BaseModel):
     passages: list[TeacherPassage]
     question_groups: list[TeacherQuestionGroup]
     question_numbers: list[int]  # занятые номера — удобно для следующей группы
+    writing_tasks: list[WritingTaskOut] = []  # Writing: Task 1 и Task 2

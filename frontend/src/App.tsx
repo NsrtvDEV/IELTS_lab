@@ -11,9 +11,13 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { ProgressPage } from "./pages/student/ProgressPage";
 import { SectionAttemptPage } from "./pages/student/SectionAttemptPage";
 import { SectionResultPage } from "./pages/student/SectionResultPage";
+import { WritingPage } from "./pages/student/WritingPage";
+import { WritingResultPage } from "./pages/student/WritingResultPage";
 import { StudentHomePage } from "./pages/student/StudentHomePage";
 import { DashboardPage } from "./pages/teacher/DashboardPage";
 import { SectionEditorPage } from "./pages/teacher/SectionEditorPage";
+import { ReviewQueuePage } from "./pages/teacher/ReviewQueuePage";
+import { ReviewWritingPage } from "./pages/teacher/ReviewWritingPage";
 import { SectionPreviewPage } from "./pages/teacher/SectionPreviewPage";
 import { StudentDetailPage, StudentResultPage } from "./pages/teacher/StudentDetailPage";
 import { StudentsPage } from "./pages/teacher/StudentsPage";
@@ -63,6 +67,11 @@ export default function App() {
             element={<ProtectedRoute><StudentLayout><SectionResultPage section={section} /></StudentLayout></ProtectedRoute>}
           />,
         ])}
+        <Route path="/writing/:sectionAttemptId" element={<ProtectedRoute><WritingPage /></ProtectedRoute>} />
+        <Route
+          path="/writing/:sectionAttemptId/result"
+          element={<ProtectedRoute><StudentLayout><WritingResultPage /></StudentLayout></ProtectedRoute>}
+        />
         <Route path="/progress" element={<ProtectedRoute><StudentLayout><ProgressPage /></StudentLayout></ProtectedRoute>} />
         <Route path="/teacher" element={<Teacher><DashboardPage /></Teacher>} />
         <Route path="/teacher/tests" element={<Teacher><TestsPage /></Teacher>} />
@@ -72,6 +81,8 @@ export default function App() {
           path="/teacher/sections/:sectionId/preview"
           element={<ProtectedRoute roles={TEACHER_ROLES}><SectionPreviewPage /></ProtectedRoute>}
         />
+        <Route path="/teacher/review" element={<Teacher><ReviewQueuePage /></Teacher>} />
+        <Route path="/teacher/review/writing/:sectionAttemptId" element={<Teacher><ReviewWritingPage /></Teacher>} />
         <Route path="/teacher/students" element={<Teacher><StudentsPage /></Teacher>} />
         <Route path="/teacher/students/:studentId" element={<Teacher><StudentDetailPage /></Teacher>} />
         <Route path="/teacher/students/:studentId/results/:sectionAttemptId" element={<Teacher><StudentResultPage /></Teacher>} />

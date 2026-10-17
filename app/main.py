@@ -18,11 +18,13 @@ from app.routers import (
     stats_router,
     teacher_content_router,
     teacher_dashboard_router,
+    teacher_review_router,
     teacher_students_router,
     teacher_tests_router,
     teacher_uploads_router,
     tests_router,
     users_router,
+    writing_router,
 )
 
 app = FastAPI(
@@ -54,7 +56,9 @@ for router in (
     attempts_router,
     listening_router,
     reading_router,
+    writing_router,
     teacher_dashboard_router,
+    teacher_review_router,
     teacher_students_router,
     teacher_tests_router,
     teacher_content_router,

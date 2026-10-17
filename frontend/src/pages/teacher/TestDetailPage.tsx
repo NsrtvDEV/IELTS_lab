@@ -64,6 +64,7 @@ function SectionRow({
   const [duration, setDuration] = useState(String(section.duration_min));
   const [error, setError] = useState<string | null>(null);
   const hasQuestions = section.type === "listening" || section.type === "reading";
+  const editableHere = section.type !== "speaking"; // Speaking пока в админке
 
   async function saveDuration() {
     const value = Number(duration);
@@ -91,7 +92,11 @@ function SectionRow({
       <div className="min-w-40 flex-1">
         <div className="font-semibold text-ink">{SECTION_LABELS[section.type]}</div>
         <div className="text-sm text-ink-muted">
-          {hasQuestions ? `${section.question_count} of 40 questions` : "Tasks are managed in the admin panel"}
+          {hasQuestions
+            ? `${section.question_count} of 40 questions`
+            : section.type === "writing"
+              ? "Task 1 and Task 2"
+              : "Tasks are managed in the admin panel"}
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm text-ink-muted">
@@ -110,9 +115,9 @@ function SectionRow({
         min
       </label>
       {error && <span className="text-sm text-red-600">{error}</span>}
-      {hasQuestions ? (
+      {editableHere ? (
         <Link to={`/teacher/sections/${section.id}`}>
-          <Button variant="secondary">{locked ? "View" : "Edit questions"}</Button>
+          <Button variant="secondary">{locked ? "View" : hasQuestions ? "Edit questions" : "Edit tasks"}</Button>
         </Link>
       ) : (
         <a href={DJANGO_ADMIN_URL + "ielts/section/" + section.id + "/change/"} target="_blank" rel="noreferrer">

@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import type { CriteriaScores, SectionResult, WritingResult, WritingTask } from "./student";
 
 export type SectionType = "listening" | "reading" | "writing" | "speaking";
 
@@ -89,6 +90,7 @@ export interface TeacherSectionContent {
   passages: TeacherPassage[];
   question_groups: TeacherQuestionGroup[];
   question_numbers: number[];
+  writing_tasks: WritingTask[];
 }
 
 export interface OptionInput {
@@ -328,8 +330,74 @@ export async function getStudent(id: number) {
 }
 
 export async function getStudentResult(studentId: number, sectionAttemptId: number) {
-  const { data } = await apiClient.get<import("./student").SectionResult>(
+  const { data } = await apiClient.get<SectionResult>(
     `/teacher/students/${studentId}/results/${sectionAttemptId}`
   );
+  return data;
+}
+
+// ───────────────────────── Writing tasks ─────────────────────────
+
+export interface WritingTaskInput {
+  prompt: string;
+  image_url: string | null;
+  min_words: number;
+  recommended_min: number;
+}
+
+export async function createWritingTask(sectionId: number, input: WritingTaskInput & { task_number: 1 | 2 }) {
+  const { data } = await apiClient.post<WritingTask>(
+    `/teacher/sections/${sectionId}/writing-tasks`,
+    input
+  );
+  return data;
+}
+
+export async function updateWritingTask(taskId: number, input: Partial<WritingTaskInput>) {
+  const { data } = await apiClient.patch<WritingTask>(`/teacher/writing-tasks/${taskId}`, input);
+  return data;
+}
+
+export async function deleteWritingTask(taskId: number) {
+  await apiClient.delete(`/teacher/writing-tasks/${taskId}`);
+}
+
+// ───────────────────────── Review ─────────────────────────
+
+export interface ReviewItem {
+  section_attempt_id: number;
+  student_id: number;
+  student_name: string;
+  student_email: string;
+  test_title: string;
+  mode: "section" | "mock";
+  submitted_at: string;
+  word_counts: number[];
+  band_score: string | null;
+}
+
+export interface ReviewDetail extends WritingResult {
+  student_id: number;
+  student_name: string;
+  student_email: string;
+}
+
+export interface TaskAssessmentInput extends CriteriaScores {
+  task_id: number;
+  feedback: string | null;
+}
+
+export async function listReview(status: "pending" | "assessed" | "all" = "pending") {
+  const { data } = await apiClient.get<ReviewItem[]>("/teacher/review", { params: { status } });
+  return data;
+}
+
+export async function getReviewWriting(sectionAttemptId: number) {
+  const { data } = await apiClient.get<ReviewDetail>(`/teacher/review/writing/${sectionAttemptId}`);
+  return data;
+}
+
+export async function assessWriting(sectionAttemptId: number, tasks: TaskAssessmentInput[]) {
+  const { data } = await apiClient.post<ReviewDetail>(`/teacher/review/writing/${sectionAttemptId}`, { tasks });
   return data;
 }

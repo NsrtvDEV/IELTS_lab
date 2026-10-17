@@ -136,15 +136,17 @@ export async function listAttempts() {
   return data;
 }
 
-/** Секции, которые уже можно проходить на сайте */
+/** Секции с вопросами (автопроверка) */
 export type QuestionSection = Extract<SectionType, "reading" | "listening">;
+/** Секции, которые уже можно проходить на сайте */
+export type AvailableSection = QuestionSection | "writing";
 
-export async function startSectionAttempt(testId: number, section: QuestionSection) {
+export async function startSectionAttempt(testId: number, section: AvailableSection) {
   const { data: attempt } = await apiClient.post<Attempt>("/attempts", {
     test_id: testId,
     section_type: section,
   });
-  const { data } = await apiClient.post<SectionContent>(`/${section}/attempts/${attempt.id}/start`);
+  const { data } = await apiClient.post<{ section_attempt_id: number }>(`/${section}/attempts/${attempt.id}/start`);
   return data;
 }
 
@@ -187,5 +189,86 @@ export async function getProgress() {
 
 export async function getSectionResult(section: QuestionSection, sectionAttemptId: number) {
   const { data } = await apiClient.get<SectionResult>(`/${section}/${sectionAttemptId}/result`);
+  return data;
+}
+
+// ───────────────────────── Writing ─────────────────────────
+
+export interface WritingTask {
+  id: number;
+  task_number: 1 | 2;
+  prompt: string;
+  image_url: string | null;
+  min_words: number;
+  recommended_min: number;
+}
+
+export interface WritingDraft {
+  task_id: number;
+  text: string;
+  word_count: number;
+}
+
+export interface WritingContent {
+  section_attempt_id: number;
+  attempt_id: number;
+  deadline: string;
+  tasks: WritingTask[];
+  responses: WritingDraft[];
+}
+
+export interface CriteriaScores {
+  task_response: number; // Task Achievement (Task 1) / Task Response (Task 2)
+  coherence_cohesion: number;
+  lexical_resource: number;
+  grammatical_range: number;
+}
+
+export interface WritingAssessment extends CriteriaScores {
+  band: string;
+  feedback: string | null;
+  grader_name: string | null;
+  created_at: string;
+}
+
+export interface WritingTaskResult {
+  task_id: number;
+  task_number: 1 | 2;
+  prompt: string;
+  image_url: string | null;
+  min_words: number;
+  text: string;
+  word_count: number;
+  assessment: WritingAssessment | null;
+}
+
+export interface WritingResult {
+  section_attempt_id: number;
+  attempt_id: number;
+  test_title: string;
+  submitted_at: string | null;
+  time_spent_sec: number | null;
+  band_score: string | null;
+  status: "pending" | "assessed";
+  tasks: WritingTaskResult[];
+}
+
+export async function getWriting(sectionAttemptId: number) {
+  const { data } = await apiClient.get<WritingContent>(`/writing/${sectionAttemptId}`);
+  return data;
+}
+
+export async function saveWriting(sectionAttemptId: number, taskId: number, text: string) {
+  const { data } = await apiClient.put<WritingDraft>(`/writing/${sectionAttemptId}/tasks/${taskId}`, { text });
+  return data;
+}
+
+export async function submitWriting(sectionAttemptId: number) {
+  const { data } = await apiClient.post<SectionAttemptShort>(`/writing/${sectionAttemptId}/submit`);
+  return data;
+}
+
+export async function getWritingResult(sectionAttemptId: number) {
+  const { data } = await apiClient.get<WritingResult>(`/writing/${sectionAttemptId}/result`);
   return data;
 }
