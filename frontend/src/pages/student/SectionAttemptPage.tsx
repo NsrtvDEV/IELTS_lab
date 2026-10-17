@@ -6,6 +6,7 @@ import { apiErrorMessage } from "../../api/client";
 import {
   abandonAttempt,
   getSectionContent,
+  savePlayback,
   saveSectionAnswers,
   submitSection,
   type QuestionSection,
@@ -226,6 +227,8 @@ export function SectionAttemptPage({ section }: { section: QuestionSection }) {
           answers={answers}
           onAnswer={setAnswer}
           playbackKey={`bandup-listening:${saId}`}
+          initialPlayback={content.playback}
+          onSavePlayback={(state) => savePlayback(saId, state)}
         />
       ) : (
         <ReadingWorkspace

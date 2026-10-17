@@ -19,6 +19,10 @@ import { QUESTION_TYPE_LABELS, SECTION_LABELS } from "../../lib/questionTypes";
 import { isLocked } from "../../lib/tests";
 import { LockedNotice } from "./TestDetailPage";
 
+function formatDuration(sec: number) {
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+}
+
 /** Недостающие номера 1–40 диапазонами: "5–12, 20, 31–40" */
 function missingRanges(taken: number[]): string {
   const ranges: string[] = [];
@@ -156,6 +160,11 @@ export function SectionEditorPage() {
     return i === -1 ? null : listening ? `Part ${i + 1}` : `Passage ${i + 1}`;
   };
   const count = section.question_numbers.length;
+  // Listening: секция должна вмещать все записи + 2 минуты на проверку ответов
+  const durations = section.passages.filter((p) => p.audio_url).map((p) => p.audio_duration_sec);
+  const totalAudio = durations.length && durations.every((d) => d) ? durations.reduce<number>((a, d) => a + (d ?? 0), 0) : null;
+  const neededMin = totalAudio !== null ? Math.ceil((totalAudio + 120) / 60) : null;
+  const tooShort = neededMin !== null && section.duration_min < neededMin;
 
   async function removePassage(p: TeacherPassage) {
     if (!window.confirm("Delete this passage? Its questions will stay but lose the link to it.")) return;
@@ -213,6 +222,16 @@ export function SectionEditorPage() {
       <div className="mt-6 space-y-4">
         <ErrorBox message={error} />
         <LockedNotice test={test} />
+        {listening && totalAudio !== null && (
+          <p
+            className={`rounded-xl px-4 py-3 text-sm ${tooShort ? "bg-amber-50 text-amber-800" : "bg-slate-50 text-ink-muted"}`}
+          >
+            Recordings last <strong>{formatDuration(totalAudio)}</strong>. Section time is {section.duration_min} min
+            {tooShort
+              ? ` — set it to at least ${neededMin} min on the test page (recordings + 2 min to check answers).`
+              : " — enough for the recordings and 2 minutes to check answers."}
+          </p>
+        )}
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_2fr]">
@@ -241,6 +260,7 @@ export function SectionEditorPage() {
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
                         {listening ? `Part ${i + 1}` : `Passage ${i + 1}`}
+                        {listening && p.audio_duration_sec ? ` · ${formatDuration(p.audio_duration_sec)}` : ""}
                       </div>
                       <div className="truncate font-semibold text-ink">{p.title || "Untitled"}</div>
                       {listening ? (

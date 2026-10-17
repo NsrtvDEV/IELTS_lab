@@ -114,6 +114,142 @@ function QuestionInput({
   );
 }
 
+// ───────────────────────── Раскладка с пропусками ─────────────────────────
+
+const GAP = /\{(\d{1,2})\}/g;
+
+/** Поле прямо в тексте формы/таблицы: слово или выбор буквы из списка группы */
+function InlineGap({
+  group,
+  question,
+  answer,
+  onChange,
+  answerKey,
+}: {
+  group: QuestionGroup;
+  question: Question;
+  answer: Answer;
+  onChange: (a: Answer) => void;
+  answerKey?: string[];
+}) {
+  const box = "h-8 rounded-md border border-slate-300 bg-white px-2 text-sm text-ink outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100";
+  return (
+    <span id={`q-${question.number}`} className="mx-0.5 inline-flex scroll-mt-24 items-center gap-1 align-middle">
+      <span className="rounded bg-ink px-1.5 py-0.5 text-[11px] font-bold text-white">{question.number}</span>
+      {group.options.length > 0 ? (
+        <select
+          value={answer.options[0] ?? ""}
+          onChange={(e) => onChange({ text: "", options: e.target.value ? [Number(e.target.value)] : [] })}
+          className={`${box} w-20`}
+          aria-label={`Answer to question ${question.number}`}
+        >
+          <option value="" />
+          {group.options.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          value={answer.text}
+          onChange={(e) => onChange({ text: e.target.value, options: [] })}
+          maxLength={500}
+          className={`${box} w-36`}
+          aria-label={`Answer to question ${question.number}`}
+          autoComplete="off"
+          spellCheck={false}
+        />
+      )}
+      {answerKey && <span className="text-xs font-semibold text-emerald-700">{answerKey.join(" / ")}</span>}
+    </span>
+  );
+}
+
+/** Текст с пропусками {n}: строки с "|" складываются в таблицу */
+function TemplateLayout({
+  template,
+  group,
+  answers,
+  setAnswer,
+  answerKey,
+}: {
+  template: string;
+  group: QuestionGroup;
+  answers: Record<number, Answer>;
+  setAnswer: (questionId: number, a: Answer) => void;
+  answerKey?: Record<number, string[]>;
+}) {
+  const byNumber = new Map(group.questions.map((q) => [q.number, q]));
+
+  function renderLine(line: string, key: string) {
+    const parts: ReactNode[] = [];
+    let last = 0;
+    for (const m of line.matchAll(GAP)) {
+      const q = byNumber.get(Number(m[1]));
+      parts.push(line.slice(last, m.index));
+      parts.push(
+        q ? (
+          <InlineGap
+            key={`${key}-${q.id}`}
+            group={group}
+            question={q}
+            answer={answers[q.id] ?? { text: "", options: [] }}
+            onChange={(a) => setAnswer(q.id, a)}
+            answerKey={answerKey?.[q.id]}
+          />
+        ) : (
+          m[0]
+        )
+      );
+      last = (m.index ?? 0) + m[0].length;
+    }
+    parts.push(line.slice(last));
+    return parts;
+  }
+
+  // соседние строки с "|" — одна таблица, первая строка — заголовок
+  const blocks: { table: boolean; lines: string[] }[] = [];
+  for (const line of template.split("\n")) {
+    const table = line.includes("|");
+    const prev = blocks[blocks.length - 1];
+    if (prev && prev.table === table) prev.lines.push(line);
+    else blocks.push({ table, lines: [line] });
+  }
+
+  return (
+    <div className="mt-4 space-y-3 rounded-lg border border-slate-200 bg-slate-50/60 p-4 text-sm leading-8 text-ink">
+      {blocks.map((b, bi) =>
+        b.table ? (
+          <div key={bi} className="overflow-x-auto">
+            <table className="w-full border-collapse bg-white text-left">
+              <tbody>
+                {b.lines.map((row, ri) => (
+                  <tr key={ri} className={ri === 0 ? "bg-slate-100 font-semibold" : ""}>
+                    {row.split("|").map((cell, ci) => (
+                      <td key={ci} className="border border-slate-200 px-3 py-1.5 align-top">
+                        {renderLine(cell.trim(), `${bi}-${ri}-${ci}`)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div key={bi}>
+            {b.lines.map((line, li) => (
+              <p key={li} className="min-h-4 whitespace-pre-wrap">
+                {renderLine(line, `${bi}-${li}`)}
+              </p>
+            ))}
+          </div>
+        )
+      )}
+    </div>
+  );
+}
+
 export function GroupBlock({
   group,
   answers,
@@ -126,6 +262,10 @@ export function GroupBlock({
   answerKey?: Record<number, string[]>; // предпросмотр учителя: правильные ответы под вопросами
 }) {
   const showOptionList = group.options.length > 0 && group.type !== "tfng" && group.type !== "ynng";
+  const template = typeof group.meta?.template === "string" ? group.meta.template : null;
+  // вопросы, у которых есть место в раскладке, показываем в ней, остальные — списком
+  const inLayout = new Set(template ? [...template.matchAll(GAP)].map((m) => Number(m[1])) : []);
+  const listed = group.questions.filter((q) => !inLayout.has(q.number));
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5">
       <p className="whitespace-pre-line text-sm font-semibold text-ink">{group.instruction}</p>
@@ -151,8 +291,11 @@ export function GroupBlock({
           ))}
         </ul>
       )}
-      <ol className="mt-4 space-y-5">
-        {group.questions.map((q) => (
+      {template && (
+        <TemplateLayout template={template} group={group} answers={answers} setAnswer={setAnswer} answerKey={answerKey} />
+      )}
+      <ol className={`${listed.length ? "mt-4" : "hidden"} space-y-5`}>
+        {listed.map((q) => (
           <li key={q.id} id={`q-${q.number}`} className="scroll-mt-24">
             <div className="flex gap-3 text-sm">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-ink">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Passage, QuestionGroup } from "../../api/student";
+import type { Passage, PlaybackState, QuestionGroup } from "../../api/student";
 import type { Answer } from "../../lib/answers";
 import { scrollToQuestion } from "../../lib/dom";
 import { GroupBlock, QuestionNavigator } from "../reading/ReadingWorkspace";
@@ -12,6 +12,8 @@ export function ListeningWorkspace({
   answers,
   onAnswer,
   playbackKey,
+  initialPlayback = null,
+  onSavePlayback,
   answerKey,
   freePlayback = false,
 }: {
@@ -20,10 +22,13 @@ export function ListeningWorkspace({
   answers: Record<number, Answer>;
   onAnswer: (questionId: number, a: Answer) => void;
   playbackKey?: string; // ключ localStorage для места воспроизведения
+  initialPlayback?: PlaybackState | null; // место воспроизведения с сервера
+  onSavePlayback?: (state: PlaybackState) => Promise<PlaybackState>;
   answerKey?: Record<number, string[]>;
   freePlayback?: boolean; // предпросмотр: обычные плееры без ограничений
 }) {
-  const [active, setActive] = useState(0);
+  // вопросы открываются на части, где остановилась запись
+  const [active, setActive] = useState(initialPlayback && !initialPlayback.finished ? initialPlayback.part : 0);
   const current = parts[active];
   // вопросы без привязки к записи показываем в первой части
   const groupsHere = groups.filter(
@@ -41,7 +46,13 @@ export function ListeningWorkspace({
       {freePlayback ? (
         <FreePlayers parts={parts} />
       ) : (
-        <ExamPlayer parts={parts} storageKey={playbackKey} onPartChange={setActive} />
+        <ExamPlayer
+          parts={parts}
+          initial={initialPlayback}
+          storageKey={playbackKey}
+          onSave={onSavePlayback}
+          onPartChange={setActive}
+        />
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto bg-[#f7f9fd]">

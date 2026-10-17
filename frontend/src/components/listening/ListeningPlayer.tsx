@@ -1,27 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { Headphones, Play, RotateCcw, Volume2 } from "lucide-react";
 import { resolveMediaUrl } from "../../api/client";
-import type { Passage } from "../../api/student";
+import type { Passage, PlaybackState } from "../../api/student";
 import { Button } from "../ui";
 
-type Saved = { part: number; time: number; finished: boolean };
-type Status = "idle" | "loading" | "playing" | "finished" | "error";
+type Status = "idle" | "loading" | "playing" | "blocked" | "finished" | "error";
 
-function load(key: string | undefined): Saved {
-  try {
-    if (key) return { part: 0, time: 0, finished: false, ...JSON.parse(localStorage.getItem(key) ?? "{}") };
-  } catch {
-    // нет доступа к localStorage — начинаем с начала
-  }
-  return { part: 0, time: 0, finished: false };
+const START: PlaybackState = { part: 0, position: 0, finished: false };
+const SERVER_SAVE_EVERY_SEC = 5;
+
+/** Что дальше по записи: дослушанное > более поздняя часть > большее время */
+function furthest(a: PlaybackState, b: PlaybackState) {
+  if (a.finished !== b.finished) return a.finished ? a : b;
+  if (a.part !== b.part) return a.part > b.part ? a : b;
+  return a.position >= b.position ? a : b;
 }
 
-function persist(key: string | undefined, value: Saved) {
+function loadLocal(key: string | undefined): PlaybackState {
+  try {
+    if (key) return { ...START, ...JSON.parse(localStorage.getItem(key) ?? "{}") };
+  } catch {
+    // нет доступа к localStorage — опираемся на сервер
+  }
+  return START;
+}
+
+function saveLocal(key: string | undefined, value: PlaybackState) {
   if (!key) return;
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // приватный режим — прогресс записи просто не сохранится
+    // приватный режим — останется сохранение на сервере
   }
 }
 
@@ -31,36 +40,74 @@ function clock(sec: number) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/** Короткий тон, чтобы проверить наушники и громкость до начала записи */
+function playTestTone(volume: number) {
+  const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  if (!Ctx) return;
+  const ctx = new Ctx();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.frequency.value = 440;
+  gain.gain.value = 0.25 * volume;
+  osc.connect(gain).connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 1);
+  osc.onended = () => ctx.close();
+}
+
 /**
  * Запись как на экзамене: все части подряд, один раз, без паузы и перемотки.
- * Место воспроизведения сохраняется — после перезагрузки продолжаем с него, а не с начала.
+ * Место воспроизведения хранится на сервере (и в браузере): после перезагрузки,
+ * очистки данных или на другом устройстве запись продолжается, а не начинается заново.
  */
 export function ExamPlayer({
   parts,
+  initial,
   storageKey,
+  onSave,
   onPartChange,
 }: {
   parts: Passage[];
+  initial: PlaybackState | null; // с сервера
   storageKey?: string;
+  onSave?: (state: PlaybackState) => Promise<PlaybackState>;
   onPartChange: (index: number) => void;
 }) {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [saved] = useState(() => load(storageKey));
+  const [saved] = useState(() => furthest(initial ?? START, loadLocal(storageKey)));
   const [part, setPart] = useState(saved.part);
   const [status, setStatus] = useState<Status>(saved.finished ? "finished" : "idle");
-  const [time, setTime] = useState(saved.time);
+  const [time, setTime] = useState(saved.position);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
-  const lastSaved = useRef(0);
-  const resumeAt = useRef(saved.time);
+  const lastServerSave = useRef(saved.position);
+  const resumeAt = useRef(saved.position);
 
   const playable = parts.map((p, i) => ({ p, i })).filter(({ p }) => p.audio_url);
   const current = parts[part];
   const position = playable.findIndex(({ i }) => i === part) + 1;
+  const knownTotal = playable.every(({ p }) => p.audio_duration_sec)
+    ? playable.reduce((sum, { p }) => sum + (p.audio_duration_sec ?? 0), 0)
+    : null;
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume;
   }, [volume]);
+
+  function store(state: PlaybackState, toServer: boolean) {
+    saveLocal(storageKey, state);
+    if (!toServer || !onSave) return;
+    onSave(state)
+      .then((server) => {
+        // запись уже дослушана в другом окне/устройстве
+        if (server.finished && !state.finished) {
+          audioRef.current?.pause();
+          saveLocal(storageKey, server);
+          setStatus("finished");
+        }
+      })
+      .catch(() => undefined); // сеть — сохраним при следующем шаге
+  }
 
   function play(index: number, at: number) {
     const audio = audioRef.current;
@@ -70,18 +117,26 @@ export function ExamPlayer({
     onPartChange(index);
     resumeAt.current = at;
     setStatus("loading");
-    audio.src = src;
-    audio.load();
-    audio.play().catch(() => setStatus("error"));
+    if (audio.src !== src) {
+      audio.src = src;
+      audio.load();
+    } else if (at > 0) {
+      audio.currentTime = at;
+    }
+    audio.play().catch((err: DOMException) =>
+      // мобильный браузер не дал включить звук без нажатия — просим нажать
+      setStatus(err.name === "NotAllowedError" ? "blocked" : "error")
+    );
   }
 
   function next() {
     const following = playable.find(({ i }) => i > part);
     if (following) {
-      persist(storageKey, { part: following.i, time: 0, finished: false });
+      store({ part: following.i, position: 0, finished: false }, true);
+      lastServerSave.current = 0;
       play(following.i, 0);
     } else {
-      persist(storageKey, { part, time: 0, finished: true });
+      store({ part, position: 0, finished: true }, true);
       setStatus("finished");
     }
   }
@@ -93,7 +148,7 @@ export function ExamPlayer({
     play(first, first === part ? resumeAt.current : 0);
   }
 
-  const notStarted = status === "idle" && saved.part === 0 && saved.time === 0;
+  const notStarted = status === "idle" && saved.part === 0 && saved.position === 0;
 
   return (
     <div className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6" role="region" aria-label="Recording">
@@ -108,14 +163,14 @@ export function ExamPlayer({
         onTimeUpdate={(e) => {
           const t = e.currentTarget.currentTime;
           setTime(t);
-          if (Math.abs(t - lastSaved.current) >= 2) {
-            lastSaved.current = t;
-            persist(storageKey, { part, time: t, finished: false });
-          }
+          const toServer = Math.abs(t - lastServerSave.current) >= SERVER_SAVE_EVERY_SEC;
+          if (toServer) lastServerSave.current = t;
+          store({ part, position: t, finished: false }, toServer);
         }}
         // паузу из системы (наушники, клавиши) отменяем — на экзамене запись не останавливается
         onPause={(e) => {
-          if (status === "playing" && !e.currentTarget.ended) e.currentTarget.play().catch(() => setStatus("error"));
+          if (status === "playing" && !e.currentTarget.ended)
+            e.currentTarget.play().catch(() => setStatus("blocked"));
         }}
         onEnded={next}
         onError={() => setStatus("error")}
@@ -130,14 +185,21 @@ export function ExamPlayer({
           <>
             <div className="min-w-48 flex-1 text-sm">
               <div className="font-semibold text-ink">
-                {notStarted ? "The recording plays once" : `Part ${part + 1} was interrupted`}
+                {notStarted
+                  ? `The recording plays once${knownTotal ? ` · ${playable.length} parts, ${clock(knownTotal)}` : ""}`
+                  : `Part ${part + 1} was interrupted`}
               </div>
               <div className="text-ink-muted">
                 {notStarted
-                  ? "All parts play one after another. You can't pause or replay it — read the questions first."
+                  ? "All parts play one after another — no pause or replay. The timer is already running: test your sound and start."
                   : "Continue from where it stopped."}
               </div>
             </div>
+            {notStarted && (
+              <Button variant="secondary" onClick={() => playTestTone(volume)}>
+                <Volume2 className="h-4 w-4" /> Test sound
+              </Button>
+            )}
             <Button onClick={start}>
               <Play className="h-4 w-4" /> {notStarted ? "Start listening" : "Resume"}
             </Button>
@@ -165,6 +227,18 @@ export function ExamPlayer({
               <div className="h-full rounded-full bg-brand-500 transition-[width]" style={{ width: duration ? `${(time / duration) * 100}%` : "0%" }} />
             </div>
           </div>
+        )}
+
+        {status === "blocked" && (
+          <>
+            <div className="min-w-48 flex-1 text-sm">
+              <div className="font-semibold text-ink">Tap to continue</div>
+              <div className="text-ink-muted">Your browser paused the sound. It continues from the same place.</div>
+            </div>
+            <Button onClick={() => play(part, time || resumeAt.current)}>
+              <Play className="h-4 w-4" /> Continue Part {part + 1}
+            </Button>
+          </>
         )}
 
         {status === "finished" && (

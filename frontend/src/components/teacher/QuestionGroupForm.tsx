@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type KeyboardEvent } from "react";
+import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { ImagePlus, Loader2, Plus, Trash2, X } from "lucide-react";
 import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import {
@@ -248,7 +248,90 @@ function ImageField({ value, onChange }: { value: string | null; onChange: (url:
   );
 }
 
+// задания, где пропуски стоят внутри формы, таблицы, заметок или текста
+const LAYOUT_TYPES: QuestionType[] = [
+  "form_completion",
+  "note_completion",
+  "table_completion",
+  "flow_chart_completion",
+  "summary_completion",
+  "sentence_completion",
+  "gap_fill",
+];
+
+/** Раскладка с пропусками: "Name: {1}" — на месте {1} ученик увидит поле для вопроса 1 */
+function LayoutField({
+  value,
+  onChange,
+  numbers,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  numbers: number[];
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const caret = useRef<number | null>(null); // где был курсор; null — в поле ещё не кликали
+  const used = new Set([...value.matchAll(/\{(\d{1,2})\}/g)].map((m) => Number(m[1])));
+
+  function insert(n: number) {
+    const el = ref.current;
+    const at = Math.min(caret.current ?? value.length, value.length);
+    const next = `${value.slice(0, at)}{${n}}${value.slice(at)}`;
+    onChange(next);
+    window.setTimeout(() => {
+      el?.focus();
+      const pos = at + String(n).length + 2;
+      el?.setSelectionRange(pos, pos);
+      caret.current = pos;
+    }, 0);
+  }
+
+  return (
+    <div>
+      <Label htmlFor="group-layout">Layout with gaps (optional)</Label>
+      <p className="mb-2 text-sm text-ink-muted">
+        Write the form, notes, table or summary and put <code className="rounded bg-slate-100 px-1">{"{5}"}</code> where the
+        gap for question 5 goes. Use <code className="rounded bg-slate-100 px-1">|</code> between table columns. Without a
+        layout, questions are shown as a list.
+      </p>
+      <textarea
+        id="group-layout"
+        ref={ref}
+        rows={6}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onSelect={(e) => (caret.current = e.currentTarget.selectionStart)}
+        className={`${textareaClass} font-mono text-[13px]`}
+        placeholder={"ACCOMMODATION BOOKING FORM\nName: Mr {1}\nArrival date: {2} March\n\nRoom | Price | Extras\nDouble | £{3} | {4}"}
+      />
+      <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <span className="text-xs text-ink-muted">Insert gap:</span>
+        {numbers.map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => insert(n)}
+            disabled={used.has(n)}
+            className="h-7 min-w-7 rounded-md bg-slate-100 px-2 text-xs font-bold text-ink hover:bg-brand-50 hover:text-brand-700 disabled:cursor-default disabled:bg-emerald-50 disabled:text-emerald-700"
+            title={used.has(n) ? "Already in the layout" : `Insert {${n}}`}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ───────────────────────── Форма ─────────────────────────
+
+/** meta группы с раскладкой (или без неё) — остальные ключи meta сохраняем */
+function withLayout(meta: Record<string, unknown> | null, template: string) {
+  const rest = { ...(meta ?? {}) };
+  delete rest.template;
+  if (template) rest.template = template;
+  return Object.keys(rest).length ? rest : null;
+}
 
 function fromGroup(group: TeacherQuestionGroup): DraftQuestion[] {
   return group.questions.map((q) => ({
@@ -287,6 +370,7 @@ export function QuestionGroupForm({
   const [allowNumber, setAllowNumber] = useState(group?.allow_number ?? false);
   const [position, setPosition] = useState(String(group?.position ?? section.question_groups.length));
   const [imageUrl, setImageUrl] = useState<string | null>(group?.image_url ?? null);
+  const [layout, setLayout] = useState<string>((group?.meta?.template as string | undefined) ?? "");
   const [groupOptions, setGroupOptions] = useState<OptionInput[]>(
     group && !FIXED_OPTIONS[group.type] ? group.options.map((o) => ({ label: o.label, text: o.text })) : []
   );
@@ -349,6 +433,7 @@ export function QuestionGroupForm({
       allow_number: usesText && allowNumber,
       position: Number(position) || 0,
       image_url: imageUrl,
+      meta: withLayout(group?.meta ?? null, LAYOUT_TYPES.includes(type) ? layout.trim() : ""),
       options: mode === "group-options" || mode === "either" ? groupOptions : [],
       questions: questions.map((q) => ({
         number: Number(q.number),
@@ -460,6 +545,14 @@ export function QuestionGroupForm({
       )}
 
       <ImageField value={imageUrl} onChange={setImageUrl} />
+
+      {LAYOUT_TYPES.includes(type) && (
+        <LayoutField
+          value={layout}
+          onChange={setLayout}
+          numbers={questions.map((q) => Number(q.number)).filter((n) => n > 0).sort((a, b) => a - b)}
+        />
+      )}
 
       {(mode === "group-options" || mode === "either") && (
         <div>

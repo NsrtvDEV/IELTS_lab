@@ -45,6 +45,7 @@ export interface TeacherPassage {
   title: string | null;
   text: string | null;
   audio_url: string | null;
+  audio_duration_sec: number | null;
   position: number;
 }
 
@@ -114,6 +115,7 @@ export interface QuestionGroupInput {
   image_url: string | null;
   options: OptionInput[];
   questions: QuestionInput[];
+  meta: Record<string, unknown> | null; // { template: "Name: {1}" } — раскладка формы/таблицы
 }
 
 export interface PassageInput {

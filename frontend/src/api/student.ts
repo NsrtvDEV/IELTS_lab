@@ -66,6 +66,7 @@ export interface Passage {
   title: string | null;
   text: string | null;
   audio_url: string | null;
+  audio_duration_sec?: number | null;
   position: number;
 }
 
@@ -83,6 +84,19 @@ export interface SectionContent {
   passages: Passage[];
   question_groups: QuestionGroup[];
   answers: SavedAnswer[];
+  playback: PlaybackState | null;
+}
+
+/** Listening: докуда дослушана запись (сервер принимает только движение вперёд) */
+export interface PlaybackState {
+  part: number;
+  position: number;
+  finished: boolean;
+}
+
+export async function savePlayback(sectionAttemptId: number, state: PlaybackState) {
+  const { data } = await apiClient.put<PlaybackState>(`/listening/${sectionAttemptId}/playback`, state);
+  return data;
 }
 
 export interface QuestionResult {
