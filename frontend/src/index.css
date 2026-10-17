@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  @apply bg-[#f7f9fd] font-sans text-ink antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
