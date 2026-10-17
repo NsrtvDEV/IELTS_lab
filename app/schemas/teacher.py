@@ -71,6 +71,7 @@ class TeacherPassage(BaseModel):
     title: str | None
     text: str | None
     audio_url: str | None
+    audio_duration_sec: int | None = None
     position: int
 
     model_config = ConfigDict(from_attributes=True)

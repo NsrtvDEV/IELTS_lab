@@ -1,5 +1,7 @@
 """Создание и проверка содержимого тестов (используется роутерами учителя)."""
 
+import re
+
 from fastapi import HTTPException
 from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -36,6 +38,12 @@ DEFAULT_SECTIONS = [
     (SectionType.SPEAKING, 14),
 ]
 QUESTION_SECTIONS = {SectionType.LISTENING, SectionType.READING}
+TEMPLATE_GAP = re.compile(r"\{(\d{1,2})\}")  # {12} в раскладке — пропуск вопроса 12
+LISTENING_CHECK_SEC = 120  # время на проверку ответов после записи
+
+
+def clock(seconds: int) -> str:
+    return f"{seconds // 60}:{seconds % 60:02d}"
 QUESTIONS_PER_SECTION = 40
 
 # ответ — выбор варианта
@@ -149,6 +157,16 @@ async def test_problems(session: AsyncSession, test: IeltsTest) -> list[str]:
         missing = [i + 1 for i, p in enumerate(parts) if not p.audio_url]
         if missing:
             problems.append(f"listening: no audio for part(s) {missing}")
+        # секция должна вмещать все записи и 2 минуты на проверку ответов (как в CD IELTS);
+        # у внешних ссылок длина неизвестна — тогда не проверяем
+        durations = [p.audio_duration_sec for p in parts if p.audio_url]
+        if durations and None not in durations:
+            needed = sum(durations) + LISTENING_CHECK_SEC
+            if listening.duration_min * 60 < needed:
+                problems.append(
+                    f"listening: recordings last {clock(sum(durations))} — set the section time "
+                    f"to at least {-(-needed // 60)} min (recordings + 2 min to check answers)"
+                )
 
     if writing := sections.get(SectionType.WRITING):
         numbers = set(
@@ -291,6 +309,19 @@ async def validate_group(
     taken = sorted(set(await session.scalars(taken_stmt)))
     if taken:
         raise bad_request(f"Question numbers already used in this section: {taken}")
+
+    # раскладка формы/таблицы/заметок: "Name: {1}\nPhone: {2}" — пропуски по номерам вопросов
+    template = (data.meta or {}).get("template")
+    if template is not None:
+        if not isinstance(template, str) or len(template) > 10_000:
+            raise bad_request("Layout must be text up to 10,000 characters")
+        used = [int(n) for n in TEMPLATE_GAP.findall(template)]
+        unknown = sorted(set(used) - set(numbers))
+        if unknown:
+            raise bad_request(f"Layout has gaps for questions not in this group: {unknown}")
+        repeated = sorted({n for n in used if used.count(n) > 1})
+        if repeated:
+            raise bad_request(f"Each gap can appear once in the layout: {repeated}")
 
     group_labels = [o.label for o in data.options]
     if len(group_labels) != len(set(group_labels)):

@@ -77,3 +77,109 @@ async def test_full_exam_goes_listening_then_reading(client, student, published_
     assert state["next_section"] == "reading"
     r = await client.post(f"/reading/attempts/{attempt['id']}/start", headers=student)
     assert r.status_code == 200
+
+
+# ───────────────────────── Доработки: длина записей, место воспроизведения, файлы ─────────────────────────
+
+import math  # noqa: E402
+import struct  # noqa: E402
+import wave  # noqa: E402
+from io import BytesIO  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+
+def wav(seconds: float) -> bytes:
+    buf = BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(8000)
+        w.writeframes(b"".join(struct.pack("<h", int(3000 * math.sin(i / 3))) for i in range(int(8000 * seconds))))
+    return buf.getvalue()
+
+
+async def upload(client, teacher, seconds):
+    r = await client.post("/teacher/uploads/audio", headers=teacher, files={"file": ("p.wav", wav(seconds), "audio/wav")})
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def file_of(url):
+    return Path(settings.MEDIA_ROOT) / url.removeprefix("/media/")
+
+
+async def test_upload_reports_duration_and_passage_stores_it(client, teacher):
+    up = await upload(client, teacher, 3)
+    assert up["duration_sec"] == 3
+    test = (await client.post("/teacher/tests", headers=teacher, json={"title": "T"})).json()
+    sec = next(s["id"] for s in test["sections"] if s["type"] == "listening")
+    p = (await client.post(f"/teacher/sections/{sec}/passages", headers=teacher, json={"audio_url": up["url"]})).json()
+    assert p["audio_duration_sec"] == 3
+    ext = (await client.post(f"/teacher/sections/{sec}/passages", headers=teacher,
+                             json={"audio_url": "https://cdn.example.com/x.mp3"})).json()
+    assert ext["audio_duration_sec"] is None  # длина внешней ссылки неизвестна
+
+
+async def test_section_time_must_fit_recordings(client, teacher, sql):
+    test = await build_test(client, teacher, sql, publish=False)
+    listening = test["sections"]["listening"]
+    up = await upload(client, teacher, 2)
+    passage = sql("SELECT id FROM passages WHERE section_id = :s", s=listening).scalar()
+    await client.patch(f"/teacher/passages/{passage}", headers=teacher, json={"audio_url": up["url"]})
+    # 1 минута < 2 с записи + 2 минуты на проверку
+    await client.patch(f"/teacher/sections/{listening}", headers=teacher, json={"duration_min": 1})
+    problems = (await client.get(f"/teacher/tests/{test['id']}", headers=teacher)).json()["problems"]
+    assert "listening: recordings last 0:02 — set the section time to at least 3 min" in problems[0]
+    await client.patch(f"/teacher/sections/{listening}", headers=teacher, json={"duration_min": 3})
+    assert (await client.post(f"/teacher/tests/{test['id']}/publish", headers=teacher)).status_code == 200
+
+
+async def test_playback_only_moves_forward(client, student, published_test):
+    content = await start_listening(client, student, published_test["id"])
+    sa = content["section_attempt_id"]
+    assert content["playback"] is None
+    url = f"/listening/{sa}/playback"
+
+    assert (await client.put(url, headers=student, json={"part": 0, "position": 42.5})).json()["position"] == 42.5
+    # назад нельзя — сервер возвращает сохранённое место
+    back = (await client.put(url, headers=student, json={"part": 0, "position": 1})).json()
+    assert back == {"part": 0, "position": 42.5, "finished": False}
+    assert (await client.put(url, headers=student, json={"part": 5, "position": 0})).status_code == 400
+
+    await client.put(url, headers=student, json={"part": 0, "position": 60, "finished": True})
+    again = (await client.put(url, headers=student, json={"part": 0, "position": 0})).json()
+    assert again["finished"] is True  # дослушанную запись не "перезапустить"
+
+    reloaded = (await client.get(f"/listening/{sa}", headers=student)).json()
+    assert reloaded["playback"]["finished"] is True
+    assert (await client.put(f"/reading/{sa}/playback", headers=student, json={"part": 0, "position": 0})).status_code in (404, 405)
+
+
+async def test_replaced_and_deleted_files_are_removed(client, teacher):
+    test = (await client.post("/teacher/tests", headers=teacher, json={"title": "T"})).json()
+    sec = next(s["id"] for s in test["sections"] if s["type"] == "listening")
+    first, second = await upload(client, teacher, 1), await upload(client, teacher, 1)
+    p = (await client.post(f"/teacher/sections/{sec}/passages", headers=teacher, json={"audio_url": first["url"]})).json()
+    assert file_of(first["url"]).exists()
+
+    await client.patch(f"/teacher/passages/{p['id']}", headers=teacher, json={"audio_url": second["url"]})
+    assert not file_of(first["url"]).exists()  # заменённая запись удалена
+    assert file_of(second["url"]).exists()
+
+    await client.delete(f"/teacher/tests/{test['id']}", headers=teacher)
+    assert not file_of(second["url"]).exists()  # вместе с тестом
+
+
+async def test_layout_template_validation(client, teacher):
+    test = (await client.post("/teacher/tests", headers=teacher, json={"title": "T"})).json()
+    sec = next(s["id"] for s in test["sections"] if s["type"] == "listening")
+    group = {"type": "form_completion", "instruction": "Questions 1–2", "word_limit": 2,
+             "questions": [{"number": 1, "correct_texts": ["Smith"]}, {"number": 2, "correct_texts": ["14"]}]}
+    url = f"/teacher/sections/{sec}/question-groups"
+
+    r = await client.post(url, headers=teacher, json={**group, "meta": {"template": "Name: {1}\nAge: {3}"}})
+    assert r.status_code == 400 and "[3]" in r.json()["detail"]
+    r = await client.post(url, headers=teacher, json={**group, "meta": {"template": "{1} {1} {2}"}})
+    assert r.status_code == 400 and "once" in r.json()["detail"]
+    r = await client.post(url, headers=teacher, json={**group, "meta": {"template": "Name: Mr {1}\nAge | {2}"}})
+    assert r.status_code == 201 and r.json()["meta"]["template"] == "Name: Mr {1}\nAge | {2}"

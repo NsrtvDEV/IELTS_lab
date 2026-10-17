@@ -254,7 +254,9 @@ class Passage(Base):
     )
     title: Mapped[str | None] = mapped_column(String(255))
     text: Mapped[str | None] = mapped_column(Text)
-    audio_url: Mapped[str | None] = mapped_column(String(500))  # файл в S3/MinIO
+    audio_url: Mapped[str | None] = mapped_column(String(500))
+    # длина записи; считается сервером для загруженных файлов, у внешних ссылок — NULL
+    audio_duration_sec: Mapped[int | None] = mapped_column(Integer)
     position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     section: Mapped["Section"] = relationship(back_populates="passages")
@@ -493,6 +495,8 @@ class SectionAttempt(Base):
         DateTime(timezone=True), server_default=func.now()
     )
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Listening: докуда дослушана запись {"part": индекс, "position": сек, "finished": bool}
+    playback: Mapped[dict | None] = mapped_column(JSONB)
     raw_score: Mapped[int | None] = mapped_column(Integer)  # только Listening/Reading
     band_score: Mapped[Decimal | None] = mapped_column(Numeric(2, 1))
     time_spent_sec: Mapped[int | None] = mapped_column(Integer)

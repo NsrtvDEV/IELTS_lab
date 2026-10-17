@@ -6,13 +6,19 @@ from app.database import db_dep
 from app.dependencies import current_user_dep
 from app.models import SectionType
 from app.schemas.attempts import SectionAttemptShort
-from app.schemas.questions import AnswersSave, QuestionSectionContent, QuestionSectionResult
+from app.schemas.questions import (
+    AnswersSave,
+    PlaybackState,
+    QuestionSectionContent,
+    QuestionSectionResult,
+)
 from app.sections import (
     get_open_section_attempt,
     get_own_attempt,
     get_own_section_attempt,
     question_section_content,
     question_section_result,
+    save_playback,
     save_question_answers,
     start_section,
     submit,
@@ -44,6 +50,16 @@ def make_router(section_type: SectionType, about: str) -> APIRouter:
         """Автосохранение ответов: можно присылать все ответы или только изменённые."""
         sa = await get_open_section_attempt(session, section_attempt_id, current_user, section_type)
         await save_question_answers(session, sa, data.answers)
+
+    if section_type == SectionType.LISTENING:
+
+        @router.put("/{section_attempt_id}/playback", response_model=PlaybackState)
+        async def playback(
+            section_attempt_id: int, session: db_dep, current_user: current_user_dep, data: PlaybackState
+        ):
+            """Место воспроизведения записи; принимается только движение вперёд."""
+            sa = await get_open_section_attempt(session, section_attempt_id, current_user, section_type)
+            return await save_playback(session, sa, data)
 
     @router.post("/{section_attempt_id}/submit", response_model=SectionAttemptShort)
     async def submit_section(section_attempt_id: int, session: db_dep, current_user: current_user_dep):

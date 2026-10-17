@@ -116,6 +116,7 @@ class Passage(Unmanaged):
     title = models.CharField(max_length=255, null=True, blank=True)
     text = models.TextField(null=True, blank=True)
     audio_url = models.CharField(max_length=500, null=True, blank=True)
+    audio_duration_sec = models.IntegerField("длина записи, сек", null=True, blank=True, editable=False)
     position = models.IntegerField(default=0)
 
     class Meta(Unmanaged.Meta):
@@ -287,6 +288,7 @@ class SectionAttempt(Unmanaged):
     raw_score = models.IntegerField(null=True)
     band_score = models.DecimalField(max_digits=2, decimal_places=1, null=True)
     time_spent_sec = models.IntegerField(null=True)
+    playback = models.JSONField(null=True, blank=True)
 
     class Meta(Unmanaged.Meta):
         db_table = "section_attempts"

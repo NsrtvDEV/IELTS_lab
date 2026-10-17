@@ -2,7 +2,13 @@ from django import forms
 from django.contrib import admin, messages
 from django.db.models import Count
 
+import uuid
+from pathlib import Path
+
+from app.config import settings as app_settings
+from app.media import _duration, media_path
 from app.models import SectionType
+from app.routers.teacher.uploads import AUDIO_TYPES
 from app.utils import hash_password
 
 from .models import (
@@ -157,9 +163,53 @@ class IeltsTestAdmin(admin.ModelAdmin):
         queryset.update(is_published=False)
 
 
+class PassageForm(forms.ModelForm):
+    """Текст или запись: у Listening файл можно загрузить прямо здесь."""
+
+    upload_audio = forms.FileField(
+        label="Загрузить запись",
+        required=False,
+        help_text=f"MP3, M4A, WAV или OGG до {app_settings.MAX_LISTENING_AUDIO_MB} МБ — заменит ссылку выше",
+    )
+
+    class Meta:
+        model = Passage
+        fields = ["title", "text", "audio_url", "position"]
+
+    def clean_upload_audio(self):
+        file = self.cleaned_data.get("upload_audio")
+        if not file:
+            return None
+        if file.content_type not in AUDIO_TYPES:
+            raise forms.ValidationError("Загрузите аудиофайл: MP3, M4A, AAC, WAV, OGG или WEBM")
+        if file.size > app_settings.MAX_LISTENING_AUDIO_MB * 1024 * 1024:
+            raise forms.ValidationError(f"Файл больше {app_settings.MAX_LISTENING_AUDIO_MB} МБ")
+        return file
+
+    def save(self, commit=True):
+        passage = super().save(commit=False)
+        file = self.cleaned_data.get("upload_audio")
+        if file:
+            name = f"{uuid.uuid4().hex}{AUDIO_TYPES[file.content_type]}"
+            path = Path(app_settings.MEDIA_ROOT) / "audio" / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with path.open("wb") as out:
+                for chunk in file.chunks():
+                    out.write(chunk)
+            passage.audio_url = f"/media/audio/{name}"
+        if "audio_url" in self.changed_data or file:
+            path = media_path(passage.audio_url)  # у внешних ссылок длина неизвестна
+            passage.audio_duration_sec = _duration(path) if path and path.is_file() else None
+        if commit:
+            passage.save()
+        return passage
+
+
 class PassageInline(admin.StackedInline):
     model = Passage
+    form = PassageForm
     extra = 0
+    readonly_fields = ["audio_duration_sec"]
 
 
 class QuestionGroupInline(admin.TabularInline):

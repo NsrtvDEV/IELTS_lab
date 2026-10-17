@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.config import settings
 from app.dependencies import teacher_dep
+from app.media import audio_duration
 
 router = APIRouter(prefix="/teacher/uploads", tags=["Teacher: uploads"])
 
@@ -36,6 +37,7 @@ CHUNK = 1024 * 1024
 
 class UploadResponse(BaseModel):
     url: str  # путь от корня сервера: /media/<папка>/<имя>
+    duration_sec: int | None = None  # для аудио — длина записи
 
 
 async def store(file: UploadFile, folder: str, extension: str, max_mb: int) -> str:
@@ -77,5 +79,5 @@ async def upload_audio(teacher: teacher_dep, file: UploadFile = File(...)):
     extension = AUDIO_TYPES.get(file_type(file))
     if not extension:
         raise HTTPException(status_code=415, detail="Upload an MP3, M4A, AAC, WAV, OGG or WEBM audio file")
-    limit = settings.MAX_LISTENING_AUDIO_MB
-    return UploadResponse(url=await store(file, "audio", extension, limit))
+    url = await store(file, "audio", extension, settings.MAX_LISTENING_AUDIO_MB)
+    return UploadResponse(url=url, duration_sec=await audio_duration(url))

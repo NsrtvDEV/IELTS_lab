@@ -9,8 +9,9 @@ from app.content import (
     test_response,
 )
 from app.database import db_dep
+from app.media import remove_unused
 from app.dependencies import teacher_dep
-from app.models import IeltsTest, Section
+from app.models import IeltsTest, Passage, QuestionGroup, Section
 from app.schemas.teacher import TeacherTest, TestCreate, TestUpdate
 
 router = APIRouter(prefix="/teacher/tests", tags=["Teacher: tests"])
@@ -60,9 +61,18 @@ async def delete_test(test_id: int, session: db_dep, teacher: teacher_dep):
         raise HTTPException(
             status_code=409, detail="Students already took this test — unpublish it instead"
         )
+    section_ids = [s.id for s in test.sections]
+    files = list(
+        await session.scalars(select(Passage.audio_url).where(Passage.section_id.in_(section_ids)))
+    ) + list(
+        await session.scalars(
+            select(QuestionGroup.image_url).where(QuestionGroup.section_id.in_(section_ids))
+        )
+    )
     # секции, тексты и вопросы удаляет сама БД (ON DELETE CASCADE)
     await session.execute(delete(IeltsTest).where(IeltsTest.id == test.id))
     await session.commit()
+    await remove_unused(session, files)
 
 
 @router.post("/{test_id}/publish", response_model=TeacherTest)

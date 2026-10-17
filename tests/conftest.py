@@ -10,6 +10,10 @@
 """
 
 import os
+import tempfile
+
+# загруженные в тестах файлы — во временную папку, а не в media/ проекта
+os.environ.setdefault("MEDIA_ROOT", tempfile.mkdtemp(prefix="bandup-test-media-"))
 
 TEST_DB_NAME = os.environ.get("TEST_DB_NAME")
 if TEST_DB_NAME:

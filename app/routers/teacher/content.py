@@ -14,6 +14,7 @@ from app.content import (
     validate_group,
 )
 from app.database import db_dep
+from app.media import audio_duration, remove_unused
 from app.dependencies import teacher_dep
 from app.models import Passage, QuestionGroup, Section
 from app.schemas.teacher import (
@@ -78,6 +79,7 @@ async def create_passage(
     """Reading — текст (Passage 1–3), Listening — аудио части (Part 1–4)."""
     section = await editable_question_section(session, section_id)
     passage = Passage(section_id=section.id, **data.model_dump())
+    passage.audio_duration_sec = await audio_duration(passage.audio_url)
     session.add(passage)
     await session.commit()
     await session.refresh(passage)
@@ -89,11 +91,15 @@ async def update_passage(
     passage_id: int, session: db_dep, teacher: teacher_dep, data: PassageUpdate
 ):
     passage = await editable_passage(session, passage_id)
+    old_audio = passage.audio_url
     for field, value in data.model_dump(exclude_unset=True).items():
         if field == "position" and value is None:
             continue
         setattr(passage, field, value)
+    if passage.audio_url != old_audio:
+        passage.audio_duration_sec = await audio_duration(passage.audio_url)
     await session.commit()
+    await remove_unused(session, [old_audio])  # заменённая запись больше не нужна
     await session.refresh(passage)
     return passage
 
@@ -102,8 +108,10 @@ async def update_passage(
 async def delete_passage(passage_id: int, session: db_dep, teacher: teacher_dep):
     """Группы вопросов к этому тексту остаются, но теряют привязку к нему."""
     passage = await editable_passage(session, passage_id)
+    audio = passage.audio_url
     await session.execute(delete(Passage).where(Passage.id == passage.id))
     await session.commit()
+    await remove_unused(session, [audio])
 
 
 # ───────────────────────── Question groups ─────────────────────────
@@ -154,17 +162,21 @@ async def replace_question_group(
     old, section = await editable_group(session, group_id)
     await validate_group(session, section, data, replacing_group_id=old.id)
 
+    old_image = old.image_url
     await session.execute(delete(QuestionGroup).where(QuestionGroup.id == old.id))
     session.expunge(old)
     group = build_group(section, data)
     session.add(group)
     await session.commit()
+    await remove_unused(session, [old_image])
     return await saved_group(session, group.id)
 
 
 @router.delete("/question-groups/{group_id}", status_code=204)
 async def delete_question_group(group_id: int, session: db_dep, teacher: teacher_dep):
     group, _ = await editable_group(session, group_id)
+    image = group.image_url
     await session.execute(delete(QuestionGroup).where(QuestionGroup.id == group.id))
     await session.commit()
+    await remove_unused(session, [image])
 

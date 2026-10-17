@@ -51,6 +51,7 @@ class PassageResponse(BaseModel):
     title: str | None = None
     text: str | None = None
     audio_url: str | None = None
+    audio_duration_sec: int | None = None
     position: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -60,6 +61,14 @@ class SavedAnswer(BaseModel):
     question_id: int
     answer_text: str | None = None
     option_ids: list[int] = []
+
+
+class PlaybackState(BaseModel):
+    """Listening: докуда дослушана запись. Сервер принимает только движение вперёд."""
+
+    part: int = Field(ge=0)  # индекс части (0 = Part 1)
+    position: float = Field(ge=0)  # секунды от начала части
+    finished: bool = False
 
 
 class QuestionSectionContent(BaseModel):
@@ -72,6 +81,7 @@ class QuestionSectionContent(BaseModel):
     passages: list[PassageResponse]
     question_groups: list[QuestionGroupResponse]
     answers: list[SavedAnswer]  # уже сохранённое — для продолжения после обрыва связи
+    playback: PlaybackState | None = None  # Listening: место воспроизведения
 
 
 # ───────────────────────── Answers ─────────────────────────

@@ -4,7 +4,7 @@
 """
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -26,6 +26,7 @@ from app.schemas.attempts import AttemptResponse, SectionAttemptShort
 from app.schemas.questions import (
     AnswerIn,
     PassageResponse,
+    PlaybackState,
     QuestionResult,
     QuestionSectionContent,
     QuestionSectionResult,
@@ -196,6 +197,7 @@ async def question_section_content(
         attempt_id=sa.attempt_id,
         section_type=sa.section.type,
         deadline=section_deadline(sa),
+        playback=sa.playback,
         passages=passages,
         question_groups=list(groups),
         answers=[
@@ -251,6 +253,25 @@ async def save_question_answers(
         ]
 
     await session.commit()
+
+
+async def save_playback(session: AsyncSession, sa: SectionAttempt, new: PlaybackState) -> PlaybackState:
+    """Listening: запоминает, докуда дослушана запись. Назад не откатывается —
+    так запись нельзя начать заново из другого браузера или после очистки данных."""
+    parts = await session.scalar(select(func.count()).where(Passage.section_id == sa.section_id))
+    if new.part >= max(parts, 1):
+        raise HTTPException(status_code=400, detail="Unknown part")
+
+    old = PlaybackState(**sa.playback) if sa.playback else PlaybackState(part=0, position=0)
+    ahead = (
+        not old.finished
+        and (new.finished or new.part > old.part or (new.part == old.part and new.position >= old.position))
+    )
+    if ahead:
+        sa.playback = new.model_dump()
+        await session.commit()
+        return new
+    return old
 
 
 async def question_section_result(

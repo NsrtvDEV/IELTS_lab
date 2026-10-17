@@ -137,7 +137,7 @@ JAZZMIN_SETTINGS = {
 
 JAZZMIN_UI_TWEAKS = {
     "theme": "flatly",
-    "dark_mode_theme": "darkly",  # если в системе тёмная тема
+    "default_theme_mode": "auto",  # светлая или тёмная — как в системе
     "navbar": "navbar-primary navbar-dark",
     "sidebar": "sidebar-dark-primary",
     "brand_colour": "navbar-primary",
