@@ -139,7 +139,7 @@ export async function listAttempts() {
 /** Секции с вопросами (автопроверка) */
 export type QuestionSection = Extract<SectionType, "reading" | "listening">;
 /** Секции, которые уже можно проходить на сайте */
-export type AvailableSection = QuestionSection | "writing";
+export type AvailableSection = QuestionSection | "writing" | "speaking";
 
 export async function startSectionAttempt(testId: number, section: AvailableSection) {
   const { data: attempt } = await apiClient.post<Attempt>("/attempts", {
@@ -270,5 +270,90 @@ export async function submitWriting(sectionAttemptId: number) {
 
 export async function getWritingResult(sectionAttemptId: number) {
   const { data } = await apiClient.get<WritingResult>(`/writing/${sectionAttemptId}/result`);
+  return data;
+}
+
+// ───────────────────────── Speaking ─────────────────────────
+
+export interface SpeakingTask {
+  id: number;
+  part: 1 | 2 | 3;
+  position: number;
+  prompt: string; // Part 1/3 — вопрос, Part 2 — тема карточки
+  cue_card_points: string[];
+  prep_time_sec: number; // 0 — без подготовки
+  speak_time_sec: number;
+}
+
+export interface SpeakingContent {
+  section_attempt_id: number;
+  attempt_id: number;
+  deadline: string;
+  tasks: SpeakingTask[]; // в порядке экзамена
+  answered_task_ids: number[];
+}
+
+export interface SpeakingScores {
+  fluency_coherence: number;
+  lexical_resource: number;
+  grammatical_range: number;
+  pronunciation: number;
+}
+
+export interface SpeakingAssessment extends SpeakingScores {
+  band: string;
+  feedback: string | null;
+  grader_name: string | null;
+  created_at: string;
+}
+
+/** Вопрос с примерным ответом учителя — у учителя и в результате после сдачи */
+export interface TeacherSpeakingTask extends SpeakingTask {
+  sample_answer: string | null;
+}
+
+export interface SpeakingTaskResult extends TeacherSpeakingTask {
+  response_id: number | null; // null — ответа нет
+  duration_sec: number | null;
+}
+
+export interface SpeakingResult {
+  section_attempt_id: number;
+  attempt_id: number;
+  test_title: string;
+  submitted_at: string | null;
+  time_spent_sec: number | null;
+  band_score: string | null;
+  status: "pending" | "assessed";
+  tasks: SpeakingTaskResult[];
+  assessment: SpeakingAssessment | null;
+}
+
+export async function getSpeaking(sectionAttemptId: number) {
+  const { data } = await apiClient.get<SpeakingContent>(`/speaking/${sectionAttemptId}`);
+  return data;
+}
+
+export async function uploadSpeakingAnswer(sectionAttemptId: number, taskId: number, audio: Blob, durationSec: number) {
+  const form = new FormData();
+  const extension = audio.type.includes("mp4") ? "m4a" : audio.type.includes("ogg") ? "ogg" : "webm";
+  form.append("file", audio, `answer.${extension}`);
+  form.append("duration_sec", String(Math.round(durationSec)));
+  await apiClient.post(`/speaking/${sectionAttemptId}/tasks/${taskId}`, form);
+}
+
+export async function submitSpeaking(sectionAttemptId: number) {
+  const { data } = await apiClient.post<SectionAttemptShort>(`/speaking/${sectionAttemptId}/submit`);
+  return data;
+}
+
+export async function getSpeakingResult(sectionAttemptId: number) {
+  const { data } = await apiClient.get<SpeakingResult>(`/speaking/${sectionAttemptId}/result`);
+  return data;
+}
+
+/** Запись ответа — с токеном, поэтому не ссылкой, а файлом в памяти браузера */
+export async function getRecording(responseId: number) {
+  const { data } = await apiClient.get<Blob>(`/speaking/recordings/${responseId}`, { responseType: "blob" });
   return data;
 }

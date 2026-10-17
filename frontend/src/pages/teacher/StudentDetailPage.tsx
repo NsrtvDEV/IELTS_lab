@@ -102,12 +102,12 @@ export function StudentDetailPage() {
                         Answers →
                       </Link>
                     )}
-                    {h.submitted_at && h.section_type === "writing" && h.status !== "abandoned" && (
+                    {h.submitted_at && (h.section_type === "writing" || h.section_type === "speaking") && h.status !== "abandoned" && (
                       <Link
-                        to={`/teacher/review/writing/${h.section_attempt_id}`}
+                        to={`/teacher/review/${h.section_type}/${h.section_attempt_id}`}
                         className="font-semibold text-brand-600 hover:text-brand-700"
                       >
-                        {h.band_score === null ? "Assess →" : "Essays →"}
+                        {h.band_score === null ? "Assess →" : h.section_type === "writing" ? "Essays →" : "Recordings →"}
                       </Link>
                     )}
                   </td>

@@ -14,6 +14,7 @@ import {
 } from "../../api/teacher";
 import { PassageForm } from "../../components/teacher/PassageForm";
 import { QuestionGroupForm } from "../../components/teacher/QuestionGroupForm";
+import { SpeakingTasksEditor } from "../../components/teacher/SpeakingTasksEditor";
 import { WritingTasksEditor } from "../../components/teacher/WritingTasksEditor";
 import { Badge, Button, Card, ErrorBox, Modal, Spinner } from "../../components/ui";
 import { QUESTION_TYPE_LABELS, SECTION_LABELS } from "../../lib/questionTypes";
@@ -156,6 +157,9 @@ export function SectionEditorPage() {
 
   if (section.type === "writing") {
     return <WritingTasksEditor section={section} test={test} onChanged={load} lockedNotice={<LockedNotice test={test} />} />;
+  }
+  if (section.type === "speaking") {
+    return <SpeakingTasksEditor section={section} test={test} onChanged={load} lockedNotice={<LockedNotice test={test} />} />;
   }
 
   const locked = isLocked(test);

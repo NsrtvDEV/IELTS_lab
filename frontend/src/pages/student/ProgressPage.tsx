@@ -200,7 +200,7 @@ export function ProgressPage() {
                       <div className="text-xs text-ink-muted">{dateFmt.format(new Date(h.date))}</div>
                     </div>
                     <span className="font-bold text-ink">{h.band}</span>
-                    {h.section_attempt_id && h.type !== "speaking" && (
+                    {h.section_attempt_id && (
                       <Link to={`/${h.type}/${h.section_attempt_id}/result`} className="font-semibold text-brand-600 hover:text-brand-700">
                         Review
                       </Link>

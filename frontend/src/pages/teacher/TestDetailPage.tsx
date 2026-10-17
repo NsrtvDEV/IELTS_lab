@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
-  ExternalLink,
   Headphones,
   Lock,
   Mic,
@@ -27,7 +26,6 @@ import {
   type TeacherTest,
 } from "../../api/teacher";
 import { Button, Card, ErrorBox, Spinner, inputBase, inputClass } from "../../components/ui";
-import { DJANGO_ADMIN_URL } from "../../lib/config";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { isLocked } from "../../lib/tests";
 import { TestStatus } from "./TestsPage";
@@ -64,7 +62,6 @@ function SectionRow({
   const [duration, setDuration] = useState(String(section.duration_min));
   const [error, setError] = useState<string | null>(null);
   const hasQuestions = section.type === "listening" || section.type === "reading";
-  const editableHere = section.type !== "speaking"; // Speaking пока в админке
 
   async function saveDuration() {
     const value = Number(duration);
@@ -96,7 +93,7 @@ function SectionRow({
             ? `${section.question_count} of 40 questions`
             : section.type === "writing"
               ? "Task 1 and Task 2"
-              : "Tasks are managed in the admin panel"}
+              : "Part 1–3 questions with sample answers"}
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm text-ink-muted">
@@ -115,17 +112,11 @@ function SectionRow({
         min
       </label>
       {error && <span className="text-sm text-red-600">{error}</span>}
-      {editableHere ? (
-        <Link to={`/teacher/sections/${section.id}`}>
-          <Button variant="secondary">{locked ? "View" : hasQuestions ? "Edit questions" : "Edit tasks"}</Button>
-        </Link>
-      ) : (
-        <a href={DJANGO_ADMIN_URL + "ielts/section/" + section.id + "/change/"} target="_blank" rel="noreferrer">
-          <Button variant="secondary">
-            Open in admin <ExternalLink className="h-4 w-4" />
-          </Button>
-        </a>
-      )}
+      <Link to={`/teacher/sections/${section.id}`}>
+        <Button variant="secondary">
+          {locked ? "View" : hasQuestions || section.type === "speaking" ? "Edit questions" : "Edit tasks"}
+        </Button>
+      </Link>
     </div>
   );
 }

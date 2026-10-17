@@ -23,7 +23,7 @@ const ICONS: Record<SectionType, LucideIcon> = {
   speaking: Mic,
 };
 // какие секции уже можно проходить на сайте
-const AVAILABLE: AvailableSection[] = ["listening", "reading", "writing"];
+const AVAILABLE: AvailableSection[] = ["listening", "reading", "writing", "speaking"];
 const isAvailable = (t: SectionType): t is AvailableSection => (AVAILABLE as SectionType[]).includes(t);
 
 /** Последний результат по каждому тесту и секции: ключ "<test_id>:<секция>" */
@@ -138,7 +138,7 @@ export function StudentHomePage() {
                                 to={`/${s.type}/${last.sectionAttemptId}/result`}
                                 className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
                               >
-                                {last.band ? <Badge color="green">{last.band}</Badge> : s.type === "writing" && <Badge color="amber">Checking</Badge>} Result
+                                {last.band ? <Badge color="green">{last.band}</Badge> : (s.type === "writing" || s.type === "speaking") && <Badge color="amber">Checking</Badge>} Result
                               </Link>
                             )}
                             <Button

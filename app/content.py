@@ -17,10 +17,11 @@ from app.models import (
     QuestionType,
     Section,
     SectionType,
-    SpeakingTask,
     TestAttempt,
     WritingTask,
 )
+from app.speaking import section_tasks as speaking_tasks
+from app.speaking import task_out, teacher_task_out
 from app.schemas.teacher import (
     QuestionGroupCreate,
     TeacherQuestion,
@@ -40,6 +41,7 @@ DEFAULT_SECTIONS = [
 QUESTION_SECTIONS = {SectionType.LISTENING, SectionType.READING}
 TEMPLATE_GAP = re.compile(r"\{(\d{1,2})\}")  # {12} в раскладке — пропуск вопроса 12
 LISTENING_CHECK_SEC = 120  # время на проверку ответов после записи
+SPEAKING_QUESTION_SEC = 10  # время, пока звучит вопрос Speaking
 
 
 def clock(seconds: int) -> str:
@@ -178,13 +180,22 @@ async def test_problems(session: AsyncSession, test: IeltsTest) -> list[str]:
             problems.append("writing: Task 1 and Task 2 are required")
 
     if speaking := sections.get(SectionType.SPEAKING):
-        parts = set(
-            await session.scalars(
-                select(SpeakingTask.part).where(SpeakingTask.section_id == speaking.id)
-            )
-        )
-        if parts != {1, 2, 3}:
+        rows = await speaking_tasks(session, speaking.id)
+        tasks = [task_out(t) for t in rows]
+        if {t.part for t in tasks} != {1, 2, 3}:
             problems.append("speaking: Part 1, 2 and 3 are required")
+        without_sample = [f"Part {t.part}: {t.prompt[:40]}" for t in rows if not (t.sample_answer or "").strip()]
+        if without_sample:
+            problems.append(f"speaking: add a sample answer to {len(without_sample)} question(s) — " + "; ".join(without_sample[:3]))
+        if sum(t.part == 2 for t in tasks) > 1:
+            problems.append("speaking: Part 2 has one cue card")
+        # все ответы должны поместиться во время секции (плюс время на вопрос)
+        needed = sum(t.prep_time_sec + t.speak_time_sec + SPEAKING_QUESTION_SEC for t in tasks)
+        if tasks and speaking.duration_min * 60 < needed:
+            problems.append(
+                f"speaking: questions and answers take up to {clock(needed)} — set the section "
+                f"time to at least {-(-needed // 60)} min or remove some questions"
+            )
 
     return problems
 
@@ -276,6 +287,7 @@ async def section_content(session: AsyncSession, section: Section) -> TeacherSec
     )
     return TeacherSectionContent(
         writing_tasks=list(tasks),
+        speaking_tasks=[teacher_task_out(t) for t in await speaking_tasks(session, section.id)],
         id=section.id,
         test_id=section.test_id,
         type=section.type,

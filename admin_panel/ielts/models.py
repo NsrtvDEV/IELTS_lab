@@ -226,6 +226,7 @@ class SpeakingTask(Unmanaged):
     cue_card_points = models.JSONField(null=True, blank=True)
     prep_time_sec = models.IntegerField(null=True, blank=True)
     speak_time_sec = models.IntegerField(null=True, blank=True)
+    sample_answer = models.TextField("примерный ответ", null=True, blank=True)
 
     class Meta(Unmanaged.Meta):
         db_table = "speaking_tasks"

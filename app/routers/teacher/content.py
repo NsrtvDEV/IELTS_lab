@@ -1,7 +1,7 @@
-"""Содержимое секций с вопросами (Reading, Listening): тексты/аудио и группы вопросов."""
+"""Содержимое секций: тексты/аудио и вопросы (Reading, Listening), задания Writing, вопросы Speaking."""
 
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 
 from app.content import (
     build_group,
@@ -16,8 +16,10 @@ from app.content import (
 from app.database import db_dep
 from app.media import audio_duration, remove_unused
 from app.dependencies import teacher_dep
-from app.models import Passage, QuestionGroup, Section, SectionType, WritingTask
+from app.models import Passage, QuestionGroup, Section, SectionType, SpeakingTask, WritingTask
+from app.schemas.speaking import SpeakingTaskCreate, SpeakingTaskUpdate, TeacherSpeakingTask
 from app.schemas.writing import WritingTaskCreate, WritingTaskOut, WritingTaskUpdate
+from app.speaking import teacher_task_out
 from app.schemas.teacher import (
     PassageCreate,
     PassageUpdate,
@@ -251,3 +253,71 @@ async def delete_writing_task(task_id: int, session: db_dep, teacher: teacher_de
     await session.execute(delete(WritingTask).where(WritingTask.id == task.id))
     await session.commit()
     await remove_unused(session, [image])
+
+
+# ───────────────────────── Speaking questions ─────────────────────────
+
+
+async def editable_speaking_task(session, task_id: int) -> SpeakingTask:
+    task = await session.get(SpeakingTask, task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Speaking question not found")
+    _, test = await get_section(session, task.section_id)
+    await ensure_editable(session, test)
+    return task
+
+
+@router.post("/sections/{section_id}/speaking-tasks", response_model=TeacherSpeakingTask, status_code=201)
+async def create_speaking_task(
+    section_id: int, session: db_dep, teacher: teacher_dep, data: SpeakingTaskCreate
+):
+    """Part 1 и Part 3 — вопросы (по одному), Part 2 — одна карточка с пунктами; у каждого — примерный ответ."""
+    section, test = await get_section(session, section_id)
+    if section.type != SectionType.SPEAKING:
+        raise HTTPException(status_code=400, detail=f"{section.type} section has no speaking questions")
+    await ensure_editable(session, test)
+    in_part = select(SpeakingTask).where(SpeakingTask.section_id == section.id, SpeakingTask.part == data.part)
+    if data.part == 2 and await session.scalar(in_part.with_only_columns(SpeakingTask.id).limit(1)):
+        raise HTTPException(status_code=400, detail="Part 2 already has a cue card — edit it instead")
+    if data.part != 2 and data.cue_card_points:
+        raise HTTPException(status_code=400, detail="Only the Part 2 cue card has points")
+
+    last = await session.scalar(in_part.with_only_columns(func.max(SpeakingTask.position)))
+    task = SpeakingTask(
+        section_id=section.id,
+        part=data.part,
+        position=data.position if data.position is not None else (last + 1 if last is not None else 0),
+        prompt=data.prompt,
+        cue_card_points=data.cue_card_points or None,
+        prep_time_sec=data.prep_time_sec,
+        speak_time_sec=data.speak_time_sec,
+        sample_answer=data.sample_answer or None,
+    )
+    session.add(task)
+    await session.commit()
+    await session.refresh(task)
+    return teacher_task_out(task)
+
+
+@router.patch("/speaking-tasks/{task_id}", response_model=TeacherSpeakingTask)
+async def update_speaking_task(task_id: int, session: db_dep, teacher: teacher_dep, data: SpeakingTaskUpdate):
+    task = await editable_speaking_task(session, task_id)
+    changes = data.model_dump(exclude_unset=True)
+    if task.part != 2 and changes.get("cue_card_points"):
+        raise HTTPException(status_code=400, detail="Only the Part 2 cue card has points")
+    for field, value in changes.items():
+        if field in ("prompt", "position") and value is None:
+            continue  # обязательные поля не стираем
+        if field in ("cue_card_points", "sample_answer"):
+            value = value or None  # пустой список/текст — значения нет
+        setattr(task, field, value)
+    await session.commit()
+    await session.refresh(task)
+    return teacher_task_out(task)
+
+
+@router.delete("/speaking-tasks/{task_id}", status_code=204)
+async def delete_speaking_task(task_id: int, session: db_dep, teacher: teacher_dep):
+    task = await editable_speaking_task(session, task_id)
+    await session.execute(delete(SpeakingTask).where(SpeakingTask.id == task.id))
+    await session.commit()

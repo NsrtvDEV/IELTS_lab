@@ -179,7 +179,8 @@ async def build_test(client, teacher, sql, publish=True):
         "VALUES (:s, 1, 'Describe', 150, 20), (:s, 2, 'Discuss', 250, 40)",
         s=sec["writing"],
     )
-    sql("INSERT INTO speaking_tasks (section_id, part, prompt) VALUES (:s, 1, 'p1'), (:s, 2, 'p2'), (:s, 3, 'p3')",
+    sql("INSERT INTO speaking_tasks (section_id, part, prompt, sample_answer) "
+        "VALUES (:s, 1, 'p1', 'a1'), (:s, 2, 'p2', 'a2'), (:s, 3, 'p3', 'a3')",
         s=sec["speaking"])
     if publish:
         r = await client.post(f"/teacher/tests/{test['id']}/publish", headers=teacher)

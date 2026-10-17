@@ -1,5 +1,13 @@
 import { apiClient } from "./client";
-import type { CriteriaScores, SectionResult, WritingResult, WritingTask } from "./student";
+import type {
+  CriteriaScores,
+  SectionResult,
+  SpeakingResult,
+  SpeakingScores,
+  TeacherSpeakingTask,
+  WritingResult,
+  WritingTask,
+} from "./student";
 
 export type SectionType = "listening" | "reading" | "writing" | "speaking";
 
@@ -91,6 +99,7 @@ export interface TeacherSectionContent {
   question_groups: TeacherQuestionGroup[];
   question_numbers: number[];
   writing_tasks: WritingTask[];
+  speaking_tasks: TeacherSpeakingTask[];
 }
 
 export interface OptionInput {
@@ -362,17 +371,46 @@ export async function deleteWritingTask(taskId: number) {
   await apiClient.delete(`/teacher/writing-tasks/${taskId}`);
 }
 
+// ───────────────────────── Speaking questions ─────────────────────────
+
+export interface SpeakingTaskInput {
+  part: 1 | 2 | 3;
+  prompt: string;
+  cue_card_points: string[];
+  prep_time_sec: number | null; // null — по умолчанию
+  speak_time_sec: number | null;
+  sample_answer: string;
+  position?: number;
+}
+
+export async function createSpeakingTask(sectionId: number, input: SpeakingTaskInput) {
+  const { data } = await apiClient.post<TeacherSpeakingTask>(`/teacher/sections/${sectionId}/speaking-tasks`, input);
+  return data;
+}
+
+export async function updateSpeakingTask(taskId: number, input: Partial<Omit<SpeakingTaskInput, "part">>) {
+  const { data } = await apiClient.patch<TeacherSpeakingTask>(`/teacher/speaking-tasks/${taskId}`, input);
+  return data;
+}
+
+export async function deleteSpeakingTask(taskId: number) {
+  await apiClient.delete(`/teacher/speaking-tasks/${taskId}`);
+}
+
 // ───────────────────────── Review ─────────────────────────
 
 export interface ReviewItem {
   section_attempt_id: number;
+  section_type: "writing" | "speaking";
   student_id: number;
   student_name: string;
   student_email: string;
   test_title: string;
   mode: "section" | "mock";
   submitted_at: string;
-  word_counts: number[];
+  word_counts: number[]; // Writing: Task 1, Task 2
+  answered: number | null; // Speaking: вопросов с ответом
+  questions: number | null; // Speaking: вопросов всего
   band_score: string | null;
 }
 
@@ -399,5 +437,21 @@ export async function getReviewWriting(sectionAttemptId: number) {
 
 export async function assessWriting(sectionAttemptId: number, tasks: TaskAssessmentInput[]) {
   const { data } = await apiClient.post<ReviewDetail>(`/teacher/review/writing/${sectionAttemptId}`, { tasks });
+  return data;
+}
+
+export interface SpeakingReviewDetail extends SpeakingResult {
+  student_id: number;
+  student_name: string;
+  student_email: string;
+}
+
+export async function getReviewSpeaking(sectionAttemptId: number) {
+  const { data } = await apiClient.get<SpeakingReviewDetail>(`/teacher/review/speaking/${sectionAttemptId}`);
+  return data;
+}
+
+export async function assessSpeaking(sectionAttemptId: number, scores: SpeakingScores & { feedback: string | null }) {
+  const { data } = await apiClient.post<SpeakingReviewDetail>(`/teacher/review/speaking/${sectionAttemptId}`, scores);
   return data;
 }

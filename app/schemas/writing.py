@@ -6,6 +6,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
+from app.models import SectionType
+
 Criterion = Annotated[int, Field(ge=0, le=9)]  # оценка по критерию — целое 0–9
 Prompt = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=5000)]
 
@@ -107,18 +109,21 @@ class WritingResult(BaseModel):
     tasks: list[WritingTaskResult]
 
 
-# ───────────────────────── Очередь проверки (учитель) ─────────────────────────
+# ───────────────────────── Очередь проверки Writing и Speaking (учитель) ─────────────────────────
 
 
 class ReviewItem(BaseModel):
     section_attempt_id: int
+    section_type: SectionType  # writing или speaking
     student_id: int
     student_name: str
     student_email: str
     test_title: str
     mode: Literal["section", "mock"]
     submitted_at: datetime
-    word_counts: list[int]  # по заданиям: Task 1, Task 2
+    word_counts: list[int]  # Writing: по заданиям Task 1, Task 2
+    answered: int | None = None  # Speaking: сколько вопросов с записью ответа
+    questions: int | None = None  # Speaking: сколько вопросов всего
     band_score: Decimal | None  # None — ещё не проверено
 
 

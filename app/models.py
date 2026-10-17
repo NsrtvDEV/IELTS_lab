@@ -428,6 +428,8 @@ class SpeakingTask(Base):
     cue_card_points: Mapped[list | None] = mapped_column(JSONB)
     prep_time_sec: Mapped[int | None] = mapped_column(Integer)  # Part 2: 60
     speak_time_sec: Mapped[int | None] = mapped_column(Integer)  # Part 2: до 120
+    # примерный ответ от учителя — ученик видит его только после сдачи
+    sample_answer: Mapped[str | None] = mapped_column(Text)
 
     section: Mapped["Section"] = relationship(back_populates="speaking_tasks")
 
