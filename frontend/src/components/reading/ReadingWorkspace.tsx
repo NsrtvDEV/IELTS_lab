@@ -3,6 +3,7 @@ import { Highlighter } from "lucide-react";
 import { resolveMediaUrl } from "../../api/client";
 import type { Passage, Question, QuestionGroup } from "../../api/student";
 import { isAnswered, type Answer } from "../../lib/answers";
+import { scrollToQuestion } from "../../lib/dom";
 import { Button, inputClass } from "../ui";
 
 // ───────────────────────── Ввод ответа ─────────────────────────
@@ -296,6 +297,53 @@ function HighlightedPassage({ passage, storageKey }: { passage: Passage; storage
   );
 }
 
+// ───────────────────────── Навигатор ─────────────────────────
+
+/** Номера 1–40 внизу экрана: закрашены отвеченные, клик — переход к вопросу */
+export function QuestionNavigator({
+  groups,
+  answers,
+  onJump,
+}: {
+  groups: QuestionGroup[];
+  answers: Record<number, Answer>;
+  onJump: (number: number, passageId: number | null) => void;
+}) {
+  const all = useMemo(
+    () =>
+      groups
+        .flatMap((g) => g.questions.map((q: Question) => ({ q, passageId: g.passage_id })))
+        .sort((a, b) => a.q.number - b.q.number),
+    [groups]
+  );
+  const answered = all.filter(({ q }) => isAnswered(answers[q.id])).length;
+
+  return (
+    <nav className="flex shrink-0 items-center gap-3 overflow-x-auto border-t border-slate-200 bg-white px-4 py-2.5 sm:px-6" aria-label="Questions">
+      <span className="shrink-0 text-xs font-semibold text-ink-muted">
+        {answered}/{all.length}
+      </span>
+      <div className="flex gap-1">
+        {all.map(({ q, passageId }) => {
+          const done = isAnswered(answers[q.id]);
+          return (
+            <button
+              key={q.id}
+              onClick={() => onJump(q.number, passageId)}
+              className={`h-8 w-8 shrink-0 rounded-md text-xs font-bold ${
+                done ? "bg-brand-500 text-white" : "bg-slate-100 text-ink hover:bg-slate-200"
+              }`}
+              aria-label={`Question ${q.number}${done ? ", answered" : ""}`}
+            >
+              {q.number}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
 // ───────────────────────── Рабочая область ─────────────────────────
 
 /** Тексты слева, вопросы справа, навигатор по номерам снизу */
@@ -315,28 +363,17 @@ export function ReadingWorkspace({
   answerKey?: Record<number, string[]>;
 }) {
   const [active, setActive] = useState(0);
-  const allQuestions = useMemo(
-    () =>
-      groups
-        .flatMap((g) => g.questions.map((q: Question) => ({ q, passageId: g.passage_id })))
-        .sort((a, b) => a.q.number - b.q.number),
-    [groups]
-  );
 
   const current = passages[active];
   // группы без привязки к тексту показываем вместе с первым текстом
   const groupsHere = groups.filter(
     (g) => g.passage_id === current?.id || (g.passage_id === null && active === 0) || !current
   );
-  const answeredCount = allQuestions.filter(({ q }) => isAnswered(answers[q.id])).length;
 
   function jumpTo(number: number, passageId: number | null) {
     const index = passages.findIndex((p) => p.id === passageId);
     setActive(index === -1 ? 0 : index);
-    window.setTimeout(
-      () => document.getElementById(`q-${number}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      50
-    );
+    scrollToQuestion(number);
   }
 
   return (
@@ -378,28 +415,7 @@ export function ReadingWorkspace({
         </section>
       </div>
 
-      <nav className="flex shrink-0 items-center gap-3 overflow-x-auto border-t border-slate-200 bg-white px-4 py-2.5 sm:px-6" aria-label="Questions">
-        <span className="shrink-0 text-xs font-semibold text-ink-muted">
-          {answeredCount}/{allQuestions.length}
-        </span>
-        <div className="flex gap-1">
-          {allQuestions.map(({ q, passageId }) => {
-            const done = isAnswered(answers[q.id]);
-            return (
-              <button
-                key={q.id}
-                onClick={() => jumpTo(q.number, passageId)}
-                className={`h-8 w-8 shrink-0 rounded-md text-xs font-bold ${
-                  done ? "bg-brand-500 text-white" : "bg-slate-100 text-ink hover:bg-slate-200"
-                }`}
-                aria-label={`Question ${q.number}${done ? ", answered" : ""}`}
-              >
-                {q.number}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      <QuestionNavigator groups={groups} answers={answers} onJump={jumpTo} />
     </>
   );
 }

@@ -4,6 +4,7 @@ import { ArrowLeft, Eye } from "lucide-react";
 import { apiErrorMessage } from "../../api/client";
 import type { QuestionGroup } from "../../api/student";
 import { getSection, type TeacherSectionContent } from "../../api/teacher";
+import { ListeningWorkspace } from "../../components/listening/ListeningWorkspace";
 import { ReadingWorkspace } from "../../components/reading/ReadingWorkspace";
 import type { Answer } from "../../lib/answers";
 import { Button, ErrorBox, Spinner } from "../../components/ui";
@@ -69,13 +70,24 @@ export function SectionPreviewPage() {
           {showKey ? "Hide answer key" : "Show answer key"}
         </Button>
       </header>
-      <ReadingWorkspace
-        passages={section.passages}
-        groups={groups}
-        answers={answers}
-        onAnswer={(id, a) => setAnswers((prev) => ({ ...prev, [id]: a }))}
-        answerKey={showKey ? answerKey : undefined}
-      />
+      {section.type === "listening" ? (
+        <ListeningWorkspace
+          parts={section.passages}
+          groups={groups}
+          answers={answers}
+          onAnswer={(id, a) => setAnswers((prev) => ({ ...prev, [id]: a }))}
+          answerKey={showKey ? answerKey : undefined}
+          freePlayback
+        />
+      ) : (
+        <ReadingWorkspace
+          passages={section.passages}
+          groups={groups}
+          answers={answers}
+          onAnswer={(id, a) => setAnswers((prev) => ({ ...prev, [id]: a }))}
+          answerKey={showKey ? answerKey : undefined}
+        />
+      )}
     </div>
   );
 }

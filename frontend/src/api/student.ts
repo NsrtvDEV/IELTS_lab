@@ -109,6 +109,7 @@ export interface SectionResult {
   band_score: string | null;
   time_spent_sec: number | null;
   questions: QuestionResult[];
+  passages: Passage[]; // Reading — тексты, Listening — записи и транскрипты (после сдачи)
 }
 
 export async function listPublishedTests() {
@@ -121,26 +122,29 @@ export async function listAttempts() {
   return data;
 }
 
-export async function startReadingAttempt(testId: number) {
+/** Секции, которые уже можно проходить на сайте */
+export type QuestionSection = Extract<SectionType, "reading" | "listening">;
+
+export async function startSectionAttempt(testId: number, section: QuestionSection) {
   const { data: attempt } = await apiClient.post<Attempt>("/attempts", {
     test_id: testId,
-    section_type: "reading",
+    section_type: section,
   });
-  const { data } = await apiClient.post<SectionContent>(`/reading/attempts/${attempt.id}/start`);
+  const { data } = await apiClient.post<SectionContent>(`/${section}/attempts/${attempt.id}/start`);
   return data;
 }
 
-export async function getReading(sectionAttemptId: number) {
-  const { data } = await apiClient.get<SectionContent>(`/reading/${sectionAttemptId}`);
+export async function getSectionContent(section: QuestionSection, sectionAttemptId: number) {
+  const { data } = await apiClient.get<SectionContent>(`/${section}/${sectionAttemptId}`);
   return data;
 }
 
-export async function saveReadingAnswers(sectionAttemptId: number, answers: SavedAnswer[]) {
-  await apiClient.put(`/reading/${sectionAttemptId}/answers`, { answers });
+export async function saveSectionAnswers(section: QuestionSection, sectionAttemptId: number, answers: SavedAnswer[]) {
+  await apiClient.put(`/${section}/${sectionAttemptId}/answers`, { answers });
 }
 
-export async function submitReading(sectionAttemptId: number) {
-  const { data } = await apiClient.post<SectionAttemptShort>(`/reading/${sectionAttemptId}/submit`);
+export async function submitSection(section: QuestionSection, sectionAttemptId: number) {
+  const { data } = await apiClient.post<SectionAttemptShort>(`/${section}/${sectionAttemptId}/submit`);
   return data;
 }
 
@@ -167,7 +171,7 @@ export async function getProgress() {
   return data;
 }
 
-export async function getReadingResult(sectionAttemptId: number) {
-  const { data } = await apiClient.get<SectionResult>(`/reading/${sectionAttemptId}/result`);
+export async function getSectionResult(section: QuestionSection, sectionAttemptId: number) {
+  const { data } = await apiClient.get<SectionResult>(`/${section}/${sectionAttemptId}/result`);
   return data;
 }

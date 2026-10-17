@@ -4,7 +4,6 @@ import {
   BarChart3,
   Bell,
   BookOpen,
-  CalendarDays,
   ChevronRight,
   ClipboardList,
   House,
@@ -26,7 +25,6 @@ import { UserMenu } from "./UserMenu";
 const NAV: { label: string; icon: LucideIcon; to?: string }[] = [
   { label: "Dashboard", icon: House, to: "/teacher" },
   { label: "Students", icon: UsersRound, to: "/teacher/students" },
-  { label: "Classes", icon: CalendarDays },
   { label: "Tests", icon: ClipboardList, to: "/teacher/tests" },
   { label: "Results", icon: BarChart3 },
   { label: "Content", icon: BookOpen },

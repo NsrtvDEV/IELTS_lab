@@ -217,6 +217,15 @@ export async function uploadImage(file: File) {
   return data.url;
 }
 
+export async function uploadAudio(file: File, onProgress?: (percent: number) => void) {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await apiClient.post<{ url: string }>("/teacher/uploads/audio", form, {
+    onUploadProgress: (e) => e.total && onProgress?.(Math.round((e.loaded / e.total) * 100)),
+  });
+  return data.url;
+}
+
 // ───────────────────────── Dashboard ─────────────────────────
 
 export interface Stat {

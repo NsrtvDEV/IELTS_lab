@@ -1,12 +1,92 @@
 import { useState, type FormEvent } from "react";
-import { apiErrorMessage } from "../../api/client";
+import { FileAudio, Loader2, Trash2, Upload } from "lucide-react";
+import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import {
   createPassage,
   updatePassage,
+  uploadAudio,
   type SectionType,
   type TeacherPassage,
 } from "../../api/teacher";
 import { Button, ErrorBox, Label, inputClass, textareaClass } from "../ui";
+
+/** Запись части Listening: загрузка файла (или ссылка) и прослушивание */
+function AudioField({ value, onChange }: { value: string; onChange: (url: string) => void }) {
+  const [progress, setProgress] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [showLink, setShowLink] = useState(false);
+
+  async function pick(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    setProgress(0);
+    try {
+      onChange(await uploadAudio(file, setProgress));
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    } finally {
+      setProgress(null);
+    }
+  }
+
+  return (
+    <div>
+      <Label>Recording</Label>
+      {value ? (
+        <div className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+          <FileAudio className="h-5 w-5 shrink-0 text-brand-500" />
+          <audio controls preload="metadata" src={resolveMediaUrl(value)} className="h-9 min-w-0 flex-1" />
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            className="rounded-md p-1.5 text-ink-muted hover:bg-slate-100 hover:text-red-600"
+            aria-label="Remove recording"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <label className="flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-200 text-sm text-ink-muted hover:border-brand-300 hover:bg-brand-50/40">
+          {progress !== null ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+          {progress !== null ? `Uploading… ${progress}%` : "Upload MP3, M4A, WAV or OGG (up to 50 MB)"}
+          <input
+            type="file"
+            accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/x-wav,audio/ogg,audio/webm,.mp3,.m4a,.wav,.ogg"
+            className="sr-only"
+            onChange={(e) => pick(e.target.files?.[0])}
+            disabled={progress !== null}
+          />
+        </label>
+      )}
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      {!value && (
+        <div className="mt-2">
+          {showLink ? (
+            <input
+              type="url"
+              onBlur={(e) => e.target.value.trim() && onChange(e.target.value.trim())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  const v = (e.target as HTMLInputElement).value.trim();
+                  if (v) onChange(v);
+                }
+              }}
+              className={inputClass}
+              placeholder="https://…/part1.mp3 — direct link to the audio file"
+              aria-label="Recording link"
+              autoFocus
+            />
+          ) : (
+            <button type="button" onClick={() => setShowLink(true)} className="text-sm font-medium text-brand-600 hover:text-brand-700">
+              or paste a link instead
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function PassageForm({
   sectionId,
@@ -34,7 +114,7 @@ export function PassageForm({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (listening ? !audioUrl.trim() : !text.trim()) {
-      setError(listening ? "Add a link to the recording." : "Paste the passage text.");
+      setError(listening ? "Upload the recording for this part." : "Paste the passage text.");
       return;
     }
     const input = {
@@ -76,19 +156,11 @@ export function PassageForm({
 
       {listening ? (
         <div>
-          <Label htmlFor="passage-audio">Recording URL</Label>
-          <input
-            id="passage-audio"
-            type="url"
-            value={audioUrl}
-            onChange={(e) => setAudioUrl(e.target.value)}
-            className={inputClass}
-            placeholder="https://…/part1.mp3"
-          />
-          <p className="mt-1.5 text-sm text-ink-muted">File upload will come together with the Listening section.</p>
+          <AudioField value={audioUrl} onChange={setAudioUrl} />
           <div className="mt-4">
             <Label htmlFor="passage-text">Transcript (optional)</Label>
             <textarea id="passage-text" rows={6} value={text} onChange={(e) => setText(e.target.value)} className={textareaClass} />
+            <p className="mt-1.5 text-sm text-ink-muted">Students see it only after they submit — to review their mistakes.</p>
           </div>
         </div>
       ) : (

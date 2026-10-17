@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { resolveMediaUrl } from "../../api/client";
 import type { SectionResult } from "../../api/student";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { Card } from "../ui";
@@ -71,6 +72,30 @@ export function ResultView({
           </div>
         </div>
       </Card>
+
+      {result.section_type === "listening" && result.passages.length > 0 && (
+        <>
+          <h2 className="mt-8 text-lg font-bold text-ink">Recordings</h2>
+          <p className="mt-1 text-sm text-ink-muted">Listen again and read the transcript to see where the answers were.</p>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {result.passages.map((p, i) => (
+              <Card key={p.id} className="p-4">
+                <div className="font-semibold text-ink">
+                  Part {i + 1}
+                  {p.title ? <span className="font-normal text-ink-muted"> · {p.title}</span> : null}
+                </div>
+                {p.audio_url && <audio controls preload="none" src={resolveMediaUrl(p.audio_url)} className="mt-3 h-9 w-full" />}
+                {p.text && (
+                  <details className="mt-3 text-sm">
+                    <summary className="cursor-pointer font-medium text-brand-600">Transcript</summary>
+                    <p className="mt-2 whitespace-pre-line leading-6 text-ink">{p.text}</p>
+                  </details>
+                )}
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="mt-8 flex items-center justify-between">
         <h2 className="text-lg font-bold text-ink">Answers</h2>

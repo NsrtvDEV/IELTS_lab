@@ -243,9 +243,15 @@ export function SectionEditorPage() {
                         {listening ? `Part ${i + 1}` : `Passage ${i + 1}`}
                       </div>
                       <div className="truncate font-semibold text-ink">{p.title || "Untitled"}</div>
-                      <p className="mt-1 line-clamp-3 text-sm text-ink-muted">
-                        {listening ? p.audio_url : p.text}
-                      </p>
+                      {listening ? (
+                        p.audio_url ? (
+                          <audio controls preload="none" src={resolveMediaUrl(p.audio_url)} className="mt-2 h-9 w-full" />
+                        ) : (
+                          <p className="mt-1 text-sm font-medium text-red-600">No recording yet</p>
+                        )
+                      ) : (
+                        <p className="mt-1 line-clamp-3 text-sm text-ink-muted">{p.text}</p>
+                      )}
                     </div>
                     {!locked && (
                       <div className="flex">

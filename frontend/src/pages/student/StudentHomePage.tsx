@@ -5,8 +5,9 @@ import { apiErrorMessage } from "../../api/client";
 import {
   listAttempts,
   listPublishedTests,
-  startReadingAttempt,
+  startSectionAttempt,
   type Attempt,
+  type QuestionSection,
   type StudentTest,
 } from "../../api/student";
 import type { SectionType } from "../../api/teacher";
@@ -22,14 +23,18 @@ const ICONS: Record<SectionType, LucideIcon> = {
   speaking: Mic,
 };
 // какие секции уже можно проходить на сайте
-const AVAILABLE: SectionType[] = ["reading"];
+const AVAILABLE: QuestionSection[] = ["listening", "reading"];
+const isAvailable = (t: SectionType): t is QuestionSection => (AVAILABLE as SectionType[]).includes(t);
 
-/** Последний результат Reading по каждому тесту */
-function lastReadingResults(attempts: Attempt[]) {
-  const result = new Map<number, { band: string | null; sectionAttemptId: number }>();
+/** Последний результат по каждому тесту и секции: ключ "<test_id>:<секция>" */
+function lastResults(attempts: Attempt[]) {
+  const result = new Map<string, { band: string | null; sectionAttemptId: number }>();
   for (const a of attempts) {
-    const sa = a.sections.find((s) => s.section_type === "reading" && s.submitted_at);
-    if (sa && !result.has(a.test_id)) result.set(a.test_id, { band: sa.band_score, sectionAttemptId: sa.id });
+    if (a.status === "abandoned") continue;
+    for (const sa of a.sections) {
+      const key = `${a.test_id}:${sa.section_type}`;
+      if (sa.submitted_at && !result.has(key)) result.set(key, { band: sa.band_score, sectionAttemptId: sa.id });
+    }
   }
   return result;
 }
@@ -40,7 +45,7 @@ export function StudentHomePage() {
   const [tests, setTests] = useState<StudentTest[] | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [starting, setStarting] = useState<number | null>(null);
+  const [starting, setStarting] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([listPublishedTests(), listAttempts()])
@@ -51,18 +56,20 @@ export function StudentHomePage() {
       .catch((err) => setError(apiErrorMessage(err)));
   }, []);
 
-  // начатый и не сданный Reading — можно продолжить
+  // начатая и не сданная секция — можно продолжить
   const unfinished = attempts
     .filter((a) => a.status === "in_progress")
-    .flatMap((a) => a.sections.filter((s) => s.section_type === "reading" && !s.submitted_at).map((s) => ({ a, s })))[0];
-  const results = lastReadingResults(attempts);
+    .flatMap((a) =>
+      a.sections.filter((s) => isAvailable(s.section_type) && !s.submitted_at).map((s) => ({ a, s }))
+    )[0];
+  const results = lastResults(attempts);
 
-  async function start(testId: number) {
-    setStarting(testId);
+  async function start(testId: number, section: QuestionSection) {
+    setStarting(`${testId}:${section}`);
     setError(null);
     try {
-      const content = await startReadingAttempt(testId);
-      navigate(`/reading/${content.section_attempt_id}`);
+      const content = await startSectionAttempt(testId, section);
+      navigate(`/${section}/${content.section_attempt_id}`);
     } catch (err) {
       setError(apiErrorMessage(err));
       setStarting(null);
@@ -83,10 +90,12 @@ export function StudentHomePage() {
           <Card className="flex flex-wrap items-center gap-4 border-brand-200 bg-brand-50/50 p-5">
             <PlayCircle className="h-8 w-8 text-brand-500" />
             <div className="min-w-48 flex-1">
-              <div className="font-semibold text-ink">You have an unfinished Reading test</div>
+              <div className="font-semibold text-ink">
+                You have an unfinished {SECTION_LABELS[unfinished.s.section_type]} test
+              </div>
               <div className="text-sm text-ink-muted">{unfinished.a.test_title} — the timer keeps running.</div>
             </div>
-            <Link to={`/reading/${unfinished.s.id}`}>
+            <Link to={`/${unfinished.s.section_type}/${unfinished.s.id}`}>
               <Button>Continue</Button>
             </Link>
           </Card>
@@ -100,18 +109,14 @@ export function StudentHomePage() {
         )}
         <div className="grid gap-5 md:grid-cols-2">
           {tests?.map((test) => {
-            const last = results.get(test.id);
             return (
               <Card key={test.id} className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-lg font-bold text-ink">{test.title}</h2>
-                  {last && <Badge color="green">Reading {last.band ?? "done"}</Badge>}
-                </div>
+                <h2 className="text-lg font-bold text-ink">{test.title}</h2>
                 <ul className="mt-4 divide-y divide-slate-100">
                   {test.sections.map((s) => {
                     const Icon = ICONS[s.type];
-                    const available = AVAILABLE.includes(s.type);
                     const done = test.completed_sections.includes(s.type);
+                    const last = results.get(`${test.id}:${s.type}`);
                     return (
                       <li key={s.type} className="flex items-center gap-3 py-3">
                         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-50">
@@ -126,14 +131,22 @@ export function StudentHomePage() {
                             <Clock className="h-3.5 w-3.5" /> {s.duration_min} min
                           </div>
                         </div>
-                        {available ? (
+                        {isAvailable(s.type) ? (
                           <div className="flex items-center gap-2">
-                            {last && s.type === "reading" && (
-                              <Link to={`/reading/${last.sectionAttemptId}/result`} className="text-sm font-medium text-brand-600 hover:text-brand-700">
-                                Result
+                            {last && (
+                              <Link
+                                to={`/${s.type}/${last.sectionAttemptId}/result`}
+                                className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
+                              >
+                                {last.band && <Badge color="green">{last.band}</Badge>} Result
                               </Link>
                             )}
-                            <Button className="h-9" onClick={() => start(test.id)} loading={starting === test.id} disabled={!!unfinished}>
+                            <Button
+                              className="h-9"
+                              onClick={() => start(test.id, s.type as QuestionSection)}
+                              loading={starting === `${test.id}:${s.type}`}
+                              disabled={!!unfinished}
+                            >
                               {done ? "Retake" : "Start"}
                             </Button>
                           </div>

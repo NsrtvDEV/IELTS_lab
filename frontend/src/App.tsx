@@ -8,8 +8,8 @@ import { StudentLayout } from "./components/StudentLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { ProgressPage } from "./pages/student/ProgressPage";
-import { ReadingPage } from "./pages/student/ReadingPage";
-import { ReadingResultPage } from "./pages/student/ReadingResultPage";
+import { SectionAttemptPage } from "./pages/student/SectionAttemptPage";
+import { SectionResultPage } from "./pages/student/SectionResultPage";
 import { StudentHomePage } from "./pages/student/StudentHomePage";
 import { DashboardPage } from "./pages/teacher/DashboardPage";
 import { SectionEditorPage } from "./pages/teacher/SectionEditorPage";
@@ -53,11 +53,18 @@ export default function App() {
           }
         />
         {/* прохождение секции — на весь экран, без шапки */}
-        <Route path="/reading/:sectionAttemptId" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
-        <Route
-          path="/reading/:sectionAttemptId/result"
-          element={<ProtectedRoute><StudentLayout><ReadingResultPage /></StudentLayout></ProtectedRoute>}
-        />
+        {(["reading", "listening"] as const).map((section) => [
+          <Route
+            key={section}
+            path={`/${section}/:sectionAttemptId`}
+            element={<ProtectedRoute><SectionAttemptPage key={section} section={section} /></ProtectedRoute>}
+          />,
+          <Route
+            key={`${section}-result`}
+            path={`/${section}/:sectionAttemptId/result`}
+            element={<ProtectedRoute><StudentLayout><SectionResultPage section={section} /></StudentLayout></ProtectedRoute>}
+          />,
+        ])}
         <Route path="/progress" element={<ProtectedRoute><StudentLayout><ProgressPage /></StudentLayout></ProtectedRoute>} />
         <Route path="/teacher" element={<Teacher><DashboardPage /></Teacher>} />
         <Route path="/teacher/tests" element={<Teacher><TestsPage /></Teacher>} />

@@ -5,16 +5,19 @@ import { CheckCircle2, Clock, Loader2, LogOut, TriangleAlert } from "lucide-reac
 import { apiErrorMessage } from "../../api/client";
 import {
   abandonAttempt,
-  getReading,
-  saveReadingAnswers,
-  submitReading,
+  getSectionContent,
+  saveSectionAnswers,
+  submitSection,
+  type QuestionSection,
   type SavedAnswer,
   type SectionContent,
 } from "../../api/student";
+import { ListeningWorkspace } from "../../components/listening/ListeningWorkspace";
 import { Logo } from "../../components/Logo";
 import { ReadingWorkspace } from "../../components/reading/ReadingWorkspace";
 import { isAnswered, type Answer } from "../../lib/answers";
 import { Button, ErrorBox, Modal, Spinner } from "../../components/ui";
+import { SECTION_LABELS } from "../../lib/questionTypes";
 
 type SaveState = "saved" | "saving" | "error";
 
@@ -27,7 +30,8 @@ function formatTime(ms: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function ReadingPage() {
+/** Прохождение секции с вопросами: Reading или Listening */
+export function SectionAttemptPage({ section }: { section: QuestionSection }) {
   const { sectionAttemptId } = useParams();
   const saId = Number(sectionAttemptId);
   const navigate = useNavigate();
@@ -45,10 +49,13 @@ export function ReadingPage() {
   const saveTimer = useRef<number | undefined>(undefined);
   const submittedRef = useRef(false);
 
-  const goToResult = useCallback(() => navigate(`/reading/${saId}/result`, { replace: true }), [navigate, saId]);
+  const goToResult = useCallback(
+    () => navigate(`/${section}/${saId}/result`, { replace: true }),
+    [navigate, section, saId]
+  );
 
   useEffect(() => {
-    getReading(saId)
+    getSectionContent(section, saId)
       .then((c) => {
         setContent(c);
         const initial: Record<number, Answer> = {};
@@ -63,7 +70,7 @@ export function ReadingPage() {
           else goToResult();
         } else setError(apiErrorMessage(err));
       });
-  }, [saId, goToResult, navigate]);
+  }, [section, saId, goToResult, navigate]);
 
   const flush = useCallback(async () => {
     window.clearTimeout(saveTimer.current);
@@ -77,7 +84,7 @@ export function ReadingPage() {
     }));
     setSaveState("saving");
     try {
-      await saveReadingAnswers(saId, payload);
+      await saveSectionAnswers(section, saId, payload);
       setSaveState(dirty.current.size ? "saving" : "saved");
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
@@ -88,7 +95,7 @@ export function ReadingPage() {
       setSaveState("error");
       throw err;
     }
-  }, [saId, goToResult]);
+  }, [section, saId, goToResult]);
 
   function setAnswer(questionId: number, a: Answer) {
     const next = { ...answersRef.current, [questionId]: a };
@@ -106,7 +113,7 @@ export function ReadingPage() {
     setBusy("submit");
     try {
       await flush();
-      await submitReading(saId);
+      await submitSection(section, saId);
       goToResult();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) return goToResult();
@@ -114,7 +121,7 @@ export function ReadingPage() {
       setBusy(null);
       setError(apiErrorMessage(err));
     }
-  }, [flush, saId, goToResult]);
+  }, [flush, section, saId, goToResult]);
 
   async function saveAndExit() {
     setBusy("exit");
@@ -171,7 +178,7 @@ export function ReadingPage() {
         <div className="hidden origin-left scale-[0.6] sm:block">
           <Logo />
         </div>
-        <h1 className="font-bold text-ink sm:ml-[-60px]">Reading</h1>
+        <h1 className="font-bold text-ink sm:ml-[-60px]">{SECTION_LABELS[section]}</h1>
         <div
           className={`ml-auto inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-bold tabular-nums ${
             lowTime ? "bg-red-50 text-red-600" : "bg-slate-100 text-ink"
@@ -212,16 +219,26 @@ export function ReadingPage() {
         </div>
       )}
 
-      <ReadingWorkspace
-        passages={content.passages}
-        groups={content.question_groups}
-        answers={answers}
-        onAnswer={setAnswer}
-        highlightKey={`bandup-highlights:${saId}`}
-      />
+      {section === "listening" ? (
+        <ListeningWorkspace
+          parts={content.passages}
+          groups={content.question_groups}
+          answers={answers}
+          onAnswer={setAnswer}
+          playbackKey={`bandup-listening:${saId}`}
+        />
+      ) : (
+        <ReadingWorkspace
+          passages={content.passages}
+          groups={content.question_groups}
+          answers={answers}
+          onAnswer={setAnswer}
+          highlightKey={`bandup-highlights:${saId}`}
+        />
+      )}
 
       {dialog === "submit" && (
-        <Modal title="Submit Reading?" onClose={() => setDialog(null)}>
+        <Modal title={`Submit ${SECTION_LABELS[section]}?`} onClose={() => setDialog(null)}>
           <p className="text-ink">
             You answered <strong>{answeredCount}</strong> of {questionIds.length} questions.
             {answeredCount < questionIds.length && " Unanswered questions will count as wrong."}
