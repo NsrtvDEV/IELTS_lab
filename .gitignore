@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# загруженные файлы и собранная статика Django
+media/
+admin_panel/staticfiles/

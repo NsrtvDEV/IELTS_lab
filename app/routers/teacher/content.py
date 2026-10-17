@@ -1,0 +1,170 @@
+"""Содержимое секций с вопросами (Reading, Listening): тексты/аудио и группы вопросов."""
+
+from fastapi import APIRouter, HTTPException
+from sqlalchemy import delete
+
+from app.content import (
+    build_group,
+    ensure_editable,
+    ensure_question_section,
+    get_section,
+    group_response,
+    load_groups,
+    section_content,
+    validate_group,
+)
+from app.database import db_dep
+from app.dependencies import teacher_dep
+from app.models import Passage, QuestionGroup, Section
+from app.schemas.teacher import (
+    PassageCreate,
+    PassageUpdate,
+    QuestionGroupCreate,
+    SectionUpdate,
+    TeacherPassage,
+    TeacherQuestionGroup,
+    TeacherSectionContent,
+)
+
+router = APIRouter(prefix="/teacher", tags=["Teacher: content"])
+
+
+# ───────────────────────── Sections ─────────────────────────
+
+
+@router.get("/sections/{section_id}", response_model=TeacherSectionContent)
+async def get_section_content(section_id: int, session: db_dep, teacher: teacher_dep):
+    """Тексты, вопросы и правильные ответы секции."""
+    section, _ = await get_section(session, section_id)
+    return await section_content(session, section)
+
+
+@router.patch("/sections/{section_id}", response_model=TeacherSectionContent)
+async def update_section(
+    section_id: int, session: db_dep, teacher: teacher_dep, data: SectionUpdate
+):
+    section, test = await get_section(session, section_id)
+    await ensure_editable(session, test)
+    section.duration_min = data.duration_min
+    await session.commit()
+    return await section_content(session, section)
+
+
+# ───────────────────────── Passages ─────────────────────────
+
+
+async def editable_question_section(session, section_id: int) -> Section:
+    section, test = await get_section(session, section_id)
+    ensure_question_section(section)
+    await ensure_editable(session, test)
+    return section
+
+
+async def editable_passage(session, passage_id: int) -> Passage:
+    passage = await session.get(Passage, passage_id)
+    if not passage:
+        raise HTTPException(status_code=404, detail="Passage not found")
+    _, test = await get_section(session, passage.section_id)
+    await ensure_editable(session, test)
+    return passage
+
+
+@router.post(
+    "/sections/{section_id}/passages", response_model=TeacherPassage, status_code=201
+)
+async def create_passage(
+    section_id: int, session: db_dep, teacher: teacher_dep, data: PassageCreate
+):
+    """Reading — текст (Passage 1–3), Listening — аудио части (Part 1–4)."""
+    section = await editable_question_section(session, section_id)
+    passage = Passage(section_id=section.id, **data.model_dump())
+    session.add(passage)
+    await session.commit()
+    await session.refresh(passage)
+    return passage
+
+
+@router.patch("/passages/{passage_id}", response_model=TeacherPassage)
+async def update_passage(
+    passage_id: int, session: db_dep, teacher: teacher_dep, data: PassageUpdate
+):
+    passage = await editable_passage(session, passage_id)
+    for field, value in data.model_dump(exclude_unset=True).items():
+        if field == "position" and value is None:
+            continue
+        setattr(passage, field, value)
+    await session.commit()
+    await session.refresh(passage)
+    return passage
+
+
+@router.delete("/passages/{passage_id}", status_code=204)
+async def delete_passage(passage_id: int, session: db_dep, teacher: teacher_dep):
+    """Группы вопросов к этому тексту остаются, но теряют привязку к нему."""
+    passage = await editable_passage(session, passage_id)
+    await session.execute(delete(Passage).where(Passage.id == passage.id))
+    await session.commit()
+
+
+# ───────────────────────── Question groups ─────────────────────────
+
+
+async def editable_group(session, group_id: int) -> tuple[QuestionGroup, Section]:
+    group = await session.get(QuestionGroup, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Question group not found")
+    section, test = await get_section(session, group.section_id)
+    await ensure_editable(session, test)
+    return group, section
+
+
+async def saved_group(session, group_id: int) -> TeacherQuestionGroup:
+    (group,) = await load_groups(session, id=group_id)
+    return group_response(group)
+
+
+@router.post(
+    "/sections/{section_id}/question-groups",
+    response_model=TeacherQuestionGroup,
+    status_code=201,
+)
+async def create_question_group(
+    section_id: int, session: db_dep, teacher: teacher_dep, data: QuestionGroupCreate
+):
+    """Группа вопросов целиком: инструкция, варианты, вопросы и правильные ответы.
+
+    Правильные варианты указываются буквами (`correct_options: ["A"]`), текстовые
+    ответы — списком допустимых написаний (`correct_texts: ["colour", "color"]`).
+    Для TFNG/YNNG варианты TRUE/FALSE/NOT GIVEN (YES/NO/NOT GIVEN) создаются сами.
+    """
+    section = await editable_question_section(session, section_id)
+    await validate_group(session, section, data)
+
+    group = build_group(section, data)
+    session.add(group)
+    await session.commit()
+    return await saved_group(session, group.id)
+
+
+@router.put("/question-groups/{group_id}", response_model=TeacherQuestionGroup)
+async def replace_question_group(
+    group_id: int, session: db_dep, teacher: teacher_dep, data: QuestionGroupCreate
+):
+    """Заменить группу целиком — как создание, но на месте старой."""
+    old, section = await editable_group(session, group_id)
+    await validate_group(session, section, data, replacing_group_id=old.id)
+
+    await session.execute(delete(QuestionGroup).where(QuestionGroup.id == old.id))
+    session.expunge(old)
+    group = build_group(section, data)
+    session.add(group)
+    await session.commit()
+    return await saved_group(session, group.id)
+
+
+@router.delete("/question-groups/{group_id}", status_code=204)
+async def delete_question_group(group_id: int, session: db_dep, teacher: teacher_dep):
+    group, _ = await editable_group(session, group_id)
+    await session.execute(delete(QuestionGroup).where(QuestionGroup.id == group.id))
+    await session.commit()
+

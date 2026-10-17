@@ -150,7 +150,8 @@ class UserProfile(Base):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
-    full_name: Mapped[str | None] = mapped_column(String(255))
+    first_name: Mapped[str | None] = mapped_column(String(100))
+    last_name: Mapped[str | None] = mapped_column(String(100))
     native_language: Mapped[str | None] = mapped_column(String(50))
     timezone: Mapped[str] = mapped_column(
         String(64), default="UTC", server_default="UTC"
@@ -486,11 +487,18 @@ class SectionAttempt(Base):
     section_id: Mapped[int] = mapped_column(
         ForeignKey("sections.id", ondelete="RESTRICT")
     )
+    # таймер секции считается по серверному времени
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     raw_score: Mapped[int | None] = mapped_column(Integer)  # только Listening/Reading
     band_score: Mapped[Decimal | None] = mapped_column(Numeric(2, 1))
     time_spent_sec: Mapped[int | None] = mapped_column(Integer)
 
-    attempt: Mapped["TestAttempt"] = relationship(back_populates="section_attempts")
+    attempt: Mapped["TestAttempt"] = relationship(
+        back_populates="section_attempts", lazy="joined"
+    )
     section: Mapped["Section"] = relationship(lazy="joined")
     answers: Mapped[list["UserAnswer"]] = relationship(
         back_populates="section_attempt", cascade="all, delete-orphan", lazy="raise"
@@ -660,6 +668,7 @@ class BandConversion(Base):
 
     __tablename__ = "band_conversion"
     __table_args__ = (
+        UniqueConstraint("section_type", "raw_score"),
         CheckConstraint("raw_score BETWEEN 0 AND 40", name="raw_score_range"),
         CheckConstraint(
             "section_type IN ('listening', 'reading')", name="section_type_scored"
@@ -667,6 +676,7 @@ class BandConversion(Base):
         band_check("band"),
     )
 
-    section_type: Mapped[SectionType] = mapped_column(SECTION_TYPE, primary_key=True)
-    raw_score: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    section_type: Mapped[SectionType] = mapped_column(SECTION_TYPE)
+    raw_score: Mapped[int] = mapped_column(Integer)
     band: Mapped[Decimal] = mapped_column(Numeric(2, 1))

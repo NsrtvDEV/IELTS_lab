@@ -1,12 +1,15 @@
+from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends
-from sqlalchemy import URL, MetaData, create_engine
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy import URL, MetaData
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 
 # URL.create экранирует спецсимволы в пароле (@, /, % и т.д.)
+# синхронный драйвер — для Alembic и Django-админки
 DB_URL = URL.create(
     "postgresql+psycopg2",
     username=settings.DB_USER,
@@ -15,10 +18,14 @@ DB_URL = URL.create(
     port=settings.DB_PORT,
     database=settings.DB_NAME,
 )
+# асинхронный драйвер — для FastAPI
+ASYNC_DB_URL = DB_URL.set(drivername="postgresql+asyncpg")
 
-engine = create_engine(DB_URL)
+engine = create_async_engine(ASYNC_DB_URL)
 
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+# expire_on_commit=False: после commit объекты остаются читаемыми без нового запроса
+# (в async ленивая подгрузка атрибутов невозможна)
+SessionLocal = async_sessionmaker(engine, expire_on_commit=False, autoflush=False)
 
 # Имена констрейнтов предсказуемые — иначе Alembic не сможет их удалять/менять
 NAMING_CONVENTION = {
@@ -34,12 +41,9 @@ class Base(DeclarativeBase):
     metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
-def get_db():
-    session = SessionLocal()
-    try:
+async def get_db() -> AsyncIterator[AsyncSession]:
+    async with SessionLocal() as session:
         yield session
-    finally:
-        session.close()
 
 
-db_dep = Annotated[Session, Depends(get_db)]
+db_dep = Annotated[AsyncSession, Depends(get_db)]

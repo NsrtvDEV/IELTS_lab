@@ -15,6 +15,13 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+def include_name(name, type_, parent_names) -> bool:
+    """В той же БД лежат таблицы Django-админки (auth_*, django_*) — их не трогаем."""
+    if type_ == "table":
+        return name in target_metadata.tables
+    return True
+
+
 def run_migrations_offline() -> None:
     """Генерация SQL без подключения к БД: `alembic upgrade head --sql`."""
     context.configure(
@@ -36,6 +43,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
+            include_name=include_name,
             compare_type=True,
             compare_server_default=True,
         )
