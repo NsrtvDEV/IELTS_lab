@@ -25,6 +25,7 @@ from app.models import (
 from app.schemas.attempts import AttemptResponse, SectionAttemptShort
 from app.schemas.questions import (
     AnswerIn,
+    PassageResponse,
     QuestionResult,
     QuestionSectionContent,
     QuestionSectionResult,
@@ -185,12 +186,17 @@ async def question_section_content(
     )
     answers = await load_answers(session, sa.id)
 
+    passages = [PassageResponse.model_validate(p) for p in passages]
+    if sa.section.type == SectionType.LISTENING:
+        # у Listening text — это транскрипт: во время теста он выдал бы ответы
+        passages = [p.model_copy(update={"text": None}) for p in passages]
+
     return QuestionSectionContent(
         section_attempt_id=sa.id,
         attempt_id=sa.attempt_id,
         section_type=sa.section.type,
         deadline=section_deadline(sa),
-        passages=list(passages),
+        passages=passages,
         question_groups=list(groups),
         answers=[
             SavedAnswer(
@@ -265,6 +271,10 @@ async def question_section_result(
         .order_by(Question.number)
     )
     answers = await load_answers(session, sa.id)
+    # после сдачи — тексты, записи и транскрипты для разбора ошибок
+    passages = await session.scalars(
+        select(Passage).where(Passage.section_id == sa.section_id).order_by(Passage.position)
+    )
 
     results = []
     for q in questions:
@@ -302,4 +312,5 @@ async def question_section_result(
         band_score=sa.band_score,
         time_spent_sec=sa.time_spent_sec,
         questions=results,
+        passages=list(passages),
     )

@@ -12,6 +12,7 @@ from app.limiter import limiter
 from app.routers import (
     attempts_router,
     auth_router,
+    listening_router,
     reading_router,
     register_router,
     teacher_content_router,
@@ -49,6 +50,7 @@ for router in (
     users_router,
     tests_router,
     attempts_router,
+    listening_router,
     reading_router,
     teacher_dashboard_router,
     teacher_students_router,
@@ -59,9 +61,10 @@ for router in (
     app.include_router(router, prefix=API_PREFIX)
 
 
-# картинки к вопросам — публичные (это содержимое тестов, а не ответы учеников)
-Path(settings.MEDIA_ROOT, "images").mkdir(parents=True, exist_ok=True)
-app.mount("/media/images", StaticFiles(directory=Path(settings.MEDIA_ROOT, "images")), name="images")
+# картинки и записи тестов — публичные (это содержимое тестов, а не ответы учеников)
+for folder in ("images", "audio"):
+    Path(settings.MEDIA_ROOT, folder).mkdir(parents=True, exist_ok=True)
+    app.mount(f"/media/{folder}", StaticFiles(directory=Path(settings.MEDIA_ROOT, folder)), name=folder)
 
 
 @app.get("/", tags=["Health"])

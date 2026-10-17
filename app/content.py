@@ -138,6 +138,18 @@ async def test_problems(session: AsyncSession, test: IeltsTest) -> list[str]:
         if without_answer:
             problems.append(f"{section_type}: no correct answer for questions {list(without_answer)}")
 
+    if listening := sections.get(SectionType.LISTENING):
+        parts = list(
+            await session.scalars(
+                select(Passage).where(Passage.section_id == listening.id).order_by(Passage.position)
+            )
+        )
+        if not parts:
+            problems.append("listening: add the recordings (Part 1–4)")
+        missing = [i + 1 for i, p in enumerate(parts) if not p.audio_url]
+        if missing:
+            problems.append(f"listening: no audio for part(s) {missing}")
+
     if writing := sections.get(SectionType.WRITING):
         numbers = set(
             await session.scalars(

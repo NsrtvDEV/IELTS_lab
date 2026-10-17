@@ -114,3 +114,4 @@ class QuestionSectionResult(BaseModel):
     band_score: Decimal | None = None
     time_spent_sec: int | None = None
     questions: list[QuestionResult]
+    passages: list[PassageResponse]  # Reading — тексты, Listening — записи и транскрипты

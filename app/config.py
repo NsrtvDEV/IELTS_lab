@@ -14,7 +14,8 @@ class Settings(BaseSettings):
     SECTION_GRACE_SECONDS: int = 30
 
     MEDIA_ROOT: str = "media"
-    MAX_AUDIO_SIZE_MB: int = 20
+    MAX_AUDIO_SIZE_MB: int = 20  # ответы Speaking
+    MAX_LISTENING_AUDIO_MB: int = 50  # записи Listening
 
     DB_USER: str
     DB_PASSWORD: str

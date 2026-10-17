@@ -23,7 +23,8 @@ async def test_new_test_has_four_sections(client, teacher):
     assert r.status_code == 201 and test["title"] == "Cambridge 19"
     assert [(s["type"], s["duration_min"]) for s in test["sections"]] == [
         ("listening", 30), ("reading", 60), ("writing", 60), ("speaking", 14)]
-    assert len(test["problems"]) == 4
+    assert len(test["problems"]) == 5
+    assert "listening: add the recordings (Part 1–4)" in test["problems"]
     r = await client.post(f"/teacher/tests/{test['id']}/publish", headers=teacher)
     assert r.status_code == 409
 
