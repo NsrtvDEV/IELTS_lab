@@ -1,0 +1,405 @@
+import { useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { Highlighter } from "lucide-react";
+import { resolveMediaUrl } from "../../api/client";
+import type { Passage, Question, QuestionGroup } from "../../api/student";
+import { isAnswered, type Answer } from "../../lib/answers";
+import { Button, inputClass } from "../ui";
+
+// ───────────────────────── Ввод ответа ─────────────────────────
+
+function QuestionInput({
+  group,
+  question,
+  answer,
+  onChange,
+}: {
+  group: QuestionGroup;
+  question: Question;
+  answer: Answer;
+  onChange: (a: Answer) => void;
+}) {
+  // свои варианты у вопроса (MCQ)
+  if (question.options.length > 0) {
+    const multi = group.type === "mcq_multi";
+    return (
+      <div className="mt-2 space-y-1.5">
+        {multi && <p className="text-xs text-ink-muted">Choose {question.answers_required}</p>}
+        {question.options.map((o) => {
+          const checked = answer.options.includes(o.id);
+          const toggle = () => {
+            if (!multi) return onChange({ text: "", options: [o.id] });
+            if (checked) return onChange({ text: "", options: answer.options.filter((x) => x !== o.id) });
+            if (answer.options.length < question.answers_required)
+              onChange({ text: "", options: [...answer.options, o.id] });
+          };
+          return (
+            <label
+              key={o.id}
+              className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2 text-sm transition ${
+                checked ? "border-brand-400 bg-brand-50" : "border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <input
+                type={multi ? "checkbox" : "radio"}
+                name={`q-${question.id}`}
+                checked={checked}
+                onChange={toggle}
+                className="mt-0.5 h-4 w-4 accent-brand-500"
+              />
+              <span>
+                <span className="font-semibold">{o.label}</span> {o.text}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // общий список вариантов группы (TFNG / matching / буквы на схеме)
+  if (group.options.length > 0) {
+    const short = group.type === "tfng" || group.type === "ynng";
+    if (short) {
+      return (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {group.options.map((o) => {
+            const on = answer.options.includes(o.id);
+            return (
+              <button
+                key={o.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => onChange({ text: "", options: on ? [] : [o.id] })}
+                className={`h-9 rounded-lg px-3 text-sm font-semibold ring-1 ring-inset transition ${
+                  on ? "bg-brand-500 text-white ring-brand-500" : "bg-white text-ink ring-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                {o.label}
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
+    return (
+      <select
+        value={answer.options[0] ?? ""}
+        onChange={(e) => onChange({ text: "", options: e.target.value ? [Number(e.target.value)] : [] })}
+        className={`${inputClass} mt-2 max-w-xs`}
+        aria-label={`Answer to question ${question.number}`}
+      >
+        <option value="">Choose…</option>
+        {group.options.map((o) => (
+          <option key={o.id} value={o.id}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  // ответ словами
+  return (
+    <input
+      value={answer.text}
+      onChange={(e) => onChange({ text: e.target.value, options: [] })}
+      maxLength={500}
+      className={`${inputClass} mt-2 max-w-sm`}
+      placeholder="Your answer"
+      aria-label={`Answer to question ${question.number}`}
+      autoComplete="off"
+      spellCheck={false}
+    />
+  );
+}
+
+export function GroupBlock({
+  group,
+  answers,
+  setAnswer,
+  answerKey,
+}: {
+  group: QuestionGroup;
+  answers: Record<number, Answer>;
+  setAnswer: (questionId: number, a: Answer) => void;
+  answerKey?: Record<number, string[]>; // предпросмотр учителя: правильные ответы под вопросами
+}) {
+  const showOptionList = group.options.length > 0 && group.type !== "tfng" && group.type !== "ynng";
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-5">
+      <p className="whitespace-pre-line text-sm font-semibold text-ink">{group.instruction}</p>
+      {group.word_limit && (
+        <p className="mt-1 text-xs text-ink-muted">
+          No more than {group.word_limit} word{group.word_limit > 1 ? "s" : ""}
+          {group.allow_number ? " and/or a number" : ""}.
+        </p>
+      )}
+      {group.image_url && (
+        <img
+          src={resolveMediaUrl(group.image_url)}
+          alt={`Illustration for: ${group.instruction}`}
+          className="mt-3 max-h-[28rem] w-auto max-w-full rounded-lg border border-slate-200"
+        />
+      )}
+      {showOptionList && (
+        <ul className="mt-3 space-y-1 rounded-lg bg-slate-50 px-4 py-3 text-sm">
+          {group.options.map((o) => (
+            <li key={o.id}>
+              <span className="font-semibold text-ink">{o.label}</span> <span className="text-ink-muted">{o.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <ol className="mt-4 space-y-5">
+        {group.questions.map((q) => (
+          <li key={q.id} id={`q-${q.number}`} className="scroll-mt-24">
+            <div className="flex gap-3 text-sm">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-ink">
+                {q.number}
+              </span>
+              <div className="min-w-0 flex-1">
+                {q.text && <p className="text-ink">{q.text}</p>}
+                <QuestionInput
+                  group={group}
+                  question={q}
+                  answer={answers[q.id] ?? { text: "", options: [] }}
+                  onChange={(a) => setAnswer(q.id, a)}
+                />
+                {answerKey?.[q.id] && (
+                  <p className="mt-1.5 text-xs font-semibold text-emerald-700">
+                    Answer: {answerKey[q.id].join(group.type === "mcq_multi" ? ", " : " / ")}
+                  </p>
+                )}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+// ───────────────────────── Текст с маркером ─────────────────────────
+
+type Range2 = [number, number];
+
+function merge(ranges: Range2[]): Range2[] {
+  const sorted = [...ranges].sort((a, b) => a[0] - b[0]);
+  const out: Range2[] = [];
+  for (const r of sorted) {
+    const last = out[out.length - 1];
+    if (last && r[0] <= last[1]) last[1] = Math.max(last[1], r[1]);
+    else out.push([...r]);
+  }
+  return out;
+}
+
+function loadHighlights(key: string | undefined): Range2[] {
+  if (!key) return [];
+  try {
+    return JSON.parse(localStorage.getItem(key) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+/** Текст, в котором ученик выделяет слова маркером, как на компьютерном IELTS */
+function HighlightedPassage({ passage, storageKey }: { passage: Passage; storageKey?: string }) {
+  const key = storageKey ? `${storageKey}:${passage.id}` : undefined;
+  const [ranges, setRanges] = useState<Range2[]>(() => loadHighlights(key));
+  const [pending, setPending] = useState<{ range: Range2; top: number; left: number } | null>(null);
+  const textRef = useRef<HTMLParagraphElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const text = passage.text ?? "";
+
+  useEffect(() => {
+    if (!key) return;
+    try {
+      localStorage.setItem(key, JSON.stringify(ranges));
+    } catch {
+      // приватный режим — выделения просто не сохранятся
+    }
+  }, [key, ranges]);
+
+  function onMouseUp() {
+    const sel = window.getSelection();
+    const root = textRef.current;
+    if (!sel || sel.isCollapsed || !root || !wrapRef.current) return setPending(null);
+    const range = sel.getRangeAt(0);
+    if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) return setPending(null);
+    // смещения в исходном тексте: длина текста от начала абзаца до границ выделения
+    const before = document.createRange();
+    before.setStart(root, 0);
+    before.setEnd(range.startContainer, range.startOffset);
+    const start = before.toString().length;
+    const end = start + range.toString().length;
+    if (end <= start) return setPending(null);
+    const rect = range.getBoundingClientRect();
+    const wrap = wrapRef.current.getBoundingClientRect();
+    setPending({ range: [start, end], top: rect.top - wrap.top - 44, left: rect.left - wrap.left + rect.width / 2 });
+  }
+
+  function addHighlight() {
+    if (!pending) return;
+    setRanges((r) => merge([...r, pending.range]));
+    setPending(null);
+    window.getSelection()?.removeAllRanges();
+  }
+
+  function removeHighlight(e: MouseEvent, index: number) {
+    e.stopPropagation();
+    setRanges((r) => r.filter((_, i) => i !== index));
+  }
+
+  const parts: ReactNode[] = [];
+  let pos = 0;
+  ranges.forEach(([s, e], i) => {
+    if (s > pos) parts.push(text.slice(pos, s));
+    parts.push(
+      <mark
+        key={i}
+        onClick={(ev) => removeHighlight(ev, i)}
+        className="cursor-pointer rounded-sm bg-amber-200/80 text-ink"
+        title="Click to remove highlight"
+      >
+        {text.slice(s, e)}
+      </mark>
+    );
+    pos = e;
+  });
+  if (pos < text.length) parts.push(text.slice(pos));
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <div className="flex items-center justify-between gap-3">
+        {passage.title && <h2 className="text-xl font-bold text-ink">{passage.title}</h2>}
+        {ranges.length > 0 && (
+          <button onClick={() => setRanges([])} className="shrink-0 text-xs font-medium text-ink-muted hover:text-ink">
+            Clear highlights
+          </button>
+        )}
+      </div>
+      <p ref={textRef} onMouseUp={onMouseUp} className="mt-3 whitespace-pre-line text-[15px] leading-7 text-ink">
+        {parts}
+      </p>
+      {pending && (
+        <button
+          onMouseDown={(e) => e.preventDefault()} // не сбрасываем выделение кликом
+          onClick={addHighlight}
+          style={{ top: pending.top, left: pending.left }}
+          className="absolute z-10 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
+        >
+          <Highlighter className="h-3.5 w-3.5" /> Highlight
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ───────────────────────── Рабочая область ─────────────────────────
+
+/** Тексты слева, вопросы справа, навигатор по номерам снизу */
+export function ReadingWorkspace({
+  passages,
+  groups,
+  answers,
+  onAnswer,
+  highlightKey,
+  answerKey,
+}: {
+  passages: Passage[];
+  groups: QuestionGroup[];
+  answers: Record<number, Answer>;
+  onAnswer: (questionId: number, a: Answer) => void;
+  highlightKey?: string; // ключ localStorage для выделений; без него не сохраняются
+  answerKey?: Record<number, string[]>;
+}) {
+  const [active, setActive] = useState(0);
+  const allQuestions = useMemo(
+    () =>
+      groups
+        .flatMap((g) => g.questions.map((q: Question) => ({ q, passageId: g.passage_id })))
+        .sort((a, b) => a.q.number - b.q.number),
+    [groups]
+  );
+
+  const current = passages[active];
+  // группы без привязки к тексту показываем вместе с первым текстом
+  const groupsHere = groups.filter(
+    (g) => g.passage_id === current?.id || (g.passage_id === null && active === 0) || !current
+  );
+  const answeredCount = allQuestions.filter(({ q }) => isAnswered(answers[q.id])).length;
+
+  function jumpTo(number: number, passageId: number | null) {
+    const index = passages.findIndex((p) => p.id === passageId);
+    setActive(index === -1 ? 0 : index);
+    window.setTimeout(
+      () => document.getElementById(`q-${number}`)?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      50
+    );
+  }
+
+  return (
+    <>
+      <div className="grid min-h-0 flex-1 lg:grid-cols-2">
+        <section className="min-h-0 overflow-y-auto border-b border-slate-200 bg-white px-5 py-5 sm:px-8 lg:border-b-0 lg:border-r">
+          <div className="flex flex-wrap gap-2" role="tablist">
+            {passages.map((p, i) => (
+              <button
+                key={p.id}
+                role="tab"
+                aria-selected={i === active}
+                onClick={() => setActive(i)}
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
+                  i === active ? "bg-brand-500 text-white" : "bg-slate-100 text-ink-muted hover:text-ink"
+                }`}
+              >
+                Passage {i + 1}
+              </button>
+            ))}
+          </div>
+          {current && (
+            <article className="mt-5">
+              <HighlightedPassage key={current.id} passage={current} storageKey={highlightKey} />
+            </article>
+          )}
+          <p className="mt-6 text-xs text-ink-muted">Tip: select words in the text to highlight them.</p>
+        </section>
+
+        <section className="min-h-0 space-y-4 overflow-y-auto bg-[#f7f9fd] px-5 py-5 sm:px-8">
+          {groupsHere.map((g) => (
+            <GroupBlock key={g.id} group={g} answers={answers} setAnswer={onAnswer} answerKey={answerKey} />
+          ))}
+          {active < passages.length - 1 && (
+            <Button variant="secondary" onClick={() => setActive(active + 1)}>
+              Next passage →
+            </Button>
+          )}
+        </section>
+      </div>
+
+      <nav className="flex shrink-0 items-center gap-3 overflow-x-auto border-t border-slate-200 bg-white px-4 py-2.5 sm:px-6" aria-label="Questions">
+        <span className="shrink-0 text-xs font-semibold text-ink-muted">
+          {answeredCount}/{allQuestions.length}
+        </span>
+        <div className="flex gap-1">
+          {allQuestions.map(({ q, passageId }) => {
+            const done = isAnswered(answers[q.id]);
+            return (
+              <button
+                key={q.id}
+                onClick={() => jumpTo(q.number, passageId)}
+                className={`h-8 w-8 shrink-0 rounded-md text-xs font-bold ${
+                  done ? "bg-brand-500 text-white" : "bg-slate-100 text-ink hover:bg-slate-200"
+                }`}
+                aria-label={`Question ${q.number}${done ? ", answered" : ""}`}
+              >
+                {q.number}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    </>
+  );
+}

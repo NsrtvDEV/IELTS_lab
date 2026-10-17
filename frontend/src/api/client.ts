@@ -3,6 +3,15 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
 
+// картинки и файлы раздаёт тот же сервер, что и API, но не под /api/v1
+const SERVER_ORIGIN = new URL(API_BASE_URL).origin;
+
+export function resolveMediaUrl(path: string | null | undefined): string | undefined {
+  if (!path) return undefined;
+  if (/^https?:\/\//.test(path)) return path;
+  return `${SERVER_ORIGIN}${path}`;
+}
+
 export const ACCESS_TOKEN_KEY = "bandup_access_token";
 export const REFRESH_TOKEN_KEY = "bandup_refresh_token";
 

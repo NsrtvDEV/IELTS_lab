@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AlertTriangle, CheckCircle2, FileText, Plus } from "lucide-react";
 import { apiErrorMessage } from "../../api/client";
 import { createTest, listTests, type TeacherTest } from "../../api/teacher";
@@ -68,9 +68,12 @@ function CreateTestModal({ onClose }: { onClose: () => void }) {
 }
 
 export function TestsPage() {
+  const [params, setParams] = useSearchParams();
+  const query = (params.get("q") ?? "").trim().toLowerCase();
   const [tests, setTests] = useState<TeacherTest[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(params.get("new") === "1");
+  const shown = tests?.filter((t) => t.title.toLowerCase().includes(query)) ?? null;
 
   useEffect(() => {
     listTests()
@@ -105,9 +108,17 @@ export function TestsPage() {
             </Button>
           </Card>
         )}
-        {tests && tests.length > 0 && (
+        {query && tests && (
+          <div className="mb-4 flex items-center gap-3 text-sm text-ink-muted">
+            {shown?.length} result(s) for “{params.get("q")}”
+            <button onClick={() => setParams({})} className="font-semibold text-brand-600 hover:text-brand-700">
+              Clear
+            </button>
+          </div>
+        )}
+        {shown && tests && tests.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2">
-            {tests.map((test) => (
+            {shown.map((test) => (
               <Link key={test.id} to={`/teacher/tests/${test.id}`} className="group">
                 <Card className="h-full p-5 transition group-hover:border-brand-200 group-hover:shadow-lg">
                   <div className="flex items-start justify-between gap-3">

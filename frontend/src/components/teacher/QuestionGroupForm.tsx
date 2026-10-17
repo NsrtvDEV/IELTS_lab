@@ -1,9 +1,10 @@
 import { useState, type FormEvent, type KeyboardEvent } from "react";
-import { Plus, Trash2, X } from "lucide-react";
-import { apiErrorMessage } from "../../api/client";
+import { ImagePlus, Loader2, Plus, Trash2, X } from "lucide-react";
+import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import {
   createQuestionGroup,
   replaceQuestionGroup,
+  uploadImage,
   type OptionInput,
   type QuestionGroupInput,
   type QuestionType,
@@ -195,6 +196,58 @@ function CorrectPicker({
   );
 }
 
+/** Картинка к группе: схема, карта, таблица, flow-chart */
+function ImageField({ value, onChange }: { value: string | null; onChange: (url: string | null) => void }) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function pick(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      onChange(await uploadImage(file));
+    } catch (err) {
+      setError(apiErrorMessage(err));
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div>
+      <Label>Image (optional)</Label>
+      <p className="mb-2 text-sm text-ink-muted">A diagram, map, table or flow-chart the questions refer to.</p>
+      {value ? (
+        <div className="relative inline-block">
+          <img src={resolveMediaUrl(value)} alt="Question group" className="max-h-56 rounded-lg border border-slate-200" />
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="absolute right-2 top-2 rounded-md bg-white/90 p-1.5 text-ink-muted shadow hover:text-red-600"
+            aria-label="Remove image"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <label className="flex h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-200 text-sm text-ink-muted hover:border-brand-300 hover:bg-brand-50/40">
+          {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImagePlus className="h-5 w-5" />}
+          {uploading ? "Uploading…" : "Upload PNG, JPG, WEBP or SVG (up to 5 MB)"}
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+            className="sr-only"
+            onChange={(e) => pick(e.target.files?.[0])}
+            disabled={uploading}
+          />
+        </label>
+      )}
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 // ───────────────────────── Форма ─────────────────────────
 
 function fromGroup(group: TeacherQuestionGroup): DraftQuestion[] {
@@ -233,6 +286,7 @@ export function QuestionGroupForm({
   const [wordLimit, setWordLimit] = useState(group?.word_limit ? String(group.word_limit) : "");
   const [allowNumber, setAllowNumber] = useState(group?.allow_number ?? false);
   const [position, setPosition] = useState(String(group?.position ?? section.question_groups.length));
+  const [imageUrl, setImageUrl] = useState<string | null>(group?.image_url ?? null);
   const [groupOptions, setGroupOptions] = useState<OptionInput[]>(
     group && !FIXED_OPTIONS[group.type] ? group.options.map((o) => ({ label: o.label, text: o.text })) : []
   );
@@ -243,7 +297,7 @@ export function QuestionGroupForm({
   const [saving, setSaving] = useState(false);
 
   const mode = answerMode(type);
-  // у схемы/карты варианты необязательны: есть общий список — отвечают буквой, нет — словами
+  // completion/схема/карта: есть общий список — отвечают буквой, нет — словами
   const usesOptions =
     mode === "fixed" || mode === "question-options" || mode === "group-options" || (mode === "either" && groupOptions.length > 0);
   const usesText = !usesOptions;
@@ -294,6 +348,7 @@ export function QuestionGroupForm({
       word_limit: usesText && wordLimit ? Number(wordLimit) : null,
       allow_number: usesText && allowNumber,
       position: Number(position) || 0,
+      image_url: imageUrl,
       options: mode === "group-options" || mode === "either" ? groupOptions : [],
       questions: questions.map((q) => ({
         number: Number(q.number),
@@ -404,11 +459,21 @@ export function QuestionGroupForm({
         </p>
       )}
 
+      <ImageField value={imageUrl} onChange={setImageUrl} />
+
       {(mode === "group-options" || mode === "either") && (
         <div>
-          <Label>{mode === "either" ? "Letters on the diagram / map (optional)" : "Options shared by all questions"}</Label>
+          <Label>
+            {mode === "group-options"
+              ? "Options shared by all questions"
+              : type === "diagram_label" || type === "map_label"
+                ? "Letters on the diagram / map (optional)"
+                : "Word list to choose from (optional)"}
+          </Label>
           {mode === "either" && (
-            <p className="mb-2 text-sm text-ink-muted">Leave empty if students write words instead of choosing letters.</p>
+            <p className="mb-2 text-sm text-ink-muted">
+              Leave empty if students write the answer themselves. With a list, they choose a letter.
+            </p>
           )}
           <OptionsEditor options={groupOptions} onChange={setGroupOptions} roman={type === "matching_headings"} />
         </div>

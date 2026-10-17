@@ -4,10 +4,18 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { TeacherLayout } from "./components/TeacherLayout";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TEACHER_ROLES } from "./lib/config";
-import { HomePage } from "./pages/HomePage";
+import { StudentLayout } from "./components/StudentLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { ProgressPage } from "./pages/student/ProgressPage";
+import { ReadingPage } from "./pages/student/ReadingPage";
+import { ReadingResultPage } from "./pages/student/ReadingResultPage";
+import { StudentHomePage } from "./pages/student/StudentHomePage";
+import { DashboardPage } from "./pages/teacher/DashboardPage";
 import { SectionEditorPage } from "./pages/teacher/SectionEditorPage";
+import { SectionPreviewPage } from "./pages/teacher/SectionPreviewPage";
+import { StudentDetailPage, StudentResultPage } from "./pages/teacher/StudentDetailPage";
+import { StudentsPage } from "./pages/teacher/StudentsPage";
 import { TestDetailPage } from "./pages/teacher/TestDetailPage";
 import { TestsPage } from "./pages/teacher/TestsPage";
 
@@ -22,8 +30,12 @@ function Teacher({ children }: { children: ReactNode }) {
 /** Главная: учителя и админы сразу попадают в кабинет учителя */
 function Home() {
   const { user } = useAuth();
-  if (user && TEACHER_ROLES.includes(user.role)) return <Navigate to="/teacher/tests" replace />;
-  return <HomePage />;
+  if (user && TEACHER_ROLES.includes(user.role)) return <Navigate to="/teacher" replace />;
+  return (
+    <StudentLayout>
+      <StudentHomePage />
+    </StudentLayout>
+  );
 }
 
 export default function App() {
@@ -40,10 +52,24 @@ export default function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/teacher" element={<Navigate to="/teacher/tests" replace />} />
+        {/* прохождение секции — на весь экран, без шапки */}
+        <Route path="/reading/:sectionAttemptId" element={<ProtectedRoute><ReadingPage /></ProtectedRoute>} />
+        <Route
+          path="/reading/:sectionAttemptId/result"
+          element={<ProtectedRoute><StudentLayout><ReadingResultPage /></StudentLayout></ProtectedRoute>}
+        />
+        <Route path="/progress" element={<ProtectedRoute><StudentLayout><ProgressPage /></StudentLayout></ProtectedRoute>} />
+        <Route path="/teacher" element={<Teacher><DashboardPage /></Teacher>} />
         <Route path="/teacher/tests" element={<Teacher><TestsPage /></Teacher>} />
         <Route path="/teacher/tests/:testId" element={<Teacher><TestDetailPage /></Teacher>} />
         <Route path="/teacher/sections/:sectionId" element={<Teacher><SectionEditorPage /></Teacher>} />
+        <Route
+          path="/teacher/sections/:sectionId/preview"
+          element={<ProtectedRoute roles={TEACHER_ROLES}><SectionPreviewPage /></ProtectedRoute>}
+        />
+        <Route path="/teacher/students" element={<Teacher><StudentsPage /></Teacher>} />
+        <Route path="/teacher/students/:studentId" element={<Teacher><StudentDetailPage /></Teacher>} />
+        <Route path="/teacher/students/:studentId/results/:sectionAttemptId" element={<Teacher><StudentResultPage /></Teacher>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

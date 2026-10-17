@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, FileAudio, FileText, Pencil, Plus, Trash2 } from "lucide-react";
-import { apiErrorMessage } from "../../api/client";
+import { ArrowLeft, Eye, FileAudio, FileText, Pencil, Plus, Trash2 } from "lucide-react";
+import { apiErrorMessage, resolveMediaUrl } from "../../api/client";
 import {
   deletePassage,
   deleteQuestionGroup,
@@ -71,6 +71,9 @@ function GroupCard({
             )}
           </div>
           <p className="mt-2 whitespace-pre-line text-sm text-ink-muted">{group.instruction}</p>
+          {group.image_url && (
+            <img src={resolveMediaUrl(group.image_url)} alt="" className="mt-3 max-h-40 rounded-lg border border-slate-200" />
+          )}
         </div>
         {!locked && (
           <div className="flex gap-1">
@@ -265,11 +268,20 @@ export function SectionEditorPage() {
         <section>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="font-bold text-ink">Questions</h2>
-            {!locked && count < 40 && (
-              <Button className="h-9" onClick={() => setEditing({ kind: "group" })}>
-                <Plus className="h-4 w-4" /> Add questions
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {count > 0 && (
+                <Link to={`/teacher/sections/${section.id}/preview`}>
+                  <Button variant="secondary" className="h-9">
+                    <Eye className="h-4 w-4" /> Preview
+                  </Button>
+                </Link>
+              )}
+              {!locked && count < 40 && (
+                <Button className="h-9" onClick={() => setEditing({ kind: "group" })}>
+                  <Plus className="h-4 w-4" /> Add questions
+                </Button>
+              )}
+            </div>
           </div>
           <div className="space-y-4">
             {section.question_groups.length === 0 && (
