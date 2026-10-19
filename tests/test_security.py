@@ -52,6 +52,7 @@ def make(**overrides):
         DB_PORT=5432,
         DB_NAME="d",
         CORS_ORIGINS=["https://bandup.uz"],
+        FRONTEND_URL="https://bandup.uz",
     )
     return Settings(_env_file=None, **{**base, **overrides})
 
@@ -66,4 +67,6 @@ def test_production_settings_are_checked():
         make(ADMIN_SECRET_KEY="")
     with pytest.raises(ValidationError, match="CORS_ORIGINS"):
         make(CORS_ORIGINS=["*"])
+    with pytest.raises(ValidationError, match="FRONTEND_URL"):
+        make(FRONTEND_URL="http://localhost:5173")
     make(DEBUG=True, SECRET_KEY="dev", ADMIN_SECRET_KEY="", CORS_ORIGINS=["*"])  # локально можно

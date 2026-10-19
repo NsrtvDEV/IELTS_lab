@@ -36,6 +36,17 @@ class Settings(BaseSettings):
     ADMIN_CSRF_ORIGINS: list[str] = []
     ADMIN_LOGIN_ATTEMPTS: int = 10  # неудачных входов в админку с одного IP за 15 минут
 
+    # ── письма (сброс пароля) ──
+    FRONTEND_URL: str = "http://localhost:5173"  # из него строится ссылка в письме
+    PASSWORD_RESET_EXPIRE_MINUTES: int = 60
+    # SMTP почтового сервиса; без SMTP_HOST письма только пишутся в лог (для разработки)
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "BandUp <no-reply@localhost>"
+    SMTP_SSL: bool = False  # True — порт 465 (SSL сразу); False — 587 со STARTTLS
+
     model_config = SettingsConfigDict(env_file=".env")
 
     @model_validator(mode="after")
@@ -50,6 +61,8 @@ class Settings(BaseSettings):
             problems.append("ADMIN_SECRET_KEY: at least 32 random characters, different from SECRET_KEY")
         if "*" in self.CORS_ORIGINS:
             problems.append("CORS_ORIGINS: list the frontend address instead of *")
+        if not self.FRONTEND_URL.startswith("https://"):
+            problems.append("FRONTEND_URL: the https:// address of the site (used in password reset emails)")
         if problems:
             raise ValueError("Unsafe settings for DEBUG=0: " + "; ".join(problems))
         return self

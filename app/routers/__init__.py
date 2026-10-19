@@ -1,5 +1,5 @@
 from .attempts import router as attempts_router
-from .auth import auth_router, register_router
+from .auth import auth_router, password_reset_router, register_router
 from .listening import router as listening_router
 from .notifications import router as notifications_router
 from .reading import router as reading_router
@@ -21,6 +21,7 @@ from .writing import router as writing_router
 __all__ = [
     "attempts_router",
     "auth_router",
+    "password_reset_router",
     "listening_router",
     "notifications_router",
     "reading_router",

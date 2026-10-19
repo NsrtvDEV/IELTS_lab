@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StringConstraints
 
@@ -35,3 +35,13 @@ class TokenResponse(BaseModel):
 
 class RefreshRequest(BaseModel):
     refresh_token: str
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+    lang: Literal["en", "ru"] = "en"  # язык письма — как у интерфейса
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str = Field(min_length=10, max_length=200)
+    new_password: str = Field(min_length=8, max_length=128)

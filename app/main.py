@@ -15,6 +15,7 @@ from app.routers import (
     auth_router,
     listening_router,
     notifications_router,
+    password_reset_router,
     reading_router,
     register_router,
     speaking_router,
@@ -76,6 +77,7 @@ API_PREFIX = "/api/v1"
 for router in (
     auth_router,
     register_router,
+    password_reset_router,
     users_router,
     notifications_router,
     stats_router,

@@ -6,8 +6,10 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { TEACHER_ROLES } from "./lib/config";
 import { StudentLayout } from "./components/StudentLayout";
 import { LandingPage } from "./pages/LandingPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ProgressPage } from "./pages/student/ProgressPage";
 import { SectionAttemptPage } from "./pages/student/SectionAttemptPage";
@@ -64,6 +66,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/" element={<Home />} />
         {/* прохождение секции — на весь экран, без шапки */}
         {(["reading", "listening"] as const).map((section) => [

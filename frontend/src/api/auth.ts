@@ -61,3 +61,19 @@ export async function deleteAvatar() {
   const { data } = await apiClient.delete<User>("/users/me/avatar");
   return data;
 }
+
+// ───────────────────────── «Забыли пароль?» ─────────────────────────
+
+/** Письмо со ссылкой; ответ одинаковый, есть такой аккаунт или нет */
+export async function requestPasswordReset(email: string, lang: string) {
+  await apiClient.post("/auth/password-reset/request", { email, lang });
+}
+
+/** Ссылка ещё действует? */
+export async function checkPasswordResetToken(token: string) {
+  await apiClient.get("/auth/password-reset/check", { params: { token } });
+}
+
+export async function confirmPasswordReset(token: string, newPassword: string) {
+  await apiClient.post("/auth/password-reset/confirm", { token, new_password: newPassword });
+}

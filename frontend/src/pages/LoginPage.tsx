@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Mail } from "lucide-react";
 import { apiErrorMessage } from "../api/client";
 import {
@@ -46,12 +46,6 @@ export function LoginPage() {
     }
   }
 
-  // пароль сбрасывает администратор в админке
-  function forgotPassword() {
-    setError(null);
-    setNotice(t("Ask your teacher or the administrator — they will set a new password for you."));
-  }
-
   return (
     <AuthLayout>
       <AuthSwitchLink question={t("Don't have an account?")} to="/register" label={t("Sign up")} />
@@ -79,13 +73,12 @@ export function LoginPage() {
               placeholder={t("Enter your password")}
             />
             <div className="mt-3 text-right">
-              <button
-                type="button"
-                onClick={forgotPassword}
+              <Link
+                to={email.trim() ? `/forgot-password?email=${encodeURIComponent(email.trim())}` : "/forgot-password"}
                 className="text-sm font-medium text-brand-500 hover:text-brand-700"
               >
                 {t("Forgot password?")}
-              </button>
+              </Link>
             </div>
           </div>
 
