@@ -4,6 +4,7 @@ import { resolveMediaUrl } from "../../api/client";
 import type { Passage, Question, QuestionGroup } from "../../api/student";
 import { isAnswered, type Answer } from "../../lib/answers";
 import { scrollToQuestion } from "../../lib/dom";
+import { PaneSwitch } from "../PaneSwitch";
 import { Button, inputClass } from "../ui";
 import { t } from "../../i18n";
 
@@ -367,6 +368,11 @@ function HighlightedPassage({ passage, storageKey }: { passage: Passage; storage
   }, [key, ranges]);
 
   function onMouseUp() {
+    onSelect(false);
+  }
+
+  /** below — кнопку «Выделить» ставим под текстом: сверху на телефоне меню браузера */
+  function onSelect(below: boolean) {
     const sel = window.getSelection();
     const root = textRef.current;
     if (!sel || sel.isCollapsed || !root || !wrapRef.current) return setPending(null);
@@ -381,8 +387,32 @@ function HighlightedPassage({ passage, storageKey }: { passage: Passage; storage
     if (end <= start) return setPending(null);
     const rect = range.getBoundingClientRect();
     const wrap = wrapRef.current.getBoundingClientRect();
-    setPending({ range: [start, end], top: rect.top - wrap.top - 44, left: rect.left - wrap.left + rect.width / 2 });
+    const top = below ? rect.bottom - wrap.top + 12 : rect.top - wrap.top - 44;
+    // кнопка шириной ~110px по центру выделения, но не за краями текста
+    const left = Math.min(Math.max(rect.left - wrap.left + rect.width / 2, 56), wrap.width - 56);
+    setPending({ range: [start, end], top, left });
   }
+
+  // на телефоне выделяют долгим нажатием и ручками — mouseup не приходит, следим за выделением.
+  // Подписка одна на всё время (страница перерисовывается каждую секунду из-за таймера),
+  // а вызываем всегда свежую onSelect через ref
+  const onSelectRef = useRef(onSelect);
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  });
+  useEffect(() => {
+    if (!window.matchMedia("(pointer: coarse)").matches) return;
+    let timer = 0;
+    const onChange = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => onSelectRef.current(true), 300);
+    };
+    document.addEventListener("selectionchange", onChange);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("selectionchange", onChange);
+    };
+  }, []);
 
   function addHighlight() {
     if (!pending) return;
@@ -507,6 +537,7 @@ export function ReadingWorkspace({
   answerKey?: Record<number, string[]>;
 }) {
   const [active, setActive] = useState(0);
+  const [pane, setPane] = useState<"text" | "questions">("text"); // на телефоне — по очереди
 
   const current = passages[active];
   // группы без привязки к тексту показываем вместе с первым текстом
@@ -517,13 +548,27 @@ export function ReadingWorkspace({
   function jumpTo(number: number, passageId: number | null) {
     const index = passages.findIndex((p) => p.id === passageId);
     setActive(index === -1 ? 0 : index);
+    setPane("questions");
     scrollToQuestion(number);
   }
 
   return (
     <>
+      <div className="shrink-0 border-b border-slate-200 bg-white px-4 py-2 sm:px-6 lg:hidden">
+        <PaneSwitch
+          value={pane}
+          onChange={setPane}
+          label={t("Show")}
+          options={[
+            { value: "text", label: t("Passage {n}", { n: active + 1 }) },
+            { value: "questions", label: t("Questions") },
+          ]}
+        />
+      </div>
       <div className="grid min-h-0 flex-1 lg:grid-cols-2">
-        <section className="min-h-0 overflow-y-auto border-b border-slate-200 bg-white px-5 py-5 sm:px-8 lg:border-b-0 lg:border-r">
+        <section
+          className={`${pane === "text" ? "" : "hidden"} min-h-0 overflow-y-auto bg-white px-5 py-5 sm:px-8 lg:block lg:border-r lg:border-slate-200`}
+        >
           <div className="flex flex-wrap gap-2" role="tablist">
             {passages.map((p, i) => (
               <button
@@ -547,12 +592,18 @@ export function ReadingWorkspace({
           <p className="mt-6 text-xs text-ink-muted">{t("Tip: select words in the text to highlight them.")}</p>
         </section>
 
-        <section className="min-h-0 space-y-4 overflow-y-auto bg-[#f7f9fd] px-5 py-5 sm:px-8">
+        <section className={`${pane === "questions" ? "" : "hidden"} min-h-0 space-y-4 overflow-y-auto bg-[#f7f9fd] px-5 py-5 sm:px-8 lg:block`}>
           {groupsHere.map((g) => (
             <GroupBlock key={g.id} group={g} answers={answers} setAnswer={onAnswer} answerKey={answerKey} />
           ))}
           {active < passages.length - 1 && (
-            <Button variant="secondary" onClick={() => setActive(active + 1)}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setActive(active + 1);
+                setPane("text");
+              }}
+            >
               {t("Next passage")} →
             </Button>
           )}

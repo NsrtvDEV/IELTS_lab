@@ -11,6 +11,7 @@ import {
   type WritingContent,
 } from "../../api/student";
 import { Logo } from "../../components/Logo";
+import { PaneSwitch } from "../../components/PaneSwitch";
 import { Button, ErrorBox, Modal, Spinner } from "../../components/ui";
 import { afterSubmitPath } from "../../lib/attempts";
 import { countWords } from "../../lib/writing";
@@ -32,6 +33,7 @@ export function WritingPage() {
   const [content, setContent] = useState<WritingContent | null>(null);
   const [texts, setTexts] = useState<Record<number, string>>({});
   const [active, setActive] = useState(0);
+  const [pane, setPane] = useState<"task" | "answer">("task"); // на телефоне — по очереди
   const [now, setNow] = useState(() => Date.now());
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [error, setError] = useState<string | null>(null);
@@ -225,11 +227,23 @@ export function WritingPage() {
             </button>
           );
         })}
+        <PaneSwitch
+          className="ml-auto"
+          value={pane}
+          onChange={setPane}
+          label={t("Show")}
+          options={[
+            { value: "task", label: t("Task") },
+            { value: "answer", label: t("Answer") },
+          ]}
+        />
       </div>
 
       {task && (
         <div className="grid min-h-0 flex-1 lg:grid-cols-2">
-          <section className="min-h-0 overflow-y-auto border-b border-slate-200 bg-white px-5 py-5 sm:px-8 lg:border-b-0 lg:border-r">
+          <section
+            className={`${pane === "task" ? "" : "hidden"} min-h-0 overflow-y-auto bg-white px-5 py-5 sm:px-8 lg:block lg:border-r lg:border-slate-200`}
+          >
             <p className="text-sm font-semibold text-ink-muted">
               You should spend about {task.recommended_min} minutes on this task.
             </p>
@@ -244,7 +258,7 @@ export function WritingPage() {
             <p className="mt-4 text-sm font-semibold text-ink">Write at least {task.min_words} words.</p>
           </section>
 
-          <section className="flex min-h-0 flex-col bg-[#f7f9fd] px-5 py-5 sm:px-8">
+          <section className={`${pane === "answer" ? "flex" : "hidden"} min-h-0 flex-col bg-[#f7f9fd] px-5 py-5 sm:px-8 lg:flex`}>
             <textarea
               key={task.id}
               value={texts[task.id] ?? ""}

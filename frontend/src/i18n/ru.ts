@@ -648,6 +648,8 @@ export const RU: Record<string, string> = {
   "Recent Activity": "Последние действия",
   "Create a test or assess a work — your actions will appear here.": "Создайте тест или оцените работу — здесь появятся ваши действия.",
   "Upload a PNG, JPG or WEBP image": "Загрузите изображение PNG, JPG или WEBP",
+  "Show": "Показать",
+  "Answer": "Ответ",
   // ошибки сервера
   "Assess every task of the section": "Оцените все задания секции",
   "Attempt is abandoned": "Попытка прервана",

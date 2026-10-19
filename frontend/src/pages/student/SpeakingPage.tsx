@@ -144,15 +144,19 @@ export function SpeakingPage() {
 
   // микрофон выключаем, когда уходим со страницы
   useEffect(() => () => stream?.getTracks().forEach((t) => t.stop()), [stream]);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // в режиме разработки React монтирует страницу дважды: после «размонтирования» флаг надо вернуть,
+    // иначе запись по «Finish answer» выбрасывается и следующий вопрос не наступает
+    discard.current = false;
+    return () => {
+      // refs здесь не DOM-узлы: при уходе нужны именно текущие значения
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       run.current++;
       discard.current = true;
       recorder.current?.stop();
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    },
-    []
-  );
+    };
+  }, []);
 
   function setStep(next: Phase, endsAt: number | null = null) {
     state.current.phase = next;
