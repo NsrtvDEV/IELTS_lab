@@ -10,9 +10,19 @@ from app.config import settings as app_settings
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = app_settings.SECRET_KEY
 DEBUG = app_settings.DEBUG
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+# свой ключ, не тот, что подписывает JWT API; локально без него — общий (на сервере config.py это не пропустит)
+SECRET_KEY = app_settings.ADMIN_SECRET_KEY or app_settings.SECRET_KEY
+ALLOWED_HOSTS = app_settings.ADMIN_HOSTS
+CSRF_TRUSTED_ORIGINS = app_settings.ADMIN_CSRF_ORIGINS
+
+if not DEBUG:
+    # админка работает за nginx по HTTPS: cookie только по HTTPS, схему берём из заголовка прокси
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_AGE = 8 * 60 * 60  # вход в админку — на рабочий день
+X_FRAME_OPTIONS = "DENY"
 
 INSTALLED_APPS = [
     "jazzmin",  # тема админки — должна стоять до django.contrib.admin
@@ -33,6 +43,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "ielts.security.AdminLoginThrottleMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"

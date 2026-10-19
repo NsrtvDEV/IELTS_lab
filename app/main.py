@@ -1,11 +1,12 @@
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.config import settings
 from app.limiter import limiter
@@ -34,6 +35,10 @@ app = FastAPI(
     title=f"{settings.PROJECT_NAME} API",
     description="Mock-тесты IELTS Academic: Listening, Reading, Writing, Speaking",
     version="1.0.0",
+    # на сервере (DEBUG=0) документацию API не показываем
+    docs_url="/docs" if settings.DEBUG else None,
+    redoc_url="/redoc" if settings.DEBUG else None,
+    openapi_url="/openapi.json" if settings.DEBUG else None,
 )
 
 app.state.limiter = limiter
@@ -42,11 +47,29 @@ app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO: заменить на домен фронтенда перед продакшеном
-    allow_credentials=True,
+    allow_origins=settings.CORS_ORIGINS,  # только адрес фронтенда (токен передаётся в заголовке, не в cookie)
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Файлы из /media открываются и напрямую по ссылке. SVG может содержать скрипт —
+# запрещаем странице файла выполнять что-либо и угадывать тип содержимого
+MEDIA_CSP = "default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'; sandbox"
+
+
+@app.middleware("http")
+async def media_headers(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/media/"):
+        response.headers["Content-Security-Policy"] = MEDIA_CSP
+        response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
+# за nginx: настоящий IP клиента из X-Forwarded-For (для лимитов на вход) — только от доверенного прокси.
+# Добавляется последним, чтобы выполняться первым
+if settings.TRUSTED_PROXIES:
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=settings.TRUSTED_PROXIES)
 
 API_PREFIX = "/api/v1"
 
