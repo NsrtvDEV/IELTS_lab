@@ -650,6 +650,7 @@ export const RU: Record<string, string> = {
   "Upload a PNG, JPG or WEBP image": "Загрузите изображение PNG, JPG или WEBP",
   "Show": "Показать",
   "Answer": "Ответ",
+  "optional": "необязательно",
   // ошибки сервера
   "Assess every task of the section": "Оцените все задания секции",
   "Attempt is abandoned": "Попытка прервана",

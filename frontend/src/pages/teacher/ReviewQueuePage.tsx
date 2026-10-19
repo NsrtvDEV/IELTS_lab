@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { CheckCircle2, Mic, PenLine } from "lucide-react";
 import { apiErrorMessage } from "../../api/client";
 import { listReview, type ReviewItem } from "../../api/teacher";
+import { Avatar } from "../../components/Avatar";
 import { Badge, Button, Card, ErrorBox, Spinner } from "../../components/ui";
-import { initials, timeAgo } from "../../lib/format";
+import { timeAgo } from "../../lib/format";
 import { t, tn } from "../../i18n";
 
 type Tab = "pending" | "assessed";
@@ -55,8 +56,8 @@ export function ReviewQueuePage() {
           <Card className="divide-y divide-slate-100">
             {list.map((item) => (
               <div key={item.section_attempt_id} className="flex flex-wrap items-center gap-4 px-5 py-4">
-                <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700">
-                  {initials(item.student_name)}
+                <span className="relative shrink-0">
+                  <Avatar name={item.student_name} url={item.student_avatar_url} className="h-10 w-10 text-xs" fallback="bg-brand-50 text-brand-700" />
                   <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-white ring-1 ring-slate-200">
                     {item.section_type === "speaking" ? <Mic className="h-3 w-3 text-brand-600" /> : <PenLine className="h-3 w-3 text-brand-600" />}
                   </span>

@@ -129,6 +129,7 @@ class ReviewItem(BaseModel):
     student_id: int
     student_name: str
     student_email: str
+    student_avatar_url: str | None = None
     test_title: str
     mode: Literal["section", "mock"]
     submitted_at: datetime
@@ -142,3 +143,4 @@ class ReviewDetail(WritingResult):
     student_id: int
     student_name: str
     student_email: str
+    student_avatar_url: str | None = None

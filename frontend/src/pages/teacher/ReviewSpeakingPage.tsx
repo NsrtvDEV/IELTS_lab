@@ -9,6 +9,7 @@ import { Button, Card, ErrorBox, Label, Spinner, textareaClass } from "../../com
 import { timeAgo } from "../../lib/format";
 import { SPEAKING_CRITERIA, speakingBand } from "../../lib/speaking";
 import { t } from "../../i18n";
+import { Avatar } from "../../components/Avatar";
 
 const BANDS = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
 const EMPTY: SpeakingScores = { fluency_coherence: -1, lexical_resource: -1, grammatical_range: -1, pronunciation: -1 };
@@ -59,13 +60,16 @@ export function ReviewSpeakingPage() {
         <ArrowLeft className="h-4 w-4" /> {t("Review queue")}
       </Link>
       <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink">{detail.student_name}</h1>
-          <p className="mt-1 text-ink-muted">
-            Speaking · {detail.test_title} · {t("submitted {when}", { when: detail.submitted_at ? timeAgo(detail.submitted_at) : "—" })} ·{" "}
-            {t("{n} of {total} questions answered", { n: answered, total: detail.tasks.length })}
-            {detail.band_score && ` · ${t("current band {band}", { band: detail.band_score })}`}
-          </p>
+        <div className="flex items-center gap-4">
+          <Avatar name={detail.student_name} url={detail.student_avatar_url} className="h-14 w-14 text-lg" />
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-ink">{detail.student_name}</h1>
+            <p className="mt-1 text-ink-muted">
+              Speaking · {detail.test_title} · {t("submitted {when}", { when: detail.submitted_at ? timeAgo(detail.submitted_at) : "—" })} ·{" "}
+              {t("{n} of {total} questions answered", { n: answered, total: detail.tasks.length })}
+              {detail.band_score && ` · ${t("current band {band}", { band: detail.band_score })}`}
+            </p>
+          </div>
         </div>
         <Link to={`/teacher/students/${detail.student_id}`} className="text-sm font-semibold text-brand-600 hover:text-brand-700">
           {t("Student profile")} →

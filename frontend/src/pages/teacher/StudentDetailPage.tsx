@@ -5,8 +5,9 @@ import { apiErrorMessage } from "../../api/client";
 import { getStudent, getStudentResult, type HistoryItem, type SectionType, type StudentDetail } from "../../api/teacher";
 import type { SectionResult } from "../../api/student";
 import { ResultView } from "../../components/results/ResultView";
+import { Avatar } from "../../components/Avatar";
 import { Badge, Card, ErrorBox, Spinner } from "../../components/ui";
-import { initials, timeAgo } from "../../lib/format";
+import { timeAgo } from "../../lib/format";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { t } from "../../i18n";
 
@@ -40,9 +41,7 @@ export function StudentDetailPage() {
       </Link>
 
       <div className="mt-4 flex flex-wrap items-center gap-4">
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-500 text-lg font-bold text-white">
-          {initials(student.name)}
-        </span>
+        <Avatar name={student.name} url={student.avatar_url} className="h-14 w-14 text-lg" />
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink">{student.name}</h1>
           <p className="text-ink-muted">

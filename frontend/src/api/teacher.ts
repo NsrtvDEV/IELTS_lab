@@ -251,6 +251,7 @@ export interface StudentProgress {
   id: number;
   name: string;
   email: string;
+  avatar_url: string | null;
   overall_band: string;
   change: string | null;
   last_activity: string; // на английском
@@ -308,6 +309,7 @@ export interface StudentSummary {
   id: number;
   name: string;
   email: string;
+  avatar_url: string | null; // фото, если ученик загрузил
   is_active: boolean;
   joined_at: string;
   sections_completed: number;
@@ -411,6 +413,7 @@ export interface ReviewItem {
   student_id: number;
   student_name: string;
   student_email: string;
+  student_avatar_url: string | null;
   test_title: string;
   mode: "section" | "mock";
   submitted_at: string;
@@ -424,6 +427,7 @@ export interface ReviewDetail extends WritingResult {
   student_id: number;
   student_name: string;
   student_email: string;
+  student_avatar_url: string | null;
 }
 
 export interface TaskAssessmentInput extends CriteriaScores {
@@ -451,6 +455,7 @@ export interface SpeakingReviewDetail extends SpeakingResult {
   student_id: number;
   student_name: string;
   student_email: string;
+  student_avatar_url: string | null;
 }
 
 export async function getReviewSpeaking(sectionAttemptId: number) {

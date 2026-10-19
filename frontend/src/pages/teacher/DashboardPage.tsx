@@ -25,10 +25,11 @@ import {
   type Stat,
   type TeacherDashboard,
 } from "../../api/teacher";
+import { Avatar } from "../../components/Avatar";
 import { Badge, Card, ErrorBox, Spinner } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
 import { DJANGO_ADMIN_URL } from "../../lib/config";
-import { greeting, initials, timeAgo } from "../../lib/format";
+import { greeting, timeAgo } from "../../lib/format";
 import { SECTION_COLORS, SECTION_LABELS } from "../../lib/questionTypes";
 import { t, tn } from "../../i18n";
 
@@ -155,9 +156,7 @@ function StudentsTable({ data }: { data: TeacherDashboard }) {
                   <tr key={s.id}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${AVATAR_TINTS[s.id % AVATAR_TINTS.length]}`}>
-                          {initials(s.name)}
-                        </span>
+                        <Avatar name={s.name} url={s.avatar_url} className="h-9 w-9 text-xs" fallback={AVATAR_TINTS[s.id % AVATAR_TINTS.length]} />
                         <Link to={`/teacher/students/${s.id}`} className="font-medium text-ink hover:text-brand-600">
                           {s.name}
                         </Link>

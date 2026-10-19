@@ -13,6 +13,7 @@ class StudentSummary(BaseModel):
     id: int
     name: str
     email: str
+    avatar_url: str | None = None  # фото, если ученик загрузил
     is_active: bool
     joined_at: datetime
     sections_completed: int  # сданных секций за всё время

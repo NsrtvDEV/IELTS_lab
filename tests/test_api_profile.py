@@ -77,3 +77,22 @@ async def test_avatar_is_served(client, student):
     # фото отдаётся как статический файл (без /api/v1)
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as raw:
         assert (await raw.get(url)).status_code == 200
+
+
+async def test_teacher_sees_student_photo(client, teacher, student, published_test):
+    r = await client.post("/users/me/avatar", headers=student, files={"file": ("me.png", PNG, "image/png")})
+    url = r.json()["profile"]["avatar_url"]
+    content = await write_and_submit(client, student, published_test["id"])
+    sa = content["section_attempt_id"]
+
+    students = (await client.get("/teacher/students", headers=teacher)).json()
+    assert students[0]["avatar_url"] == url
+    me = students[0]["id"]
+    assert (await client.get(f"/teacher/students/{me}", headers=teacher)).json()["avatar_url"] == url
+    queue = (await client.get("/teacher/review?status=pending", headers=teacher)).json()
+    assert queue[0]["student_avatar_url"] == url
+    assert (await client.get(f"/teacher/review/writing/{sa}", headers=teacher)).json()["student_avatar_url"] == url
+
+    await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=assessment(content))
+    dashboard = (await client.get("/teacher/dashboard", headers=teacher)).json()
+    assert dashboard["students"][0]["avatar_url"] == url

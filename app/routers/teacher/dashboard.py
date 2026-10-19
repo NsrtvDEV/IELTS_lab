@@ -102,6 +102,7 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
                 User.created_at,
                 UserProfile.first_name,
                 UserProfile.last_name,
+                UserProfile.avatar_url,
             )
             .join(SectionAttempt.attempt)
             .join(SectionAttempt.section)
@@ -156,6 +157,7 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
                 id=last.user_id,
                 name=display_name(last.first_name, last.last_name, last.email),
                 email=last.email,
+                avatar_url=last.avatar_url,
                 overall_band=now_band,
                 change=now_band - prev_band if prev_band is not None else None,
                 last_activity=f"{section_name} test" if last.section_type else f"Mock test · {section_name}",

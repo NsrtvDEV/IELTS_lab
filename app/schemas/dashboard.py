@@ -28,6 +28,7 @@ class StudentProgress(BaseModel):
     id: int
     name: str
     email: str
+    avatar_url: str | None = None
     overall_band: Decimal
     change: Decimal | None  # относительно результата до последней сданной секции
     last_activity: str  # "Reading test", "Mock test · Listening"

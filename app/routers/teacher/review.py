@@ -49,6 +49,7 @@ async def review_queue(
             User.email,
             UserProfile.first_name,
             UserProfile.last_name,
+            UserProfile.avatar_url,
         )
         .join(SectionAttempt.attempt)
         .join(SectionAttempt.section)
@@ -109,6 +110,7 @@ async def review_queue(
             student_id=user_id,
             student_name=display_name(first, last, email),
             student_email=email,
+            student_avatar_url=avatar,
             test_title=title,
             mode="section" if attempt_section else "mock",
             submitted_at=sa.submitted_at,
@@ -117,7 +119,7 @@ async def review_queue(
             questions=questions.get(sa.section_id, 0) if section_type == SectionType.SPEAKING else None,
             band_score=sa.band_score,
         )
-        for sa, section_type, user_id, attempt_section, title, email, first, last in rows
+        for sa, section_type, user_id, attempt_section, title, email, first, last, avatar in rows
     ]
 
 
@@ -141,6 +143,7 @@ async def student_info(session, sa: SectionAttempt) -> dict:
             profile.first_name if profile else None, profile.last_name if profile else None, student.email
         ),
         "student_email": student.email,
+        "student_avatar_url": profile.avatar_url if profile else None,
     }
 
 

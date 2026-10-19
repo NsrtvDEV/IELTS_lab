@@ -64,6 +64,7 @@ def summarize(user: User, profile: UserProfile | None, rows) -> StudentSummary:
             user.email,
         ),
         email=user.email,
+        avatar_url=profile.avatar_url if profile else None,
         is_active=user.is_active,
         joined_at=user.created_at,
         sections_completed=len(submitted),

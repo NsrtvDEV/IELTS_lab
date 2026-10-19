@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import { Search, UsersRound } from "lucide-react";
 import { apiErrorMessage } from "../../api/client";
 import { listStudents, type SectionType, type StudentSummary } from "../../api/teacher";
+import { Avatar } from "../../components/Avatar";
 import { Badge, Card, ErrorBox, Spinner } from "../../components/ui";
-import { initials, timeAgo } from "../../lib/format";
+import { timeAgo } from "../../lib/format";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { t } from "../../i18n";
 
@@ -78,9 +79,7 @@ export function StudentsPage() {
                   <tr key={s.id} className="hover:bg-slate-50">
                     <td className="px-5 py-3">
                       <Link to={`/teacher/students/${s.id}`} className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-700">
-                          {initials(s.name)}
-                        </span>
+                        <Avatar name={s.name} url={s.avatar_url} className="h-9 w-9 text-xs" fallback="bg-brand-50 text-brand-700" />
                         <span>
                           <span className="block font-semibold text-ink hover:text-brand-600">{s.name}</span>
                           <span className="block text-xs text-ink-muted">{s.email}</span>
