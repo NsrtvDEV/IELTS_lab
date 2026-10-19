@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, LogOut, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { DJANGO_ADMIN_URL, TEACHER_ROLES } from "../lib/config";
+import { DJANGO_ADMIN_URL } from "../lib/config";
 import { initials } from "../lib/format";
 
 export function UserMenu() {
@@ -9,7 +9,7 @@ export function UserMenu() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const name = [user?.profile?.first_name, user?.profile?.last_name].filter(Boolean).join(" ") || user?.email || "";
-  const staff = !!user && TEACHER_ROLES.includes(user.role);
+  const isAdmin = user?.role === "admin"; // Django-админка — только для администраторов
 
   useEffect(() => {
     function close(e: MouseEvent) {
@@ -38,7 +38,7 @@ export function UserMenu() {
       </button>
       {open && (
         <div role="menu" className="absolute right-0 z-50 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
-          {staff && (
+          {isAdmin && (
             <a
               role="menuitem"
               href={DJANGO_ADMIN_URL}

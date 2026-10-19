@@ -30,19 +30,22 @@ function Footer() {
   const { user } = useAuth();
   return (
     <div className="space-y-4">
-      <a
-        href={DJANGO_ADMIN_URL}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50"
-      >
-        <ShieldCheck className="h-5 w-5 text-ink-muted" />
-        <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold capitalize text-ink">{user?.role}</div>
-          <div className="text-xs text-ink-muted">Admin panel</div>
-        </div>
-        <ChevronRight className="h-4 w-4 text-ink-muted" />
-      </a>
+      {/* Django-админка — только для администраторов */}
+      {user?.role === "admin" && (
+        <a
+          href={DJANGO_ADMIN_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50"
+        >
+          <ShieldCheck className="h-5 w-5 text-ink-muted" />
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold capitalize text-ink">{user.role}</div>
+            <div className="text-xs text-ink-muted">Admin panel</div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-ink-muted" />
+        </a>
+      )}
       <div className="relative hidden h-56 overflow-hidden rounded-2xl bg-gradient-to-b from-brand-50 to-white lg:block">
         <img src={mountains} alt="" className="absolute bottom-0 h-3/5 w-full object-cover" />
         <p className="relative px-5 pt-8 font-hand text-xl leading-snug text-ink">
