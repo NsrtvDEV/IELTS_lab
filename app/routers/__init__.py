@@ -4,6 +4,7 @@ from .auth import auth_router, password_reset_router, register_router
 from .listening import router as listening_router
 from .notifications import router as notifications_router
 from .reading import router as reading_router
+from .site import router as site_router
 from .speaking import router as speaking_router
 from .stats import router as stats_router
 from .teacher import (
@@ -27,6 +28,7 @@ __all__ = [
     "listening_router",
     "notifications_router",
     "reading_router",
+    "site_router",
     "register_router",
     "speaking_router",
     "stats_router",

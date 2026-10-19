@@ -14,11 +14,13 @@ from app.models import (
     RefreshToken,
     Section,
     SectionAttempt,
+    SiteContent,
     TestAttempt,
     User,
     UserProfile,
     UserRole,
 )
+from app.routers.site import LANDING_KEY, stored_landing
 from app.routers.teacher.dashboard import display_name, percent_change
 from app.schemas.admin import (
     AdminActivity,
@@ -31,6 +33,7 @@ from app.schemas.admin import (
     UserUpdate,
 )
 from app.schemas.dashboard import Stat
+from app.schemas.site import LandingContent
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -267,3 +270,34 @@ async def update_user(user_id: int, session: db_dep, admin: admin_dep, data: Use
     await session.commit()
     profile = await session.get(UserProfile, user.id)
     return admin_user(user, profile)
+
+
+# ───────────────────────── Лендинг ─────────────────────────
+
+
+@router.get("/landing", response_model=LandingContent, response_model_exclude_none=True)
+async def get_landing(session: db_dep, admin: admin_dep):
+    return await stored_landing(session)
+
+
+@router.put("/landing", response_model=LandingContent, response_model_exclude_none=True)
+async def save_landing(session: db_dep, admin: admin_dep, data: LandingContent):
+    """Пустые поля не сохраняются — на сайте для них стандартный текст."""
+    value = data.model_dump(exclude_none=True)
+    row = await session.get(SiteContent, LANDING_KEY)
+    if row:
+        row.value = value
+        row.updated_by_id = admin.id
+    else:
+        session.add(SiteContent(key=LANDING_KEY, value=value, updated_by_id=admin.id))
+    await session.commit()
+    return data
+
+
+@router.delete("/landing", status_code=204)
+async def reset_landing(session: db_dep, admin: admin_dep):
+    """Вернуть стандартные тексты и настройки."""
+    row = await session.get(SiteContent, LANDING_KEY)
+    if row:
+        await session.delete(row)
+        await session.commit()

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -18,19 +18,23 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import { apiClient } from "../api/client";
+import { apiClient, resolveMediaUrl } from "../api/client";
+import { getLanding } from "../api/site";
+import { lang, locale, t } from "../i18n";
 import { TELEGRAM_URL } from "../lib/config";
+import { EMPTY_CONTENT, resolveTexts, withDefaults, type LandingContent, type ResolvedTexts } from "../lib/landing";
 import london from "../assets/london.jpg";
 import mountains from "../assets/mountains.jpg";
 
 const YEAR = new Date().getFullYear();
 
-const NAV = [
+type NavEntry = readonly [string, string];
+const ALL_NAV: NavEntry[] = [
   ["#top", "Home"],
   ["#features", "Features"],
   ["#skills", "Skills"],
   ["#about", "About"],
-] as const;
+];
 
 type PublicStats = { students: number; tests: number; sections_completed: number };
 
@@ -40,7 +44,7 @@ const STATS: { icon: LucideIcon; key: keyof PublicStats; label: string }[] = [
   { icon: TrendingUp, key: "sections_completed", label: "Sections Completed" },
 ];
 
-const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const compact = new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 });
 
 /** Реальные цифры из базы; пока грузятся — заглушки, при ошибке блок скрывается */
 function useStats() {
@@ -55,42 +59,13 @@ function useStats() {
   return { stats, failed };
 }
 
-const FEATURES: { icon: LucideIcon; title: string; text: string }[] = [
-  { icon: BookOpen, title: "Real IELTS Practice", text: "Authentic questions and full mock tests for all 4 sections." },
-  { icon: Target, title: "Track Your Progress", text: "See your scores, identify weak areas and improve step by step." },
-  { icon: UserRound, title: "Personalized Learning", text: "Get recommendations based on your current level and goals." },
-  { icon: Trophy, title: "Achieve Your Goals", text: "Build the skills and confidence you need for a higher band score." },
-];
+const FEATURE_ICONS: LucideIcon[] = [BookOpen, Target, UserRound, Trophy];
 
-const SKILLS: { icon: LucideIcon; title: string; text: string; tone: string; iconTone: string }[] = [
-  {
-    icon: BookOpen,
-    title: "Reading",
-    text: "Improve your reading skills with real passages and exam-style questions.",
-    tone: "from-brand-50",
-    iconTone: "text-brand-500 bg-brand-100",
-  },
-  {
-    icon: Headphones,
-    title: "Listening",
-    text: "Train with authentic audio and develop your listening comprehension.",
-    tone: "from-emerald-50",
-    iconTone: "text-emerald-600 bg-emerald-100",
-  },
-  {
-    icon: PenLine,
-    title: "Writing",
-    text: "Learn task formats, get practice tips and improve your writing skills.",
-    tone: "from-violet-50",
-    iconTone: "text-violet-600 bg-violet-100",
-  },
-  {
-    icon: Mic,
-    title: "Speaking",
-    text: "Practice real exam questions and build your confidence in speaking.",
-    tone: "from-rose-50",
-    iconTone: "text-rose-500 bg-rose-100",
-  },
+const SKILL_STYLES: { icon: LucideIcon; tone: string; iconTone: string }[] = [
+  { icon: BookOpen, tone: "from-brand-50", iconTone: "text-brand-500 bg-brand-100" },
+  { icon: Headphones, tone: "from-emerald-50", iconTone: "text-emerald-600 bg-emerald-100" },
+  { icon: PenLine, tone: "from-violet-50", iconTone: "text-violet-600 bg-violet-100" },
+  { icon: Mic, tone: "from-rose-50", iconTone: "text-rose-500 bg-rose-100" },
 ];
 
 // фото растворяется слева и снизу в фоне страницы
@@ -114,7 +89,7 @@ const primaryBtn =
 const HEADER_OFFSET = 120; // высота шапки с запасом: раздел активен, когда дошёл до неё
 
 /** Какой раздел меню сейчас на экране — последний, чей верх уже прокручен под шапку */
-function useActiveSection(): string {
+function useActiveSection(NAV: NavEntry[]): string {
   const [active, setActive] = useState<string>(NAV[0][0]);
   useEffect(() => {
     let frame = 0;
@@ -143,12 +118,12 @@ function useActiveSection(): string {
       window.removeEventListener("resize", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [NAV]);
   return active;
 }
 
-function NavLinks() {
-  const active = useActiveSection();
+function NavLinks({ nav: NAV }: { nav: NavEntry[] }) {
+  const active = useActiveSection(NAV);
   const links = useRef<Record<string, HTMLAnchorElement | null>>({});
   const [bar, setBar] = useState({ left: 0, width: 0 });
 
@@ -165,7 +140,7 @@ function NavLinks() {
   }, [active]);
 
   return (
-    <nav className="relative hidden gap-7 md:flex" aria-label="Main">
+    <nav className="relative hidden gap-7 md:flex" aria-label={t("Main")}>
       {NAV.map(([href, label]) => (
         <a
           key={href}
@@ -178,7 +153,7 @@ function NavLinks() {
             active === href ? "text-brand-500" : "text-ink-muted hover:text-ink"
           }`}
         >
-          {label}
+          {t(label)}
         </a>
       ))}
       <span
@@ -190,7 +165,7 @@ function NavLinks() {
   );
 }
 
-function Header() {
+function Header({ nav }: { nav: NavEntry[] }) {
   return (
     <header className="sticky top-0 z-40 border-b border-transparent bg-white/70 backdrop-blur-md">
       <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
@@ -198,17 +173,17 @@ function Header() {
           <a href="#top" aria-label="BandUp home">
             <Brand />
           </a>
-          <NavLinks />
+          <NavLinks nav={nav} />
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
             to="/login"
             className="hidden h-10 items-center rounded-full border border-slate-200 px-5 text-sm font-semibold text-ink transition hover:bg-slate-50 sm:inline-flex"
           >
-            Log in
+            {t("Log in")}
           </Link>
           <Link to="/register" className={`${primaryBtn} h-10 px-5 text-sm`}>
-            Get Started
+            {t("Get Started")}
           </Link>
         </div>
       </div>
@@ -216,7 +191,7 @@ function Header() {
   );
 }
 
-function Hero() {
+function Hero({ c, showStats, image }: { c: ResolvedTexts; showStats: boolean; image: string }) {
   const { stats, failed } = useStats();
   return (
     <section id="top" className="relative scroll-mt-20 overflow-hidden bg-gradient-to-b from-[#eef4ff] to-[#f7f9fd]">
@@ -224,7 +199,7 @@ function Hero() {
       <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[55%] lg:block">
         <div className="absolute inset-y-6 right-0 left-10 overflow-hidden rounded-l-[120px]">
           <img
-            src={london}
+            src={image}
             alt=""
             className="h-full w-full object-cover object-[50%_35%]"
             style={PHOTO_FADE}
@@ -236,31 +211,30 @@ function Hero() {
         <div>
           <span className="inline-flex items-center gap-2 rounded-full bg-brand-100/70 px-3 py-1 text-xs font-semibold text-brand-700">
             <Star className="h-3.5 w-3.5" />
-            Your IELTS journey starts here
+            {c.hero_badge}
           </span>
           <h1 className="mt-5 text-[44px] font-extrabold leading-[1.05] tracking-tight text-ink sm:text-6xl">
-            Prepare smarter.
+            {c.hero_title}
             <br />
-            <span className="text-brand-500">Score higher.</span>
+            <span className="text-brand-500">{c.hero_title_accent}</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-muted">
-            BandUp is your all-in-one IELTS learning platform with real practice tests, progress
-            tracking and personalized learning.
+            {c.hero_subtitle}
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
             <Link to="/register" className={`${primaryBtn} h-14 px-7 text-base`}>
-              Start Learning <ArrowRight className="h-5 w-5" />
+              {c.hero_primary} <ArrowRight className="h-5 w-5" />
             </Link>
             <a
               href="#features"
               className="inline-flex h-14 items-center gap-3 rounded-full border border-slate-200 bg-white px-7 text-base font-semibold text-ink transition hover:bg-slate-50"
             >
-              <Play className="h-4 w-4 fill-current" /> See How It Works
+              <Play className="h-4 w-4 fill-current" /> {c.hero_secondary}
             </a>
           </div>
 
-          {!failed && (
+          {showStats && !failed && (
             <dl className="mt-10 flex flex-wrap gap-x-10 gap-y-5">
               {STATS.map(({ icon: Icon, key, label }) => (
                 <div key={key} className="flex items-center gap-3">
@@ -268,7 +242,7 @@ function Hero() {
                     <Icon className="h-5 w-5" />
                   </span>
                   <div>
-                    <dt className="sr-only">{label}</dt>
+                    <dt className="sr-only">{t(label)}</dt>
                     <dd className="text-lg font-bold text-ink">
                       {stats ? (
                         compact.format(stats[key])
@@ -276,7 +250,7 @@ function Hero() {
                         <span className="inline-block h-5 w-10 animate-pulse rounded bg-slate-200 align-middle" />
                       )}
                     </dd>
-                    <dd className="text-sm text-ink-muted">{label}</dd>
+                    <dd className="text-sm text-ink-muted">{t(label)}</dd>
                   </div>
                 </div>
               ))}
@@ -287,11 +261,11 @@ function Hero() {
         {/* декоративный слой поверх фото: рукописная фраза и карточка band */}
         <div className="relative hidden min-h-[380px] lg:block" aria-hidden="true">
           <p className="absolute left-2 top-16 -rotate-12 font-hand text-[26px] leading-tight text-ink/80">
-            Your goal
-            <br />
-            is closer than
-            <br />
-            you think
+            {c.hero_note.split("\n").map((line, i) => (
+              <span key={i} className="block">
+                {line}
+              </span>
+            ))}
           </p>
           <svg viewBox="0 0 80 40" className="absolute left-16 top-52 h-10 w-20 text-ink/70" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M4 30 C 20 42, 45 36, 70 10" />
@@ -301,7 +275,7 @@ function Hero() {
           <div className="absolute bottom-10 right-0 w-60 -rotate-3 rounded-2xl bg-white p-5 shadow-card">
             <div className="flex items-start justify-between">
               <div>
-                <div className="text-sm font-medium text-ink-muted">Your target band</div>
+                <div className="text-sm font-medium text-ink-muted">{t("Your target band")}</div>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className="text-4xl font-extrabold text-ink">7.5</span>
                   <span className="text-sm font-bold text-emerald-500">+0.5</span>
@@ -321,109 +295,103 @@ function Hero() {
   );
 }
 
-function Features() {
+function Features({ c }: { c: ResolvedTexts }) {
   return (
     <section id="features" className="scroll-mt-20 bg-white py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">Why BandUp?</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">{c.features_eyebrow}</p>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            Everything you need for IELTS success
+            {c.features_title}
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-            Focus on what matters. We provide the tools, practice and support to help you reach your
-            target band score.
+            {c.features_subtitle}
           </p>
         </div>
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map(({ icon: Icon, title, text }) => (
-            <article
-              key={title}
-              className="group rounded-2xl border border-slate-200/80 bg-white p-6 transition hover:-translate-y-1 hover:shadow-card"
-            >
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100/70 text-brand-500">
-                <Icon className="h-6 w-6" />
-              </span>
-              <h3 className="mt-5 font-bold text-ink">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink-muted">{text}</p>
-              <Link
-                to="/register"
-                className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 hover:text-brand-600"
+          {c.features.map(({ title, text }, i) => {
+            const Icon = FEATURE_ICONS[i];
+            return (
+              <article
+                key={i}
+                className="group rounded-2xl border border-slate-200/80 bg-white p-6 transition hover:-translate-y-1 hover:shadow-card"
               >
-                Learn more <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
-              </Link>
-            </article>
-          ))}
+                <span className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100/70 text-brand-500">
+                  <Icon className="h-6 w-6" />
+                </span>
+                <h3 className="mt-5 font-bold text-ink">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{text}</p>
+                <Link
+                  to="/register"
+                  className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-brand-500 hover:text-brand-600"
+                >
+                  {t("Learn more")} <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+                </Link>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-function Skills() {
+function Skills({ c }: { c: ResolvedTexts }) {
   return (
     <section id="skills" className="scroll-mt-20 bg-[#f3f7fe] py-16 sm:py-20">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[300px_1fr]">
         <div>
           <span className="inline-block rounded-full bg-brand-100/70 px-3 py-1 text-xs font-semibold uppercase text-brand-700">
-            Four skills. One goal.
+            {c.skills_badge}
           </span>
-          <h2 className="mt-4 text-3xl font-bold tracking-tight text-ink">Master all 4 IELTS skills</h2>
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-ink">{c.skills_title}</h2>
           <p className="mt-3 leading-relaxed text-ink-muted">
-            Practice Reading, Listening, Writing and Speaking with real exam formats and expert
-            resources.
+            {c.skills_subtitle}
           </p>
           <Link to="/register" className={`${primaryBtn} mt-6 h-11 px-6 text-sm`}>
-            Explore All Skills <ArrowRight className="h-4 w-4" />
+            {c.skills_button} <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {SKILLS.map(({ icon: Icon, title, text, tone, iconTone }) => (
-            <Link
-              key={title}
-              to="/register"
-              className={`group relative overflow-hidden rounded-2xl border border-white bg-gradient-to-br to-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-card ${tone}`}
-            >
-              {/* крупная полупрозрачная иконка в углу вместо иллюстрации */}
-              <Icon className="absolute -right-3 -top-3 h-24 w-24 opacity-10" strokeWidth={1.25} aria-hidden="true" />
-              <span className={`relative flex h-11 w-11 items-center justify-center rounded-full ${iconTone}`}>
-                <Icon className="h-5 w-5" />
-              </span>
-              <h3 className="relative mt-4 font-bold text-ink">{title}</h3>
-              <p className="relative mt-2 text-sm leading-relaxed text-ink-muted">{text}</p>
-              <ArrowRight className="relative mt-4 h-4 w-4 text-ink-muted transition group-hover:translate-x-1 group-hover:text-brand-500" />
-            </Link>
-          ))}
+          {c.skills.map(({ title, text }, i) => {
+            const { icon: Icon, tone, iconTone } = SKILL_STYLES[i];
+            return (
+              <Link
+                key={i}
+                to="/register"
+                className={`group relative overflow-hidden rounded-2xl border border-white bg-gradient-to-br to-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-card ${tone}`}
+              >
+                {/* крупная полупрозрачная иконка в углу вместо иллюстрации */}
+                <Icon className="absolute -right-3 -top-3 h-24 w-24 opacity-10" strokeWidth={1.25} aria-hidden="true" />
+                <span className={`relative flex h-11 w-11 items-center justify-center rounded-full ${iconTone}`}>
+                  <Icon className="h-5 w-5" />
+                </span>
+                <h3 className="relative mt-4 font-bold text-ink">{title}</h3>
+                <p className="relative mt-2 text-sm leading-relaxed text-ink-muted">{text}</p>
+                <ArrowRight className="relative mt-4 h-4 w-4 text-ink-muted transition group-hover:translate-x-1 group-hover:text-brand-500" />
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>
   );
 }
 
-const ABOUT_POINTS = [
-  "Full IELTS Academic mock tests in the real exam format — or any single section",
-  "Server-side timer, autosave and instant Listening & Reading scores on the official band scale",
-  "Teachers build tests and follow every student's progress and mistakes",
-];
-
-function About() {
+function About({ c, telegram }: { c: ResolvedTexts; telegram: string | null }) {
   return (
     <section id="about" className="scroll-mt-20 bg-white py-16 sm:py-20">
       <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-[1fr_400px]">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">About us</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">{c.about_eyebrow}</p>
           <h2 className="mt-2 text-3xl font-bold tracking-tight text-ink sm:text-4xl">
-            Built for IELTS learners and teachers
+            {c.about_title}
           </h2>
-          <p className="mt-4 max-w-2xl leading-relaxed text-ink-muted">
-            BandUp is an independent IELTS Academic preparation platform. We started it to make
-            exam practice feel like the real test: the same formats, the same timing and honest
-            scoring — so you know exactly where you stand and what to work on next.
-          </p>
+          <p className="mt-4 max-w-2xl whitespace-pre-line leading-relaxed text-ink-muted">{c.about_text}</p>
           <ul className="mt-6 space-y-3">
-            {ABOUT_POINTS.map((point) => (
+            {c.about_points.map((point) => (
               <li key={point} className="flex gap-3 text-ink">
                 <CircleCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" />
                 <span>{point}</span>
@@ -436,23 +404,22 @@ function About() {
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#229ED9]/10 text-[#229ED9]">
             <Send className="h-7 w-7" />
           </span>
-          <h3 className="mt-5 text-xl font-bold text-ink">Questions or ideas?</h3>
+          <h3 className="mt-5 text-xl font-bold text-ink">{c.contact_title}</h3>
           <p className="mt-2 text-sm leading-relaxed text-ink-muted">
-            Write to us on Telegram — we answer questions about the platform, tests and
-            preparation, and we'd love to hear your feedback.
+            {c.contact_text}
           </p>
-          {TELEGRAM_URL ? (
+          {telegram ? (
             <a
-              href={TELEGRAM_URL}
+              href={telegram}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 inline-flex h-11 items-center gap-2 rounded-full bg-[#229ED9] px-6 text-sm font-semibold text-white shadow-lg shadow-[#229ED9]/25 transition hover:bg-[#1c8cc2]"
             >
-              <Send className="h-4 w-4" /> Message us on Telegram
+              <Send className="h-4 w-4" /> {c.contact_button}
             </a>
           ) : (
             <Link to="/register" className={`${primaryBtn} mt-6 h-11 px-6 text-sm`}>
-              Join BandUp <ArrowRight className="h-4 w-4" />
+              {t("Join BandUp")} <ArrowRight className="h-4 w-4" />
             </Link>
           )}
         </div>
@@ -461,7 +428,7 @@ function About() {
   );
 }
 
-function CallToAction() {
+function CallToAction({ c }: { c: ResolvedTexts }) {
   return (
     <section className="bg-white pb-16">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
@@ -474,9 +441,9 @@ function CallToAction() {
                 <TrendingUp className="h-7 w-7" />
               </span>
               <div>
-                <h2 className="text-xl font-bold text-white">Ready to start your IELTS journey?</h2>
+                <h2 className="text-xl font-bold text-white">{c.cta_title}</h2>
                 <p className="mt-1 text-sm text-slate-300">
-                  Join thousands of students who are already achieving their dreams with BandUp.
+                  {c.cta_text}
                 </p>
               </div>
             </div>
@@ -484,7 +451,7 @@ function CallToAction() {
               to="/register"
               className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-white px-6 text-sm font-semibold text-ink transition hover:bg-brand-50"
             >
-              Get Started Free <ArrowRight className="h-4 w-4" />
+              {c.cta_button} <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
         </div>
@@ -493,20 +460,20 @@ function CallToAction() {
   );
 }
 
-function Footer() {
+function Footer({ telegram }: { telegram: string | null }) {
   return (
     <footer className="border-t border-slate-200/70 bg-white">
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-5">
           <Brand small />
-          <span className="text-sm text-ink-muted">© {YEAR} BandUp. All rights reserved.</span>
+          <span className="text-sm text-ink-muted">© {YEAR} BandUp. {t("All rights reserved.")}</span>
         </div>
-        <nav className="flex gap-6 text-sm text-ink-muted" aria-label="Footer">
-          <Link to="/login" className="hover:text-ink">Log in</Link>
-          <Link to="/register" className="hover:text-ink">Sign up</Link>
-          {TELEGRAM_URL && (
+        <nav className="flex gap-6 text-sm text-ink-muted" aria-label={t("Footer")}>
+          <Link to="/login" className="hover:text-ink">{t("Log in")}</Link>
+          <Link to="/register" className="hover:text-ink">{t("Sign up")}</Link>
+          {telegram && (
             <a
-              href={TELEGRAM_URL}
+              href={telegram}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 hover:text-[#229ED9]"
@@ -520,19 +487,47 @@ function Footer() {
   );
 }
 
-/** Публичная главная для гостей */
-export function LandingPage() {
+/** Лендинг по готовому содержимому — и для гостей, и для предпросмотра в редакторе админа */
+export function LandingView({ content, language = lang }: { content: LandingContent; language?: typeof lang }) {
+  const c = resolveTexts(content, language);
+  const st = content.settings;
+  const telegram = st.telegram_url || TELEGRAM_URL;
+  const nav = useMemo(
+    () =>
+      ALL_NAV.filter(
+        ([href]) =>
+          (href !== "#features" || st.show_features) && (href !== "#skills" || st.show_skills) && (href !== "#about" || st.show_about)
+      ),
+    [st.show_features, st.show_skills, st.show_about]
+  );
   return (
     <div className="min-h-screen">
-      <Header />
+      <Header nav={nav} />
       <main>
-        <Hero />
-        <Features />
-        <Skills />
-        <About />
-        <CallToAction />
+        <Hero c={c} showStats={st.show_stats} image={resolveMediaUrl(st.hero_image_url) ?? london} />
+        {st.show_features && <Features c={c} />}
+        {st.show_skills && <Skills c={c} />}
+        {st.show_about && <About c={c} telegram={telegram} />}
+        {st.show_cta && <CallToAction c={c} />}
       </main>
-      <Footer />
+      <Footer telegram={telegram} />
     </div>
   );
+}
+
+const LOAD_TIMEOUT_MS = 1500; // сервер не ответил — показываем стандартные тексты
+
+/** Публичная главная для гостей: тексты, заданные админом */
+export function LandingPage() {
+  const [content, setContent] = useState<LandingContent | null>(null);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setContent((c) => c ?? EMPTY_CONTENT), LOAD_TIMEOUT_MS);
+    getLanding()
+      .then((data) => setContent(withDefaults(data)))
+      .catch(() => setContent(EMPTY_CONTENT));
+    return () => window.clearTimeout(timer);
+  }, []);
+  // пока тексты грузятся (обычно доли секунды) — пустой фон, без мигания стандартных текстов
+  if (!content) return <div className="min-h-screen bg-gradient-to-b from-[#eef4ff] to-[#f7f9fd]" />;
+  return <LandingView content={content} />;
 }

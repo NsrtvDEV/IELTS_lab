@@ -25,6 +25,7 @@ import { ProfilePage } from "./pages/student/ProfilePage";
 import { ResultsPage } from "./pages/student/ResultsPage";
 import { StudentDashboardPage } from "./pages/student/StudentDashboardPage";
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import { LandingEditorPage } from "./pages/admin/LandingEditorPage";
 import { UsersPage } from "./pages/admin/UsersPage";
 import { DashboardPage } from "./pages/teacher/DashboardPage";
 import { SectionEditorPage } from "./pages/teacher/SectionEditorPage";
@@ -118,6 +119,7 @@ export default function App() {
         ))}
         <Route path="/admin" element={<Admin><AdminDashboardPage /></Admin>} />
         <Route path="/admin/users" element={<Admin><UsersPage /></Admin>} />
+        <Route path="/admin/landing" element={<Admin><LandingEditorPage /></Admin>} />
         <Route path="/teacher" element={<Teacher><DashboardPage /></Teacher>} />
         <Route path="/teacher/tests" element={<Teacher><TestsPage /></Teacher>} />
         <Route path="/teacher/tests/:testId" element={<Teacher><TestDetailPage /></Teacher>} />

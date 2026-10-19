@@ -395,6 +395,19 @@ class SpeakingTask(Base):
     section: Mapped["Section"] = relationship(back_populates="speaking_tasks")
 
 
+class SiteContent(Base):
+    """Редактируемое содержимое сайта (сейчас — тексты лендинга), ключ → JSON."""
+
+    __tablename__ = "site_content"
+
+    key: Mapped[str] = mapped_column(String(50), primary_key=True)
+    value: Mapped[dict] = mapped_column(JSONB)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+    updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
+
 class Notification(Base):
     """Уведомление в колокольчике: ученику — об оценке, учителю — о новой работе и т.д."""
 

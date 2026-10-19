@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   House,
+  LayoutTemplate,
   Settings,
   ShieldCheck,
   UserCog,
@@ -20,6 +21,7 @@ import { t } from "../i18n";
 const ADMIN_NAV: NavItem[] = [
   { label: "Dashboard", icon: House, to: "/admin", end: true },
   { label: "Users", icon: UserCog, to: "/admin/users" },
+  { label: "Landing page", icon: LayoutTemplate, to: "/admin/landing" },
 ];
 
 const NAV: NavItem[] = [

@@ -95,7 +95,7 @@ export function apiErrorMessage(error: unknown): string {
     if (!error.response) return t("Server is unavailable. Please try again later.");
     const detail = error.response.data?.detail;
     if (typeof detail === "string") return t(detail);
-    if (Array.isArray(detail) && detail[0]?.msg) return t(detail[0].msg);
+    if (Array.isArray(detail) && detail[0]?.msg) return t(String(detail[0].msg).replace(/^Value error, /, ""));
     return error.message;
   }
   return t("Something went wrong");
