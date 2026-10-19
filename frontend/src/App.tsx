@@ -15,7 +15,11 @@ import { SpeakingPage } from "./pages/student/SpeakingPage";
 import { SpeakingResultPage } from "./pages/student/SpeakingResultPage";
 import { WritingPage } from "./pages/student/WritingPage";
 import { WritingResultPage } from "./pages/student/WritingResultPage";
-import { StudentHomePage } from "./pages/student/StudentHomePage";
+import { MockTestsPage } from "./pages/student/MockTestsPage";
+import { PracticePage } from "./pages/student/PracticePage";
+import { ProfilePage } from "./pages/student/ProfilePage";
+import { ResultsPage } from "./pages/student/ResultsPage";
+import { StudentDashboardPage } from "./pages/student/StudentDashboardPage";
 import { DashboardPage } from "./pages/teacher/DashboardPage";
 import { SectionEditorPage } from "./pages/teacher/SectionEditorPage";
 import { ReviewQueuePage } from "./pages/teacher/ReviewQueuePage";
@@ -45,7 +49,7 @@ function Home() {
   if (TEACHER_ROLES.includes(user.role)) return <Navigate to="/teacher" replace />;
   return (
     <StudentLayout>
-      <StudentHomePage />
+      <StudentDashboardPage />
     </StudentLayout>
   );
 }
@@ -80,7 +84,17 @@ export default function App() {
           path="/speaking/:sectionAttemptId/result"
           element={<ProtectedRoute><StudentLayout><SpeakingResultPage /></StudentLayout></ProtectedRoute>}
         />
-        <Route path="/progress" element={<ProtectedRoute><StudentLayout><ProgressPage /></StudentLayout></ProtectedRoute>} />
+        {(
+          [
+            ["/practice/:section", PracticePage],
+            ["/tests", MockTestsPage],
+            ["/results", ResultsPage],
+            ["/progress", ProgressPage],
+            ["/profile", ProfilePage],
+          ] as const
+        ).map(([path, Page]) => (
+          <Route key={path} path={path} element={<ProtectedRoute><StudentLayout><Page /></StudentLayout></ProtectedRoute>} />
+        ))}
         <Route path="/teacher" element={<Teacher><DashboardPage /></Teacher>} />
         <Route path="/teacher/tests" element={<Teacher><TestsPage /></Teacher>} />
         <Route path="/teacher/tests/:testId" element={<Teacher><TestDetailPage /></Teacher>} />

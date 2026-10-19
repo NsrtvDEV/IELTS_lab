@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { BookOpen, CheckCircle2, Clock, Headphones, Mic, PenLine, PlayCircle, type LucideIcon } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { CheckCircle2, Clock, X } from "lucide-react";
 import { apiErrorMessage } from "../../api/client";
 import {
   listAttempts,
@@ -10,21 +10,10 @@ import {
   type AvailableSection,
   type StudentTest,
 } from "../../api/student";
-import type { SectionType } from "../../api/teacher";
+import { UnfinishedBanner } from "../../components/UnfinishedBanner";
 import { Badge, Button, Card, ErrorBox, Spinner } from "../../components/ui";
-import { useAuth } from "../../context/AuthContext";
-import { greeting } from "../../lib/format";
 import { SECTION_LABELS } from "../../lib/questionTypes";
-
-const ICONS: Record<SectionType, LucideIcon> = {
-  listening: Headphones,
-  reading: BookOpen,
-  writing: PenLine,
-  speaking: Mic,
-};
-// какие секции уже можно проходить на сайте
-const AVAILABLE: AvailableSection[] = ["listening", "reading", "writing", "speaking"];
-const isAvailable = (t: SectionType): t is AvailableSection => (AVAILABLE as SectionType[]).includes(t);
+import { SECTION_ICONS } from "../../lib/sectionStyle";
 
 /** Последний результат по каждому тесту и секции: ключ "<test_id>:<секция>" */
 function lastResults(attempts: Attempt[]) {
@@ -39,9 +28,10 @@ function lastResults(attempts: Attempt[]) {
   return result;
 }
 
-export function StudentHomePage() {
-  const { user } = useAuth();
+export function MockTestsPage() {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const query = (params.get("q") ?? "").trim().toLowerCase();
   const [tests, setTests] = useState<StudentTest[] | null>(null);
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -56,12 +46,8 @@ export function StudentHomePage() {
       .catch((err) => setError(apiErrorMessage(err)));
   }, []);
 
-  // начатая и не сданная секция — можно продолжить
-  const unfinished = attempts
-    .filter((a) => a.status === "in_progress")
-    .flatMap((a) =>
-      a.sections.filter((s) => isAvailable(s.section_type) && !s.submitted_at).map((s) => ({ a, s }))
-    )[0];
+  const unfinished = attempts.some((a) => a.status === "in_progress" && a.sections.some((s) => !s.submitted_at));
+  const shown = tests?.filter((t) => t.title.toLowerCase().includes(query));
   const results = lastResults(attempts);
 
   async function start(testId: number, section: AvailableSection) {
@@ -78,43 +64,40 @@ export function StudentHomePage() {
 
   return (
     <>
-      <p className="font-semibold text-brand-600">
-        {greeting()}, {user?.profile?.first_name || "there"} 👋
+      <h1 className="text-3xl font-extrabold tracking-tight text-ink">Mock Tests</h1>
+      <p className="mt-1 text-ink-muted">
+        Full IELTS Academic tests. Take any section on its own — Listening and Reading are checked instantly, Writing and
+        Speaking by a teacher.
       </p>
-      <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-ink">Practice IELTS Academic</h1>
-      <p className="mt-1 text-ink-muted">Pick a mock test and a section. Your answers are checked as soon as you finish.</p>
 
       <div className="mt-6 space-y-4">
         <ErrorBox message={error} />
-        {unfinished && (
-          <Card className="flex flex-wrap items-center gap-4 border-brand-200 bg-brand-50/50 p-5">
-            <PlayCircle className="h-8 w-8 text-brand-500" />
-            <div className="min-w-48 flex-1">
-              <div className="font-semibold text-ink">
-                You have an unfinished {SECTION_LABELS[unfinished.s.section_type]} test
-              </div>
-              <div className="text-sm text-ink-muted">{unfinished.a.test_title} — the timer keeps running.</div>
-            </div>
-            <Link to={`/${unfinished.s.section_type}/${unfinished.s.id}`}>
-              <Button>Continue</Button>
-            </Link>
-          </Card>
+        <UnfinishedBanner attempts={attempts} />
+        {query && (
+          <div className="flex items-center gap-2 text-sm text-ink-muted">
+            Search: <span className="font-semibold text-ink">“{params.get("q")}”</span> · {shown?.length ?? 0} found
+            <button onClick={() => setParams({})} className="rounded p-1 hover:bg-slate-100" aria-label="Clear search">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         )}
       </div>
 
       <div className="mt-6">
         {!tests && !error && <Spinner />}
-        {tests && tests.length === 0 && (
-          <Card className="px-6 py-14 text-center text-ink-muted">No tests are published yet. Check back soon!</Card>
+        {shown && shown.length === 0 && (
+          <Card className="px-6 py-14 text-center text-ink-muted">
+            {query ? "No tests match your search." : "No tests are published yet. Check back soon!"}
+          </Card>
         )}
         <div className="grid gap-5 md:grid-cols-2">
-          {tests?.map((test) => {
+          {shown?.map((test) => {
             return (
               <Card key={test.id} className="p-5">
                 <h2 className="text-lg font-bold text-ink">{test.title}</h2>
                 <ul className="mt-4 divide-y divide-slate-100">
                   {test.sections.map((s) => {
-                    const Icon = ICONS[s.type];
+                    const Icon = SECTION_ICONS[s.type];
                     const done = test.completed_sections.includes(s.type);
                     const last = results.get(`${test.id}:${s.type}`);
                     return (
@@ -131,8 +114,7 @@ export function StudentHomePage() {
                             <Clock className="h-3.5 w-3.5" /> {s.duration_min} min
                           </div>
                         </div>
-                        {isAvailable(s.type) ? (
-                          <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2">
                             {last && (
                               <Link
                                 to={`/${s.type}/${last.sectionAttemptId}/result`}
@@ -143,16 +125,13 @@ export function StudentHomePage() {
                             )}
                             <Button
                               className="h-9"
-                              onClick={() => start(test.id, s.type as AvailableSection)}
+                              onClick={() => start(test.id, s.type)}
                               loading={starting === `${test.id}:${s.type}`}
-                              disabled={!!unfinished}
+                              disabled={unfinished}
                             >
                               {done ? "Retake" : "Start"}
                             </Button>
                           </div>
-                        ) : (
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">Soon</span>
-                        )}
                       </li>
                     );
                   })}

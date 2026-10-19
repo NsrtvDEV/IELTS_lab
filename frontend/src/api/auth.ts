@@ -25,3 +25,15 @@ export async function fetchMe() {
   const { data } = await apiClient.get<User>("/users/me");
   return data;
 }
+
+export interface ProfileInput {
+  first_name: string;
+  last_name: string;
+  native_language: string | null;
+  timezone: string;
+}
+
+export async function updateProfile(input: ProfileInput) {
+  const { data } = await apiClient.patch<User>("/users/me", input);
+  return data;
+}

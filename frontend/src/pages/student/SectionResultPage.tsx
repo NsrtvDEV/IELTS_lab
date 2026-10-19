@@ -17,5 +17,5 @@ export function SectionResultPage({ section }: { section: QuestionSection }) {
   }, [section, sectionAttemptId]);
 
   if (!result) return error ? <ErrorBox message={error} /> : <Spinner />;
-  return <ResultView result={result} backTo="/" backLabel="All tests" />;
+  return <ResultView result={result} backTo="/tests" backLabel="All tests" />;
 }
