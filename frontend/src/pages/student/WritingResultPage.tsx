@@ -5,6 +5,7 @@ import { apiErrorMessage } from "../../api/client";
 import { getWritingResult, type WritingResult } from "../../api/student";
 import { WritingTaskCard } from "../../components/writing/WritingTaskCard";
 import { Card, ErrorBox, Spinner } from "../../components/ui";
+import { t } from "../../i18n";
 
 export function WritingResultPage() {
   const { sectionAttemptId } = useParams();
@@ -23,7 +24,7 @@ export function WritingResultPage() {
   return (
     <>
       <Link to="/tests" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> All tests
+        <ArrowLeft className="h-4 w-4" /> {t("All tests")}
       </Link>
 
       <Card className="mt-4 p-6 sm:p-8">
@@ -33,23 +34,22 @@ export function WritingResultPage() {
             {pending ? (
               <>
                 <h1 className="mt-2 flex items-center gap-3 text-3xl font-extrabold tracking-tight text-ink">
-                  <Hourglass className="h-7 w-7 text-amber-500" /> Waiting for assessment
+                  <Hourglass className="h-7 w-7 text-amber-500" /> {t("Waiting for assessment")}
                 </h1>
                 <p className="mt-2 max-w-xl text-ink-muted">
-                  Your essays were sent to a teacher. You&apos;ll see the band, the score for each criterion and feedback here
-                  once they&apos;re checked.
+                  {t("Your essays were sent to a teacher. You'll see the band, the score for each criterion and feedback here once they're checked.")}
                 </p>
               </>
             ) : (
               <>
-                <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink">Your Writing has been assessed</h1>
-                <p className="mt-2 text-ink-muted">Task 2 counts twice as much as Task 1 in the Writing band.</p>
+                <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink">{t("Your Writing has been assessed")}</h1>
+                <p className="mt-2 text-ink-muted">{t("Task 2 counts twice as much as Task 1 in the Writing band.")}</p>
               </>
             )}
           </div>
           {!pending && (
             <div className="flex flex-col items-center justify-center rounded-2xl bg-brand-50 px-8 py-5">
-              <span className="text-sm font-medium text-brand-700">Band score</span>
+              <span className="text-sm font-medium text-brand-700">{t("Band score")}</span>
               <span className="text-5xl font-extrabold text-brand-600">{result.band_score}</span>
             </div>
           )}
@@ -57,8 +57,8 @@ export function WritingResultPage() {
       </Card>
 
       <div className="mt-6 space-y-5">
-        {result.tasks.map((t) => (
-          <WritingTaskCard key={t.task_id} task={t} />
+        {result.tasks.map((task) => (
+          <WritingTaskCard key={task.task_id} task={task} />
         ))}
       </div>
     </>

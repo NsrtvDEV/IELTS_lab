@@ -4,6 +4,7 @@ import type { Answer } from "../../lib/answers";
 import { scrollToQuestion } from "../../lib/dom";
 import { GroupBlock, QuestionNavigator } from "../reading/ReadingWorkspace";
 import { ExamPlayer, FreePlayers } from "./ListeningPlayer";
+import { t } from "../../i18n";
 
 /** Плеер сверху, вопросы текущей части по центру, навигатор по номерам снизу */
 export function ListeningWorkspace({
@@ -58,7 +59,7 @@ export function ListeningWorkspace({
       <div className="min-h-0 flex-1 overflow-y-auto bg-[#f7f9fd]">
         <div className="mx-auto max-w-3xl space-y-4 px-4 py-5 sm:px-6">
           {/* части можно листать: на экзамене вопросы разрешено читать заранее */}
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label="Parts">
+          <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("Parts")}>
             {parts.map((p, i) => (
               <button
                 key={p.id}
@@ -69,7 +70,7 @@ export function ListeningWorkspace({
                   i === active ? "bg-brand-500 text-white" : "bg-white text-ink-muted ring-1 ring-inset ring-slate-200 hover:text-ink"
                 }`}
               >
-                Part {i + 1}
+                {t("Part {n}", { n: i + 1 })}
               </button>
             ))}
           </div>
@@ -77,7 +78,7 @@ export function ListeningWorkspace({
           {groupsHere.map((g) => (
             <GroupBlock key={g.id} group={g} answers={answers} setAnswer={onAnswer} answerKey={answerKey} />
           ))}
-          {groupsHere.length === 0 && <p className="text-sm text-ink-muted">No questions in this part.</p>}
+          {groupsHere.length === 0 && <p className="text-sm text-ink-muted">{t("No questions in this part.")}</p>}
         </div>
       </div>
 

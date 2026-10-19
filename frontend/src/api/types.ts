@@ -4,6 +4,10 @@ export interface UserProfile {
   first_name: string | null;
   last_name: string | null;
   native_language: string | null;
+  phone: string | null;
+  location: string | null;
+  bio: string | null;
+  avatar_url: string | null; // /media/avatars/...
 }
 
 export interface User {

@@ -9,6 +9,7 @@ import { ReadingWorkspace } from "../../components/reading/ReadingWorkspace";
 import type { Answer } from "../../lib/answers";
 import { Button, ErrorBox, Spinner } from "../../components/ui";
 import { SECTION_LABELS } from "../../lib/questionTypes";
+import { t } from "../../i18n";
 
 /** Секция глазами ученика: можно отвечать (ничего не сохраняется) и показать ключ ответов */
 export function SectionPreviewPage() {
@@ -61,13 +62,13 @@ export function SectionPreviewPage() {
     <div className="flex h-screen flex-col">
       <header className="flex h-16 shrink-0 items-center gap-4 border-b border-slate-200 bg-amber-50 px-4 sm:px-6">
         <Link to={`/teacher/sections/${section.id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink">
-          <ArrowLeft className="h-4 w-4" /> Back to editor
+          <ArrowLeft className="h-4 w-4" /> {t("Back to editor")}
         </Link>
         <span className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
-          <Eye className="h-4 w-4" /> Preview · {SECTION_LABELS[section.type]} — answers aren&apos;t saved
+          <Eye className="h-4 w-4" /> {t("Preview · {section} — answers aren't saved", { section: SECTION_LABELS[section.type] })}
         </span>
         <Button variant="secondary" className="ml-auto" onClick={() => setShowKey((v) => !v)} aria-pressed={showKey}>
-          {showKey ? "Hide answer key" : "Show answer key"}
+          {showKey ? t("Hide answer key") : t("Show answer key")}
         </Button>
       </header>
       {section.type === "listening" ? (

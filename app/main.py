@@ -20,6 +20,7 @@ from app.routers import (
     stats_router,
     teacher_content_router,
     teacher_dashboard_router,
+    teacher_profile_router,
     teacher_review_router,
     teacher_students_router,
     teacher_tests_router,
@@ -62,6 +63,7 @@ for router in (
     writing_router,
     speaking_router,
     teacher_dashboard_router,
+    teacher_profile_router,
     teacher_review_router,
     teacher_students_router,
     teacher_tests_router,
@@ -71,8 +73,8 @@ for router in (
     app.include_router(router, prefix=API_PREFIX)
 
 
-# картинки и записи тестов — публичные (это содержимое тестов, а не ответы учеников)
-for folder in ("images", "audio"):
+# картинки и записи тестов — публичные (это содержимое тестов, а не ответы учеников); фото профилей тоже
+for folder in ("images", "audio", "avatars"):
     Path(settings.MEDIA_ROOT, folder).mkdir(parents=True, exist_ok=True)
     app.mount(f"/media/{folder}", StaticFiles(directory=Path(settings.MEDIA_ROOT, folder)), name=folder)
 

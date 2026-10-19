@@ -30,6 +30,7 @@ import { useAuth } from "../../context/AuthContext";
 import { DJANGO_ADMIN_URL } from "../../lib/config";
 import { greeting, initials, timeAgo } from "../../lib/format";
 import { SECTION_COLORS, SECTION_LABELS } from "../../lib/questionTypes";
+import { t, tn } from "../../i18n";
 
 // порядок в легенде как на макете
 const PERFORMANCE_ORDER: SectionType[] = ["reading", "listening", "writing", "speaking"];
@@ -62,18 +63,18 @@ function Hero({ firstName }: { firstName: string }) {
           {greeting()}, {firstName} 👋
         </p>
         <h1 className="mt-2 text-[28px] font-extrabold leading-tight tracking-tight text-ink">
-          Here&apos;s what&apos;s happening with your students today.
+          {t("Here's what's happening with your students today.")}
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-ink-muted">
-          Track progress, build tests and help your students achieve their IELTS goals.
+          {t("Track progress, build tests and help your students achieve their IELTS goals.")}
         </p>
       </div>
       <p className="absolute right-[34%] top-6 hidden -rotate-12 font-hand text-xl leading-tight text-ink lg:block">
-        Small steps
+        {t("Small steps")}
         <br />
-        make big
+        {t("make big")}
         <br />
-        progress.
+        {t("progress.")}
       </p>
     </Card>
   );
@@ -81,7 +82,7 @@ function Hero({ firstName }: { firstName: string }) {
 
 function Change({ stat, unit, period }: { stat: Stat; unit: "%" | "band"; period: string }) {
   if (stat.change === null || stat.change === 0) {
-    return <span className="text-xs text-ink-muted">{stat.change === 0 ? "no change" : "no earlier data"}</span>;
+    return <span className="text-xs text-ink-muted">{stat.change === 0 ? t("no change") : t("no earlier data")}</span>;
   }
   const up = stat.change > 0;
   const Arrow = up ? ArrowUp : ArrowDown;
@@ -119,7 +120,7 @@ function StatCard({
       <div className="mt-4 text-sm font-medium text-ink">{label}</div>
       <div className="mt-1 flex items-center gap-3">
         <span className="text-[32px] font-extrabold leading-none text-ink">{stat.value ?? "—"}</span>
-        {note ? <span className="text-xs text-ink-muted">{note}</span> : <Change stat={stat} unit={unit} period="vs last 30 days" />}
+        {note ? <span className="text-xs text-ink-muted">{note}</span> : <Change stat={stat} unit={unit} period={t("vs last 30 days")} />}
       </div>
     </Card>
   );
@@ -129,22 +130,22 @@ function StudentsTable({ data }: { data: TeacherDashboard }) {
   return (
     <Card className="p-5 sm:p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-ink">Student Progress Overview</h2>
-        <span className="text-sm text-ink-muted">Latest results</span>
+        <h2 className="text-lg font-bold text-ink">{t("Student Progress Overview")}</h2>
+        <span className="text-sm text-ink-muted">{t("Latest results")}</span>
       </div>
       {data.students.length === 0 ? (
         <p className="mt-6 rounded-xl bg-slate-50 px-4 py-10 text-center text-sm text-ink-muted">
-          No results yet. Students appear here after they finish a section.
+          {t("No results yet. Students appear here after they finish a section.")}
         </p>
       ) : (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="bg-slate-50 text-left text-xs font-medium text-ink-muted">
-                <th className="rounded-l-lg px-4 py-3 font-medium">Student</th>
-                <th className="px-4 py-3 font-medium">Overall band</th>
-                <th className="px-4 py-3 font-medium">Progress</th>
-                <th className="rounded-r-lg px-4 py-3 font-medium">Last activity</th>
+                <th className="rounded-l-lg px-4 py-3 font-medium">{t("Student")}</th>
+                <th className="px-4 py-3 font-medium">{t("Overall band")}</th>
+                <th className="px-4 py-3 font-medium">{t("Progress")}</th>
+                <th className="rounded-r-lg px-4 py-3 font-medium">{t("Last activity")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -168,7 +169,7 @@ function StudentsTable({ data }: { data: TeacherDashboard }) {
                         <div
                           className="h-2 w-36 overflow-hidden rounded-full bg-slate-100"
                           role="img"
-                          aria-label={`Band ${s.overall_band} of 9`}
+                          aria-label={t("Band {band} of 9", { band: s.overall_band })}
                         >
                           <div className="h-full rounded-full bg-brand-500" style={{ width: `${(Number(s.overall_band) / 9) * 100}%` }} />
                         </div>
@@ -176,14 +177,18 @@ function StudentsTable({ data }: { data: TeacherDashboard }) {
                           className={`w-10 text-xs font-semibold ${
                             change === null ? "text-ink-muted" : change >= 0 ? "text-emerald-600" : "text-red-600"
                           }`}
-                          title="Change since the previous result"
+                          title={t("Change since the previous result")}
                         >
                           {change === null ? "—" : `${change > 0 ? "+" : change < 0 ? "−" : "±"}${Math.abs(change).toFixed(1)}`}
                         </span>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="text-ink">{s.last_activity}</div>
+                      <div className="text-ink">
+                        {s.last_in_mock
+                          ? `${t("Mock test")} · ${SECTION_LABELS[s.last_section]}`
+                          : t("{section} test", { section: SECTION_LABELS[s.last_section] })}
+                      </div>
                       <div className="text-xs text-ink-muted">{timeAgo(s.last_activity_at)}</div>
                     </td>
                   </tr>
@@ -201,35 +206,39 @@ function YourTests({ data }: { data: TeacherDashboard }) {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-ink">Your tests</h2>
+        <h2 className="text-lg font-bold text-ink">{t("Your tests")}</h2>
         <Link to="/teacher/tests" className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700">
-          View all <ArrowRight className="h-4 w-4" />
+          {t("View all")} <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
       {data.tests.length === 0 ? (
         <div className="mt-4 rounded-xl bg-slate-50 px-4 py-8 text-center text-sm text-ink-muted">
-          No tests yet.{" "}
+          {t("No tests yet.")}{" "}
           <Link to="/teacher/tests?new=1" className="font-semibold text-brand-600">
-            Create the first one
+            {t("Create the first one")}
           </Link>
         </div>
       ) : (
         <ul className="mt-3 divide-y divide-slate-100">
-          {data.tests.map((t) => (
-            <li key={t.id}>
-              <Link to={`/teacher/tests/${t.id}`} className="flex items-center gap-3 py-3 hover:opacity-80">
+          {data.tests.map((test) => (
+            <li key={test.id}>
+              <Link to={`/teacher/tests/${test.id}`} className="flex items-center gap-3 py-3 hover:opacity-80">
                 <span
-                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${t.is_published ? "bg-emerald-500" : t.problems ? "bg-amber-400" : "bg-brand-500"}`}
+                  className={`h-2.5 w-2.5 shrink-0 rounded-full ${test.is_published ? "bg-emerald-500" : test.problems ? "bg-amber-400" : "bg-brand-500"}`}
                   aria-hidden
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold text-ink">{t.title}</div>
+                  <div className="truncate text-sm font-semibold text-ink">{test.title}</div>
                   <div className="text-xs text-ink-muted">
-                    {t.questions}/80 questions ·{" "}
-                    {t.is_published ? "published" : t.problems ? `${t.problems} thing(s) to finish` : "ready to publish"}
+                    {t("{n}/80 questions", { n: test.questions })} ·{" "}
+                    {test.is_published
+                      ? t("published")
+                      : test.problems
+                        ? tn(test.problems, "{n} thing to finish", "{n} things to finish")
+                        : t("ready to publish")}
                   </div>
                 </div>
-                {t.is_published ? <Badge color="green">Live</Badge> : <Badge color="gray">Draft</Badge>}
+                {test.is_published ? <Badge color="green">{t("Live")}</Badge> : <Badge color="gray">{t("Draft")}</Badge>}
               </Link>
             </li>
           ))}
@@ -243,17 +252,20 @@ function PerformanceCard({ data }: { data: TeacherDashboard }) {
   const bySection = Object.fromEntries(data.performance.sections.map((s) => [s.section_type, s]));
   return (
     <Card className="p-5">
-      <h2 className="text-lg font-bold text-ink">Class Performance</h2>
+      <h2 className="text-lg font-bold text-ink">{t("Class Performance")}</h2>
       <div className="mt-4 flex items-end gap-3">
         <span className="text-5xl font-extrabold leading-none text-ink">{data.performance.overall_band ?? "—"}</span>
-        <span className="pb-1 text-sm text-ink-muted">average overall band</span>
+        <span className="pb-1 text-sm text-ink-muted">{t("average overall band")}</span>
       </div>
       {/* средние по секциям — отдельные величины по шкале 0–9, поэтому полосы, а не кольцо */}
       <ul className="mt-6 space-y-4">
         {PERFORMANCE_ORDER.map((type) => {
           const s = bySection[type];
           const band = s?.band === null || s?.band === undefined ? null : Number(s.band);
-          const tooltip = band === null ? `${SECTION_LABELS[type]}: no results yet` : `${SECTION_LABELS[type]}: ${s.band} average band · ${s.attempts} result${s.attempts === 1 ? "" : "s"}`;
+          const tooltip =
+            band === null
+              ? `${SECTION_LABELS[type]}: ${t("no results yet")}`
+              : `${SECTION_LABELS[type]}: ${t("{band} average band", { band: String(s.band) })} · ${tn(s.attempts, "{n} result", "{n} results")}`;
           return (
             <li key={type} className="group relative">
               <div className="flex items-center justify-between text-sm">
@@ -275,7 +287,7 @@ function PerformanceCard({ data }: { data: TeacherDashboard }) {
           );
         })}
       </ul>
-      <p className="mt-4 text-xs text-ink-muted">Scale 0–9 · all students, all time</p>
+      <p className="mt-4 text-xs text-ink-muted">{t("Scale 0–9 · all students, all time")}</p>
     </Card>
   );
 }
@@ -286,12 +298,20 @@ const ACTIVITY_ICONS: Record<Activity["kind"], { icon: LucideIcon; tint: string 
   mock_completed: { icon: Trophy, tint: "bg-amber-50 text-amber-600" },
 };
 
+function activityText(a: Activity): string {
+  if (a.kind === "joined") return t("joined BandUp");
+  if (a.kind === "section_completed" && a.section)
+    return t("got {band} in {section}", { band: String(a.band), section: SECTION_LABELS[a.section] });
+  if (a.kind === "mock_completed" && a.title) return t("completed {title} — overall {band}", { title: a.title, band: String(a.band) });
+  return a.text;
+}
+
 function Activities({ data }: { data: TeacherDashboard }) {
   return (
     <Card className="p-5">
-      <h2 className="text-lg font-bold text-ink">Recent Activities</h2>
+      <h2 className="text-lg font-bold text-ink">{t("Recent Activities")}</h2>
       {data.activities.length === 0 ? (
-        <p className="mt-4 text-sm text-ink-muted">Nothing yet.</p>
+        <p className="mt-4 text-sm text-ink-muted">{t("Nothing yet.")}</p>
       ) : (
         <ul className="mt-3 divide-y divide-slate-100">
           {data.activities.map((a, i) => {
@@ -303,7 +323,7 @@ function Activities({ data }: { data: TeacherDashboard }) {
                 </span>
                 <div className="min-w-0 text-sm">
                   <p className="text-ink">
-                    <span className="font-semibold">{a.student}</span> {a.text}
+                    <span className="font-semibold">{a.student}</span> {activityText(a)}
                   </p>
                   <p className="text-xs text-ink-muted">{timeAgo(a.at)}</p>
                 </div>
@@ -317,16 +337,26 @@ function Activities({ data }: { data: TeacherDashboard }) {
 }
 
 function QuickActions() {
-  const actions: { label: string; icon: LucideIcon; to?: string; href?: string }[] = [
-    { label: "Create test", icon: FilePlus2, to: "/teacher/tests?new=1" },
-    { label: "Add student", icon: UserPlus, href: DJANGO_ADMIN_URL + "ielts/user/add/" },
-    { label: "Band scales", icon: Scale, href: DJANGO_ADMIN_URL + "ielts/bandconversion/" },
-    { label: "Review writing & speaking", icon: PenLine, to: "/teacher/review" },
-  ];
+  const { user } = useAuth();
+  // пользователи и шкалы баллов — в Django-админке, она только для администраторов
+  const actions: { label: string; icon: LucideIcon; to?: string; href?: string }[] =
+    user?.role === "admin"
+      ? [
+          { label: t("Create test"), icon: FilePlus2, to: "/teacher/tests?new=1" },
+          { label: t("Add student"), icon: UserPlus, href: DJANGO_ADMIN_URL + "ielts/user/add/" },
+          { label: t("Band scales"), icon: Scale, href: DJANGO_ADMIN_URL + "ielts/bandconversion/" },
+          { label: t("Review writing & speaking"), icon: PenLine, to: "/teacher/review" },
+        ]
+      : [
+          { label: t("Create test"), icon: FilePlus2, to: "/teacher/tests?new=1" },
+          { label: t("Review writing & speaking"), icon: PenLine, to: "/teacher/review" },
+          { label: t("Students"), icon: UsersRound, to: "/teacher/students" },
+          { label: t("All tests"), icon: ClipboardList, to: "/teacher/tests" },
+        ];
   const cls = "flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-4 text-center text-sm font-medium text-ink transition";
   return (
     <Card className="p-5">
-      <h2 className="text-lg font-bold text-ink">Quick Actions</h2>
+      <h2 className="text-lg font-bold text-ink">{t("Quick Actions")}</h2>
       <div className="mt-4 grid grid-cols-2 gap-3">
         {actions.map(({ label, icon: Icon, to, href }) => {
           const inner = (
@@ -338,12 +368,7 @@ function QuickActions() {
             </>
           );
           if (to) return <Link key={label} to={to} className={`${cls} hover:border-brand-200 hover:bg-brand-50/40`}>{inner}</Link>;
-          if (href) return <a key={label} href={href} target="_blank" rel="noreferrer" className={`${cls} hover:border-brand-200 hover:bg-brand-50/40`}>{inner}</a>;
-          return (
-            <div key={label} className={`${cls} cursor-not-allowed opacity-50`} title="Coming soon">
-              {inner}
-            </div>
-          );
+          return <a key={label} href={href} target="_blank" rel="noreferrer" className={`${cls} hover:border-brand-200 hover:bg-brand-50/40`}>{inner}</a>;
         })}
       </div>
     </Card>
@@ -357,14 +382,14 @@ function HelpBanner() {
         <GraduationCap className="h-6 w-6 text-white" />
       </span>
       <div className="min-w-48 flex-1">
-        <div className="font-semibold text-ink">Need help with a specific student?</div>
-        <div className="text-sm text-ink-muted">See their bands, test history and every answer they gave.</div>
+        <div className="font-semibold text-ink">{t("Need help with a specific student?")}</div>
+        <div className="text-sm text-ink-muted">{t("See their bands, test history and every answer they gave.")}</div>
       </div>
       <Link
         to="/teacher/students"
         className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-600"
       >
-        Go to students <ArrowRight className="h-4 w-4" />
+        {t("Go to students")} <ArrowRight className="h-4 w-4" />
       </Link>
     </Card>
   );
@@ -383,7 +408,7 @@ export function DashboardPage() {
       .catch((err) => setError(apiErrorMessage(err)));
   }, []);
 
-  const firstName = user?.profile?.first_name || "there";
+  const firstName = user?.profile?.first_name || t("there");
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -394,10 +419,10 @@ export function DashboardPage() {
         {data && (
           <>
             <div className="grid grid-cols-2 gap-3 sm:gap-4 2xl:grid-cols-4">
-              <StatCard icon={UsersRound} tint="bg-brand-50 text-brand-600" label="Total Students" stat={data.stats.total_students} unit="%" />
-              <StatCard icon={ClipboardList} tint="bg-sky-50 text-sky-600" label="Published Tests" stat={data.stats.published_tests} unit="%" note={`${data.stats.draft_tests} draft${data.stats.draft_tests === 1 ? "" : "s"}`} />
-              <StatCard icon={FileCheck2} tint="bg-emerald-50 text-emerald-600" label="Tests Completed" stat={data.stats.tests_completed} unit="%" />
-              <StatCard icon={Target} tint="bg-violet-50 text-violet-600" label="Average Band Score" stat={data.stats.average_band} unit="band" />
+              <StatCard icon={UsersRound} tint="bg-brand-50 text-brand-600" label={t("Total Students")} stat={data.stats.total_students} unit="%" />
+              <StatCard icon={ClipboardList} tint="bg-sky-50 text-sky-600" label={t("Published Tests")} stat={data.stats.published_tests} unit="%" note={tn(data.stats.draft_tests, "{n} draft", "{n} drafts")} />
+              <StatCard icon={FileCheck2} tint="bg-emerald-50 text-emerald-600" label={t("Tests Completed")} stat={data.stats.tests_completed} unit="%" />
+              <StatCard icon={Target} tint="bg-violet-50 text-violet-600" label={t("Average Band Score")} stat={data.stats.average_band} unit="band" />
             </div>
             <StudentsTable data={data} />
             <HelpBanner />

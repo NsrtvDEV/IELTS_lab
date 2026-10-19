@@ -2,8 +2,9 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { ProgressPoint } from "../api/student";
 import type { SectionType } from "../api/teacher";
 import { SECTION_COLORS, SECTION_LABELS } from "../lib/questionTypes";
+import { locale, t } from "../i18n";
 
-const dateFmt = new Intl.DateTimeFormat("en", { day: "numeric", month: "short" });
+const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
 
 function useWidth<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -45,7 +46,7 @@ export function BandChart({
   return (
     <div ref={ref} className="relative">
       {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label="Band score over time by section">
+        <svg width={width} height={height} role="img" aria-label={t("Band score over time by section")}>
           {yTicks.map((t) => (
             <g key={t}>
               <line x1={pad.left} x2={width - pad.right} y1={y(t)} y2={y(t)} stroke="#e8edf5" strokeWidth={1} />

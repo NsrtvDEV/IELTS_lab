@@ -2,11 +2,12 @@ import type { ReactNode } from "react";
 import { BookOpen, Target, UserRound, type LucideIcon } from "lucide-react";
 import london from "../assets/london.jpg";
 import { Logo } from "./Logo";
+import { t } from "../i18n";
 
 const FEATURES: { icon: LucideIcon; title: string; text: string }[] = [
-  { icon: BookOpen, title: "Real IELTS Practice", text: "Updated test formats and authentic questions" },
-  { icon: Target, title: "Track Your Progress", text: "See your improvement and stay motivated" },
-  { icon: UserRound, title: "Personalized Learning", text: "Your goals, your pace, your success" },
+  { icon: BookOpen, title: t("Real IELTS Practice"), text: t("Updated test formats and authentic questions") },
+  { icon: Target, title: t("Track Your Progress"), text: t("See your improvement and stay motivated") },
+  { icon: UserRound, title: t("Personalized Learning"), text: t("Your goals, your pace, your success") },
 ];
 
 const FADE =
@@ -30,13 +31,12 @@ function HeroPanel() {
         <Logo />
 
         <h1 className="mt-16 text-5xl font-extrabold leading-[1.08] tracking-tight text-ink xl:text-[56px]">
-          Your IELTS journey
+          {t("Your IELTS journey")}
           <br />
-          <span className="text-brand-500">starts here.</span>
+          <span className="text-brand-500">{t("starts here.")}</span>
         </h1>
         <p className="mt-6 max-w-md text-lg leading-relaxed text-ink-muted">
-          Achieve your target band with personalized practice, real test formats and expert
-          guidance.
+          {t("Achieve your target band with personalized practice, real test formats and expert guidance.")}
         </p>
 
         <ul className="mt-10 space-y-6">
@@ -55,9 +55,9 @@ function HeroPanel() {
 
         <div className="mt-16">
           <p className="-rotate-12 font-hand text-[32px] leading-tight text-brand-600">
-            Better English
+            {t("Better English")}
             <br />
-            <span className="ml-2">Bigger Opportunities</span>
+            <span className="ml-2">{t("Bigger Opportunities")}</span>
           </p>
           <svg
             viewBox="0 0 120 60"

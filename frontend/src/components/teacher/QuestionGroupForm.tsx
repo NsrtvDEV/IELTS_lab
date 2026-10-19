@@ -18,6 +18,7 @@ import {
 } from "../../lib/questionTypes";
 import { Button, ErrorBox, Label, inputBase, inputClass, textareaClass } from "../ui";
 import { ImageField } from "./ImageField";
+import { t } from "../../i18n";
 
 interface DraftQuestion {
   key: number; // стабильный ключ для React, номер вопроса может меняться
@@ -87,7 +88,7 @@ function AnswerTags({
       {values.map((v) => (
         <span key={v} className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-sm font-medium text-emerald-800">
           {v}
-          <button type="button" onClick={() => onChange(values.filter((x) => x !== v))} aria-label={`Remove ${v}`}>
+          <button type="button" onClick={() => onChange(values.filter((x) => x !== v))} aria-label={t("Remove {v}", { v })}>
             <X className="h-3.5 w-3.5" />
           </button>
         </span>
@@ -98,7 +99,7 @@ function AnswerTags({
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={onKeyDown}
         onBlur={commit}
-        placeholder={values.length ? "Another spelling…" : "Type the answer and press Enter"}
+        placeholder={values.length ? t("Another spelling…") : t("Type the answer and press Enter")}
         className="min-w-40 flex-1 border-0 bg-transparent px-1 text-sm outline-none placeholder:text-slate-400"
       />
     </div>
@@ -122,21 +123,21 @@ function OptionsEditor({
             value={o.label}
             onChange={(e) => onChange(options.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))}
             className={`${inputBase} w-16 shrink-0 text-center font-semibold`}
-            aria-label="Option label"
+            aria-label={t("Option label")}
             maxLength={10}
           />
           <input
             value={o.text}
             onChange={(e) => onChange(options.map((x, j) => (j === i ? { ...x, text: e.target.value } : x)))}
             className={inputClass}
-            placeholder="Option text"
-            aria-label={`Option ${o.label} text`}
+            placeholder={t("Option text")}
+            aria-label={t("Option {label} text", { label: o.label })}
           />
           <button
             type="button"
             onClick={() => onChange(options.filter((_, j) => j !== i))}
             className="rounded-lg px-2 text-ink-muted hover:bg-slate-100 hover:text-red-600"
-            aria-label={`Remove option ${o.label}`}
+            aria-label={t("Remove option {label}", { label: o.label })}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -172,7 +173,7 @@ function CorrectPicker({
     else if (selected.length < max) onChange([...selected, label]);
   }
   if (!labels.length) {
-    return <p className="text-sm text-ink-muted">Add options first.</p>;
+    return <p className="text-sm text-ink-muted">{t("Add options first.")}</p>;
   }
   return (
     <div className="flex flex-wrap gap-2">
@@ -236,11 +237,11 @@ function LayoutField({
 
   return (
     <div>
-      <Label htmlFor="group-layout">Layout with gaps (optional)</Label>
+      <Label htmlFor="group-layout">{t("Layout with gaps (optional)")}</Label>
       <p className="mb-2 text-sm text-ink-muted">
-        Write the form, notes, table or summary and put <code className="rounded bg-slate-100 px-1">{"{5}"}</code> where the
-        gap for question 5 goes. Use <code className="rounded bg-slate-100 px-1">|</code> between table columns. Without a
-        layout, questions are shown as a list.
+        {t("Write the form, notes, table or summary and put")} <code className="rounded bg-slate-100 px-1">{"{5}"}</code>{" "}
+        {t("where the gap for question 5 goes. Use")} <code className="rounded bg-slate-100 px-1">|</code>{" "}
+        {t("between table columns. Without a layout, questions are shown as a list.")}
       </p>
       <textarea
         id="group-layout"
@@ -253,7 +254,7 @@ function LayoutField({
         placeholder={"ACCOMMODATION BOOKING FORM\nName: Mr {1}\nArrival date: {2} March\n\nRoom | Price | Extras\nDouble | £{3} | {4}"}
       />
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-ink-muted">Insert gap:</span>
+        <span className="text-xs text-ink-muted">{t("Insert gap:")}</span>
         {numbers.map((n) => (
           <button
             key={n}
@@ -261,7 +262,7 @@ function LayoutField({
             onClick={() => insert(n)}
             disabled={used.has(n)}
             className="h-7 min-w-7 rounded-md bg-slate-100 px-2 text-xs font-bold text-ink hover:bg-brand-50 hover:text-brand-700 disabled:cursor-default disabled:bg-emerald-50 disabled:text-emerald-700"
-            title={used.has(n) ? "Already in the layout" : `Insert {${n}}`}
+            title={used.has(n) ? t("Already in the layout") : `${t("Insert")} {${n}}`}
           >
             {n}
           </button>
@@ -393,11 +394,11 @@ export function QuestionGroupForm({
       })),
     };
 
-    if (!payload.instruction) return setError("Write the instruction for students.");
+    if (!payload.instruction) return setError(t("Write the instruction for students."));
     const missing = payload.questions.find((q) =>
       usesOptions ? q.correct_options.length === 0 : q.correct_texts.length === 0
     );
-    if (missing) return setError(`Question ${missing.number}: choose the correct answer.`);
+    if (missing) return setError(t("Question {n}: choose the correct answer.", { n: missing.number }));
 
     setSaving(true);
     try {
@@ -410,30 +411,30 @@ export function QuestionGroupForm({
     }
   }
 
-  const passageName = (i: number) => (section.type === "listening" ? `Part ${i + 1}` : `Passage ${i + 1}`);
+  const passageName = (i: number) => (section.type === "listening" ? t("Part {n}", { n: i + 1 }) : t("Passage {n}", { n: i + 1 }));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-[2fr_2fr_1fr]">
         <div>
-          <Label htmlFor="group-type">Question type</Label>
+          <Label htmlFor="group-type">{t("Question type")}</Label>
           <select id="group-type" value={type} onChange={(e) => changeType(e.target.value as QuestionType)} className={inputClass}>
-            {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map((t) => (
-              <option key={t} value={t}>
-                {QUESTION_TYPE_LABELS[t]}
+            {(Object.keys(QUESTION_TYPE_LABELS) as QuestionType[]).map((qt) => (
+              <option key={qt} value={qt}>
+                {QUESTION_TYPE_LABELS[qt]}
               </option>
             ))}
           </select>
         </div>
         <div>
-          <Label htmlFor="group-passage">{section.type === "listening" ? "Recording" : "Passage"}</Label>
+          <Label htmlFor="group-passage">{section.type === "listening" ? t("Recording") : t("Passage")}</Label>
           <select
             id="group-passage"
             value={passageId ?? ""}
             onChange={(e) => setPassageId(e.target.value ? Number(e.target.value) : null)}
             className={inputClass}
           >
-            <option value="">— not linked —</option>
+            <option value="">— {t("not linked")} —</option>
             {section.passages.map((p, i) => (
               <option key={p.id} value={p.id}>
                 {passageName(i)}
@@ -443,13 +444,13 @@ export function QuestionGroupForm({
           </select>
         </div>
         <div>
-          <Label htmlFor="group-position">Order</Label>
+          <Label htmlFor="group-position">{t("Order")}</Label>
           <input id="group-position" type="number" min={0} value={position} onChange={(e) => setPosition(e.target.value)} className={inputClass} />
         </div>
       </div>
 
       <div>
-        <Label htmlFor="group-instruction">Instruction for students</Label>
+        <Label htmlFor="group-instruction">{t("Instruction for students")}</Label>
         <textarea
           id="group-instruction"
           rows={2}
@@ -467,7 +468,7 @@ export function QuestionGroupForm({
       {usesText && (
         <div className="flex flex-wrap items-end gap-6">
           <div>
-            <Label htmlFor="group-word-limit">Word limit</Label>
+            <Label htmlFor="group-word-limit">{t("Word limit")}</Label>
             <input
               id="group-word-limit"
               type="number"
@@ -476,19 +477,20 @@ export function QuestionGroupForm({
               value={wordLimit}
               onChange={(e) => setWordLimit(e.target.value)}
               className={`${inputBase} w-28`}
-              placeholder="no limit"
+              placeholder={t("no limit")}
             />
           </div>
           <label className="flex h-10 items-center gap-2 text-sm text-ink">
             <input type="checkbox" checked={allowNumber} onChange={(e) => setAllowNumber(e.target.checked)} className="h-4 w-4 rounded accent-brand-500" />
-            “AND/OR A NUMBER” — a number doesn&apos;t count as a word
+            {t("“AND/OR A NUMBER” — a number doesn't count as a word")}
           </label>
         </div>
       )}
 
       {mode === "fixed" && (
         <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-ink-muted">
-          Students choose from <strong className="text-ink">{FIXED_OPTIONS[type]?.join(" / ")}</strong> — the options are added automatically.
+          {t("Students choose from")} <strong className="text-ink">{FIXED_OPTIONS[type]?.join(" / ")}</strong> —{" "}
+          {t("the options are added automatically.")}
         </p>
       )}
 
@@ -506,14 +508,14 @@ export function QuestionGroupForm({
         <div>
           <Label>
             {mode === "group-options"
-              ? "Options shared by all questions"
+              ? t("Options shared by all questions")
               : type === "diagram_label" || type === "map_label"
-                ? "Letters on the diagram / map (optional)"
-                : "Word list to choose from (optional)"}
+                ? t("Letters on the diagram / map (optional)")
+                : t("Word list to choose from (optional)")}
           </Label>
           {mode === "either" && (
             <p className="mb-2 text-sm text-ink-muted">
-              Leave empty if students write the answer themselves. With a list, they choose a letter.
+              {t("Leave empty if students write the answer themselves. With a list, they choose a letter.")}
             </p>
           )}
           <OptionsEditor options={groupOptions} onChange={setGroupOptions} roman={type === "matching_headings"} />
@@ -522,7 +524,7 @@ export function QuestionGroupForm({
 
       <div>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-bold text-ink">Questions ({questions.length})</h3>
+          <h3 className="font-bold text-ink">{t("Questions")} ({questions.length})</h3>
         </div>
         <div className="space-y-3">
           {questions.map((q) => (
@@ -535,25 +537,25 @@ export function QuestionGroupForm({
                   value={q.number}
                   onChange={(e) => updateQuestion(q.key, { number: e.target.value })}
                   className={`${inputBase} w-16 shrink-0 text-center font-bold`}
-                  aria-label="Question number"
+                  aria-label={t("Question number")}
                 />
                 <input
                   value={q.text}
                   onChange={(e) => updateQuestion(q.key, { text: e.target.value })}
                   className={inputClass}
-                  placeholder={usesText ? "Sentence with a gap: The hive holds about ____ bees." : "Question or statement"}
-                  aria-label={`Question ${q.number} text`}
+                  placeholder={usesText ? t("Sentence with a gap: The hive holds about ____ bees.") : t("Question or statement")}
+                  aria-label={t("Question {n} text", { n: q.number })}
                 />
                 {type === "mcq_multi" && (
                   <select
                     value={q.answersRequired}
                     onChange={(e) => updateQuestion(q.key, { answersRequired: Number(e.target.value), correctOptions: [] })}
                     className={`${inputBase} w-36 shrink-0`}
-                    aria-label="How many answers"
+                    aria-label={t("How many answers")}
                   >
                     {[2, 3, 4, 5].map((n) => (
                       <option key={n} value={n}>
-                        Choose {n}
+                        {t("Choose {n}", { n })}
                       </option>
                     ))}
                   </select>
@@ -563,7 +565,7 @@ export function QuestionGroupForm({
                     type="button"
                     onClick={() => setQuestions((qs) => qs.filter((x) => x.key !== q.key))}
                     className="rounded-lg px-2 text-ink-muted hover:bg-slate-100 hover:text-red-600"
-                    aria-label={`Remove question ${q.number}`}
+                    aria-label={t("Remove question {n}", { n: q.number })}
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -577,7 +579,7 @@ export function QuestionGroupForm({
               )}
 
               <div className="mt-3 flex flex-wrap items-center gap-3 pl-[4.75rem]">
-                <span className="text-sm font-semibold text-ink-muted">Correct:</span>
+                <span className="text-sm font-semibold text-ink-muted">{t("Correct:")}</span>
                 <div className="min-w-0 flex-1">
                   {usesOptions ? (
                     <CorrectPicker
@@ -595,17 +597,17 @@ export function QuestionGroupForm({
           ))}
         </div>
         <Button type="button" variant="secondary" className="mt-3" onClick={addQuestion}>
-          <Plus className="h-4 w-4" /> Add question
+          <Plus className="h-4 w-4" /> {t("Add question")}
         </Button>
       </div>
 
       <ErrorBox message={error} />
       <div className="flex justify-end gap-3 border-t border-slate-100 pt-5">
         <Button type="button" variant="secondary" onClick={onCancel}>
-          Cancel
+          {t("Cancel")}
         </Button>
         <Button type="submit" loading={saving}>
-          {group ? "Save changes" : "Add questions"}
+          {group ? t("Save changes") : t("Add questions")}
         </Button>
       </div>
     </form>

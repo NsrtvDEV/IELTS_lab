@@ -6,7 +6,6 @@ import {
   AuthCard,
   AuthSwitchLink,
   FormAlert,
-  GoogleButton,
   PasswordField,
   SecurityNote,
   SubmitButton,
@@ -14,6 +13,7 @@ import {
 } from "../components/AuthForm";
 import { AuthLayout } from "../components/AuthLayout";
 import { useAuth } from "../context/AuthContext";
+import { t } from "../i18n";
 
 const MIN_PASSWORD = 8; // как на бэкенде (RegisterRequest)
 
@@ -28,13 +28,13 @@ type Errors = Partial<Record<keyof Form, string>>;
 
 function validate(form: Form): Errors {
   const errors: Errors = {};
-  if (!form.firstName.trim()) errors.firstName = "Enter your first name";
-  if (!form.lastName.trim()) errors.lastName = "Enter your last name";
-  if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) errors.email = "Enter a valid email address";
+  if (!form.firstName.trim()) errors.firstName = t("Enter your first name");
+  if (!form.lastName.trim()) errors.lastName = t("Enter your last name");
+  if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) errors.email = t("Enter a valid email address");
   if (form.password.length < MIN_PASSWORD) {
-    errors.password = `Use at least ${MIN_PASSWORD} characters`;
+    errors.password = t("Use at least {n} characters", { n: MIN_PASSWORD });
   }
-  if (form.confirm !== form.password) errors.confirm = "Passwords do not match";
+  if (form.confirm !== form.password) errors.confirm = t("Passwords do not match");
   return errors;
 }
 
@@ -51,7 +51,6 @@ export function RegisterPage() {
   });
   const [errors, setErrors] = useState<Errors>({});
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   if (user) return <Navigate to="/" replace />;
@@ -71,7 +70,6 @@ export function RegisterPage() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    setNotice(null);
 
     const found = validate(form);
     setErrors(found);
@@ -95,26 +93,26 @@ export function RegisterPage() {
 
   return (
     <AuthLayout>
-      <AuthSwitchLink question="Already have an account?" to="/login" label="Log in" />
+      <AuthSwitchLink question={t("Already have an account?")} to="/login" label={t("Log in")} />
 
-      <AuthCard title="Create your account" subtitle="Start preparing for your IELTS today">
+      <AuthCard title={t("Create your account")} subtitle={t("Start preparing for your IELTS today")}>
         <form onSubmit={handleSubmit} className="mt-10 space-y-6" noValidate>
           <div className="grid gap-6 sm:grid-cols-2">
             <TextField
               id="first-name"
-              label="First name"
+              label={t("First name")}
               icon={UserRound}
               autoComplete="given-name"
-              placeholder="John"
+              placeholder={t("John")}
               maxLength={100}
               {...field("firstName")}
             />
             <TextField
               id="last-name"
-              label="Last name"
+              label={t("Last name")}
               icon={UserRound}
               autoComplete="family-name"
-              placeholder="Smith"
+              placeholder={t("Smith")}
               maxLength={100}
               {...field("lastName")}
             />
@@ -122,7 +120,7 @@ export function RegisterPage() {
 
           <TextField
             id="email"
-            label="Email address"
+            label={t("Email address")}
             icon={Mail}
             type="email"
             autoComplete="email"
@@ -132,31 +130,25 @@ export function RegisterPage() {
 
           <PasswordField
             id="password"
-            label="Password"
+            label={t("Password")}
             autoComplete="new-password"
-            placeholder="Create a password"
-            hint={`At least ${MIN_PASSWORD} characters`}
+            placeholder={t("Create a password")}
+            hint={t("At least {n} characters", { n: MIN_PASSWORD })}
             {...field("password")}
           />
 
           <PasswordField
             id="confirm-password"
-            label="Confirm password"
+            label={t("Confirm password")}
             autoComplete="new-password"
-            placeholder="Repeat your password"
+            placeholder={t("Repeat your password")}
             {...field("confirm")}
           />
 
-          <FormAlert error={error} notice={notice} />
-          <SubmitButton loading={submitting}>Create account</SubmitButton>
+          <FormAlert error={error} />
+          <SubmitButton loading={submitting}>{t("Create account")}</SubmitButton>
         </form>
 
-        <GoogleButton
-          onClick={() => {
-            setError(null);
-            setNotice("Sign up with Google is coming soon.");
-          }}
-        />
         <SecurityNote />
       </AuthCard>
     </AuthLayout>

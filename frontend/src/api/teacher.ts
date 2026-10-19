@@ -253,7 +253,9 @@ export interface StudentProgress {
   email: string;
   overall_band: string;
   change: string | null;
-  last_activity: string;
+  last_activity: string; // на английском
+  last_section: SectionType;
+  last_in_mock: boolean;
   last_activity_at: string;
 }
 
@@ -266,7 +268,10 @@ export interface SectionPerformance {
 export interface Activity {
   kind: "joined" | "section_completed" | "mock_completed";
   student: string;
-  text: string;
+  text: string; // на английском
+  section: SectionType | null;
+  band: string | null;
+  title: string | null;
   at: string;
 }
 
@@ -455,5 +460,31 @@ export async function getReviewSpeaking(sectionAttemptId: number) {
 
 export async function assessSpeaking(sectionAttemptId: number, scores: SpeakingScores & { feedback: string | null }) {
   const { data } = await apiClient.post<SpeakingReviewDetail>(`/teacher/review/speaking/${sectionAttemptId}`, scores);
+  return data;
+}
+
+// ───────────────────────── Профиль учителя ─────────────────────────
+
+export interface TeacherActivity {
+  kind: "test_created" | "work_assessed";
+  at: string;
+  title: string | null;
+  test_id: number | null;
+  student: string | null;
+  section: SectionType | null;
+  band: string | null;
+  section_attempt_id: number | null;
+}
+
+export interface TeacherProfileStats {
+  students: number;
+  tests_created: number;
+  works_assessed: number;
+  waiting_review: number;
+  activity: TeacherActivity[]; // новые сверху
+}
+
+export async function getTeacherProfile() {
+  const { data } = await apiClient.get<TeacherProfileStats>("/teacher/profile");
   return data;
 }

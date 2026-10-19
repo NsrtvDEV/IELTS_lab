@@ -29,6 +29,7 @@ import { Button, Card, ErrorBox, Spinner, inputBase, inputClass } from "../../co
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { isLocked } from "../../lib/tests";
 import { TestStatus } from "./TestsPage";
+import { t } from "../../i18n";
 
 const SECTION_ICONS: Record<SectionType, LucideIcon> = {
   listening: Headphones,
@@ -43,8 +44,8 @@ export function LockedNotice({ test }: { test: TeacherTest }) {
     <div className="flex items-start gap-3 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
       <Lock className="mt-0.5 h-4 w-4 shrink-0" />
       {test.has_attempts
-        ? "Students have already taken this test, so its content can't be changed."
-        : "The test is published. Unpublish it to edit the content."}
+        ? t("Students have already taken this test, so its content can't be changed.")
+        : t("The test is published. Unpublish it to edit the content.")}
     </div>
   );
 }
@@ -67,7 +68,7 @@ function SectionRow({
     const value = Number(duration);
     if (value === section.duration_min) return;
     if (!Number.isInteger(value) || value < 1 || value > 180) {
-      setError("1–180 min");
+      setError(t("1–180 min"));
       setDuration(String(section.duration_min));
       return;
     }
@@ -90,10 +91,10 @@ function SectionRow({
         <div className="font-semibold text-ink">{SECTION_LABELS[section.type]}</div>
         <div className="text-sm text-ink-muted">
           {hasQuestions
-            ? `${section.question_count} of 40 questions`
+            ? t("{n} of 40 questions", { n: section.question_count })
             : section.type === "writing"
-              ? "Task 1 and Task 2"
-              : "Part 1–3 questions with sample answers"}
+              ? t("Task 1 and Task 2")
+              : t("Part 1–3 questions with sample answers")}
         </div>
       </div>
       <label className="flex items-center gap-2 text-sm text-ink-muted">
@@ -107,14 +108,14 @@ function SectionRow({
           onBlur={saveDuration}
           onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
           className={`${inputBase} w-20 text-center`}
-          aria-label={`${SECTION_LABELS[section.type]} duration, minutes`}
+          aria-label={t("{section} duration, minutes", { section: SECTION_LABELS[section.type] })}
         />
-        min
+        {t("min")}
       </label>
       {error && <span className="text-sm text-red-600">{error}</span>}
       <Link to={`/teacher/sections/${section.id}`}>
         <Button variant="secondary">
-          {locked ? "View" : hasQuestions || section.type === "speaking" ? "Edit questions" : "Edit tasks"}
+          {locked ? t("View") : hasQuestions || section.type === "speaking" ? t("Edit questions") : t("Edit tasks")}
         </Button>
       </Link>
     </div>
@@ -175,7 +176,7 @@ export function TestDetailPage() {
   }
 
   async function remove() {
-    if (!test || !window.confirm(`Delete "${test.title}"? This can't be undone.`)) return;
+    if (!test || !window.confirm(t("Delete “{title}”? This can't be undone.", { title: test.title }))) return;
     setBusy("delete");
     try {
       await deleteTest(test.id);
@@ -189,7 +190,7 @@ export function TestDetailPage() {
   return (
     <>
       <Link to="/teacher/tests" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> All tests
+        <ArrowLeft className="h-4 w-4" /> {t("All tests")}
       </Link>
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
@@ -206,7 +207,7 @@ export function TestDetailPage() {
               }}
               maxLength={255}
               className={`${inputClass} h-12 max-w-xl text-2xl font-bold`}
-              aria-label="Test title"
+              aria-label={t("Test title")}
             />
           ) : (
             <h1 className="flex items-center gap-3 text-3xl font-extrabold tracking-tight text-ink">
@@ -217,7 +218,7 @@ export function TestDetailPage() {
                   setEditingTitle(true);
                 }}
                 className="rounded-md p-1.5 text-ink-muted hover:bg-slate-100 hover:text-ink"
-                aria-label="Rename test"
+                aria-label={t("Rename test")}
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -229,8 +230,8 @@ export function TestDetailPage() {
         </div>
         <div className="flex gap-3">
           <Button variant="danger" onClick={remove} loading={busy === "delete"} disabled={test.has_attempts}
-            title={test.has_attempts ? "Students already took this test" : undefined}>
-            <Trash2 className="h-4 w-4" /> Delete
+            title={test.has_attempts ? t("Students already took this test") : undefined}>
+            <Trash2 className="h-4 w-4" /> {t("Delete")}
           </Button>
           <Button
             variant={test.is_published ? "secondary" : "primary"}
@@ -238,7 +239,7 @@ export function TestDetailPage() {
             loading={busy === "publish"}
             disabled={!test.is_published && test.problems.length > 0}
           >
-            {test.is_published ? "Unpublish" : "Publish"}
+            {test.is_published ? t("Unpublish") : t("Publish")}
           </Button>
         </div>
       </div>
@@ -251,16 +252,16 @@ export function TestDetailPage() {
           <Card className="p-5">
             {test.problems.length === 0 ? (
               <p className="flex items-center gap-2 font-semibold text-emerald-700">
-                <CheckCircle2 className="h-5 w-5" /> The test is complete and ready to publish.
+                <CheckCircle2 className="h-5 w-5" /> {t("The test is complete and ready to publish.")}
               </p>
             ) : (
               <>
                 <p className="flex items-center gap-2 font-semibold text-amber-700">
-                  <AlertTriangle className="h-5 w-5" /> Before publishing:
+                  <AlertTriangle className="h-5 w-5" /> {t("Before publishing:")}
                 </p>
                 <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-ink-muted">
                   {test.problems.map((p) => (
-                    <li key={p}>{p}</li>
+                    <li key={p}>{t(p)}</li>
                   ))}
                 </ul>
               </>

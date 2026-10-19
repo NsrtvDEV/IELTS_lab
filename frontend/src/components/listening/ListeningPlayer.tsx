@@ -3,6 +3,7 @@ import { Headphones, Play, RotateCcw, Volume2 } from "lucide-react";
 import { resolveMediaUrl } from "../../api/client";
 import type { Passage, PlaybackState } from "../../api/student";
 import { Button } from "../ui";
+import { t, tn } from "../../i18n";
 
 type Status = "idle" | "loading" | "playing" | "blocked" | "finished" | "error";
 
@@ -151,7 +152,7 @@ export function ExamPlayer({
   const notStarted = status === "idle" && saved.part === 0 && saved.position === 0;
 
   return (
-    <div className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6" role="region" aria-label="Recording">
+    <div className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6" role="region" aria-label={t("Recording")}>
       <audio
         ref={audioRef}
         preload="auto"
@@ -186,22 +187,22 @@ export function ExamPlayer({
             <div className="min-w-48 flex-1 text-sm">
               <div className="font-semibold text-ink">
                 {notStarted
-                  ? `The recording plays once${knownTotal ? ` · ${playable.length} parts, ${clock(knownTotal)}` : ""}`
-                  : `Part ${part + 1} was interrupted`}
+                  ? t("The recording plays once") + (knownTotal ? ` · ${tn(playable.length, "{n} part", "{n} parts")}, ${clock(knownTotal)}` : "")
+                  : t("Part {n} was interrupted", { n: part + 1 })}
               </div>
               <div className="text-ink-muted">
                 {notStarted
-                  ? "All parts play one after another — no pause or replay. The timer is already running: test your sound and start."
-                  : "Continue from where it stopped."}
+                  ? t("All parts play one after another — no pause or replay. The timer is already running: test your sound and start.")
+                  : t("Continue from where it stopped.")}
               </div>
             </div>
             {notStarted && (
               <Button variant="secondary" onClick={() => playTestTone(volume)}>
-                <Volume2 className="h-4 w-4" /> Test sound
+                <Volume2 className="h-4 w-4" /> {t("Test sound")}
               </Button>
             )}
             <Button onClick={start}>
-              <Play className="h-4 w-4" /> {notStarted ? "Start listening" : "Resume"}
+              <Play className="h-4 w-4" /> {notStarted ? t("Start listening") : t("Resume")}
             </Button>
           </>
         )}
@@ -210,16 +211,17 @@ export function ExamPlayer({
           <div className="min-w-48 flex-1">
             <div className="flex items-center justify-between text-sm">
               <span className="font-semibold text-ink">
-                Part {part + 1} <span className="font-normal text-ink-muted">· recording {position} of {playable.length}</span>
+                {t("Part {n}", { n: part + 1 })}{" "}
+                <span className="font-normal text-ink-muted">· {t("recording {n} of {total}", { n: position, total: playable.length })}</span>
               </span>
               <span className="tabular-nums text-ink-muted">
-                {status === "loading" ? "Loading…" : `${clock(time)} / ${clock(duration)}`}
+                {status === "loading" ? t("Loading…") : `${clock(time)} / ${clock(duration)}`}
               </span>
             </div>
             <div
               className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100"
               role="progressbar"
-              aria-label={`Part ${part + 1} progress`}
+              aria-label={t("Part {n} progress", { n: part + 1 })}
               aria-valuemin={0}
               aria-valuemax={100}
               aria-valuenow={duration ? Math.round((time / duration) * 100) : 0}
@@ -232,30 +234,30 @@ export function ExamPlayer({
         {status === "blocked" && (
           <>
             <div className="min-w-48 flex-1 text-sm">
-              <div className="font-semibold text-ink">Tap to continue</div>
-              <div className="text-ink-muted">Your browser paused the sound. It continues from the same place.</div>
+              <div className="font-semibold text-ink">{t("Tap to continue")}</div>
+              <div className="text-ink-muted">{t("Your browser paused the sound. It continues from the same place.")}</div>
             </div>
             <Button onClick={() => play(part, time || resumeAt.current)}>
-              <Play className="h-4 w-4" /> Continue Part {part + 1}
+              <Play className="h-4 w-4" /> {t("Continue Part {n}", { n: part + 1 })}
             </Button>
           </>
         )}
 
         {status === "finished" && (
           <div className="flex-1 text-sm">
-            <div className="font-semibold text-ink">The recording has finished</div>
-            <div className="text-ink-muted">Check your answers and submit when you&apos;re ready.</div>
+            <div className="font-semibold text-ink">{t("The recording has finished")}</div>
+            <div className="text-ink-muted">{t("Check your answers and submit when you're ready.")}</div>
           </div>
         )}
 
         {status === "error" && (
           <>
             <div className="min-w-48 flex-1 text-sm">
-              <div className="font-semibold text-red-600">The recording couldn&apos;t play</div>
-              <div className="text-ink-muted">Check your connection and try again — it continues from the same place.</div>
+              <div className="font-semibold text-red-600">{t("The recording couldn't play")}</div>
+              <div className="text-ink-muted">{t("Check your connection and try again — it continues from the same place.")}</div>
             </div>
             <Button variant="secondary" onClick={() => play(part, time || resumeAt.current)}>
-              <RotateCcw className="h-4 w-4" /> Try again
+              <RotateCcw className="h-4 w-4" /> {t("Try again")}
             </Button>
           </>
         )}
@@ -270,7 +272,7 @@ export function ExamPlayer({
             value={volume}
             onChange={(e) => setVolume(Number(e.target.value))}
             className="w-24 accent-brand-500"
-            aria-label="Volume"
+            aria-label={t("Volume")}
           />
         </label>
       </div>
@@ -285,11 +287,11 @@ export function FreePlayers({ parts }: { parts: Passage[] }) {
       <div className="mx-auto grid max-w-5xl gap-3 sm:grid-cols-2">
         {parts.map((p, i) => (
           <div key={p.id} className="flex items-center gap-3">
-            <span className="w-14 shrink-0 text-sm font-semibold text-ink">Part {i + 1}</span>
+            <span className="w-16 shrink-0 text-sm font-semibold text-ink">{t("Part {n}", { n: i + 1 })}</span>
             {p.audio_url ? (
               <audio controls preload="none" src={resolveMediaUrl(p.audio_url)} className="h-9 w-full" />
             ) : (
-              <span className="text-sm text-red-600">no audio</span>
+              <span className="text-sm text-red-600">{t("no audio")}</span>
             )}
           </div>
         ))}

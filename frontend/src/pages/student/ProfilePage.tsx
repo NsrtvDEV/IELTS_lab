@@ -5,8 +5,9 @@ import { apiErrorMessage } from "../../api/client";
 import { Button, Card, ErrorBox, Label, inputClass } from "../../components/ui";
 import { useAuth } from "../../context/AuthContext";
 import { initials } from "../../lib/format";
+import { locale, t } from "../../i18n";
 
-const dateFmt = new Intl.DateTimeFormat("en", { day: "numeric", month: "long", year: "numeric" });
+const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long", year: "numeric" });
 
 export function ProfilePage() {
   const { user, updateUser } = useAuth();
@@ -25,7 +26,7 @@ export function ProfilePage() {
     e.preventDefault();
     setError(null);
     setSaved(false);
-    if (!firstName.trim() || !lastName.trim()) return setError("Enter your first and last name.");
+    if (!firstName.trim() || !lastName.trim()) return setError(t("Enter your first and last name."));
     setSaving(true);
     try {
       updateUser(
@@ -45,7 +46,7 @@ export function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-3xl font-extrabold tracking-tight text-ink">Profile</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight text-ink">{t("Profile")}</h1>
       <Card className="mt-6 flex flex-wrap items-center gap-5 p-6">
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-500 text-xl font-bold text-white">
           {initials(name)}
@@ -55,7 +56,7 @@ export function ProfilePage() {
           <div className="mt-0.5 flex items-center gap-1.5 text-sm text-ink-muted">
             <Mail className="h-4 w-4" /> {user.email}
           </div>
-          <div className="mt-0.5 text-sm text-ink-muted">Member since {dateFmt.format(new Date(user.created_at))}</div>
+          <div className="mt-0.5 text-sm text-ink-muted">{t("Member since {date}", { date: dateFmt.format(new Date(user.created_at)) })}</div>
         </div>
       </Card>
 
@@ -63,21 +64,21 @@ export function ProfilePage() {
         <form onSubmit={save} className="space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
-              <Label htmlFor="first-name">First name</Label>
+              <Label htmlFor="first-name">{t("First name")}</Label>
               <input id="first-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} className={inputClass} maxLength={100} />
             </div>
             <div>
-              <Label htmlFor="last-name">Last name</Label>
+              <Label htmlFor="last-name">{t("Last name")}</Label>
               <input id="last-name" value={lastName} onChange={(e) => setLastName(e.target.value)} className={inputClass} maxLength={100} />
             </div>
             <div>
-              <Label htmlFor="language">Native language</Label>
+              <Label htmlFor="language">{t("Native language")}</Label>
               <input
                 id="language"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value)}
                 className={inputClass}
-                placeholder="e.g. Uzbek"
+                placeholder={t("e.g. Uzbek")}
                 maxLength={50}
               />
             </div>
@@ -86,11 +87,11 @@ export function ProfilePage() {
           <div className="flex items-center justify-end gap-3">
             {saved && (
               <span className="inline-flex items-center gap-1.5 text-sm text-emerald-600">
-                <CheckCircle2 className="h-4 w-4" /> Saved
+                <CheckCircle2 className="h-4 w-4" /> {t("Saved")}
               </span>
             )}
             <Button type="submit" loading={saving}>
-              Save changes
+              {t("Save changes")}
             </Button>
           </div>
         </form>

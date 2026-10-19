@@ -169,6 +169,8 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
                 last_activity=f"{section_name} test"
                 if last.section_type
                 else f"Mock test · {section_name}",
+                last_section=last.type,
+                last_in_mock=not last.section_type,
                 last_activity_at=last.submitted_at,
             )
         )
@@ -180,6 +182,8 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
             kind="section_completed",
             student=display_name(r.first_name, r.last_name, r.email),
             text=f"got {r.band_score} in {r.type.value.capitalize()}",
+            section=r.type,
+            band=r.band_score,
             at=r.submitted_at,
         )
         for r in graded[-ACTIVITIES_SHOWN:]
@@ -201,6 +205,8 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
             kind="mock_completed",
             student=display_name(m.first_name, m.last_name, m.email),
             text=f"completed {m.title} — overall {m.overall_band}",
+            band=m.overall_band,
+            title=m.title,
             at=m.finished_at,
         )
         for m in finished_mocks

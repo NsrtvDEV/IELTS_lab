@@ -7,6 +7,7 @@ from .speaking import router as speaking_router
 from .teacher import (
     teacher_content_router,
     teacher_dashboard_router,
+    teacher_profile_router,
     teacher_review_router,
     teacher_students_router,
     teacher_tests_router,
@@ -28,6 +29,7 @@ __all__ = [
     "stats_router",
     "teacher_content_router",
     "teacher_dashboard_router",
+    "teacher_profile_router",
     "teacher_review_router",
     "teacher_students_router",
     "teacher_tests_router",

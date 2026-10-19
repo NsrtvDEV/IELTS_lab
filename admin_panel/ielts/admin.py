@@ -140,7 +140,7 @@ class SectionInline(admin.TabularInline):
 class IeltsTestAdmin(admin.ModelAdmin):
     form = IeltsTestForm
     inlines = [SectionInline]
-    list_display = ["title", "is_published", "created_at"]
+    list_display = ["title", "is_published", "created_by", "created_at"]
     list_filter = ["is_published"]
     search_fields = ["title"]
     actions = ["publish", "unpublish"]

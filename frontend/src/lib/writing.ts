@@ -1,4 +1,5 @@
 import type { CriteriaScores } from "../api/student";
+import { t } from "../i18n";
 
 /** Как на сервере (app/utils.count_words): слова разделены пробелами и переносами */
 export function countWords(text: string) {
@@ -7,10 +8,10 @@ export function countWords(text: string) {
 
 /** Четыре официальных критерия Writing; первый называется по-разному в Task 1 и Task 2 */
 export const CRITERIA: { key: keyof CriteriaScores; label: (task: number) => string; short: string }[] = [
-  { key: "task_response", label: (t) => (t === 1 ? "Task Achievement" : "Task Response"), short: "TA/TR" },
-  { key: "coherence_cohesion", label: () => "Coherence & Cohesion", short: "CC" },
-  { key: "lexical_resource", label: () => "Lexical Resource", short: "LR" },
-  { key: "grammatical_range", label: () => "Grammatical Range & Accuracy", short: "GRA" },
+  { key: "task_response", label: (n) => (n === 1 ? t("Task Achievement") : t("Task Response")), short: "TA/TR" },
+  { key: "coherence_cohesion", label: () => t("Coherence & Cohesion"), short: "CC" },
+  { key: "lexical_resource", label: () => t("Lexical Resource"), short: "LR" },
+  { key: "grammatical_range", label: () => t("Grammatical Range & Accuracy"), short: "GRA" },
 ];
 
 /** Округление band по правилам IELTS: до ближайших 0.5 (.25 → .5, .75 → следующее целое) */

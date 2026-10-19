@@ -16,6 +16,7 @@ import { Badge, Button, Card, ErrorBox, Spinner } from "../../components/ui";
 import { isMock, isUnfinished } from "../../lib/attempts";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { SECTION_ICONS } from "../../lib/sectionStyle";
+import { t } from "../../i18n";
 
 /** Последний результат по каждому тесту и секции: ключ "<test_id>:<секция>" */
 function lastResults(attempts: Attempt[]) {
@@ -78,10 +79,9 @@ export function MockTestsPage() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold tracking-tight text-ink">Mock Tests</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight text-ink">{t("Mock Tests")}</h1>
       <p className="mt-1 text-ink-muted">
-        Full IELTS Academic tests. Take the whole exam in order for an overall band, or any section on its own — Listening
-        and Reading are checked instantly, Writing and Speaking by a teacher.
+        {t("Full IELTS Academic tests. Take the whole exam in order for an overall band, or any section on its own — Listening and Reading are checked instantly, Writing and Speaking by a teacher.")}
       </p>
 
       <div className="mt-6 space-y-4">
@@ -89,8 +89,8 @@ export function MockTestsPage() {
         <UnfinishedBanner attempts={attempts} />
         {query && (
           <div className="flex items-center gap-2 text-sm text-ink-muted">
-            Search: <span className="font-semibold text-ink">“{params.get("q")}”</span> · {shown?.length ?? 0} found
-            <button onClick={() => setParams({})} className="rounded p-1 hover:bg-slate-100" aria-label="Clear search">
+            {t("Search:")} <span className="font-semibold text-ink">“{params.get("q")}”</span> · {t("{n} found", { n: shown?.length ?? 0 })}
+            <button onClick={() => setParams({})} className="rounded p-1 hover:bg-slate-100" aria-label={t("Clear search")}>
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -101,7 +101,7 @@ export function MockTestsPage() {
         {!tests && !error && <Spinner />}
         {shown && shown.length === 0 && (
           <Card className="px-6 py-14 text-center text-ink-muted">
-            {query ? "No tests match your search." : "No tests are published yet. Check back soon!"}
+            {query ? t("No tests match your search.") : t("No tests are published yet. Check back soon!")}
           </Card>
         )}
         <div className="grid gap-5 md:grid-cols-2">
@@ -114,8 +114,8 @@ export function MockTestsPage() {
                 <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-brand-50/60 p-4">
                   <PlayCircle className="h-6 w-6 text-brand-500" />
                   <div className="min-w-40 flex-1">
-                    <div className="font-semibold text-ink">Full mock test</div>
-                    <div className="text-xs text-ink-muted">All 4 sections in order · overall band</div>
+                    <div className="font-semibold text-ink">{t("Full mock test")}</div>
+                    <div className="text-xs text-ink-muted">{t("All 4 sections in order · overall band")}</div>
                   </div>
                   {lastMock && (
                     <Link to={`/mock/${lastMock.id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700">
@@ -124,16 +124,16 @@ export function MockTestsPage() {
                           <Trophy className="h-3 w-3" /> {lastMock.overall_band}
                         </Badge>
                       ) : (
-                        <Badge color="amber">Checking</Badge>
+                        <Badge color="amber">{t("Checking")}</Badge>
                       )}{" "}
-                      Result
+                      {t("Result")}
                     </Link>
                   )}
                   <Button className="h-9" onClick={() => startMock(test.id)} loading={starting === `${test.id}:mock`} disabled={unfinished}>
-                    Start full mock
+                    {t("Start full mock")}
                   </Button>
                 </div>
-                <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-ink-muted">Or one section</p>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-ink-muted">{t("Or one section")}</p>
                 <ul className="mt-1 divide-y divide-slate-100">
                   {test.sections.map((s) => {
                     const Icon = SECTION_ICONS[s.type];
@@ -147,10 +147,10 @@ export function MockTestsPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 font-semibold text-ink">
                             {SECTION_LABELS[s.type]}
-                            {done && <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-label="Completed" />}
+                            {done && <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-label={t("Completed")} />}
                           </div>
                           <div className="flex items-center gap-1 text-xs text-ink-muted">
-                            <Clock className="h-3.5 w-3.5" /> {s.duration_min} min
+                            <Clock className="h-3.5 w-3.5" /> {t("{n} min", { n: s.duration_min })}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -159,7 +159,7 @@ export function MockTestsPage() {
                                 to={`/${s.type}/${last.sectionAttemptId}/result`}
                                 className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
                               >
-                                {last.band ? <Badge color="green">{last.band}</Badge> : (s.type === "writing" || s.type === "speaking") && <Badge color="amber">Checking</Badge>} Result
+                                {last.band ? <Badge color="green">{last.band}</Badge> : (s.type === "writing" || s.type === "speaking") && <Badge color="amber">{t("Checking")}</Badge>} {t("Result")}
                               </Link>
                             )}
                             <Button
@@ -168,7 +168,7 @@ export function MockTestsPage() {
                               loading={starting === `${test.id}:${s.type}`}
                               disabled={unfinished}
                             >
-                              {done ? "Retake" : "Start"}
+                              {done ? t("Retake") : t("Start")}
                             </Button>
                           </div>
                       </li>

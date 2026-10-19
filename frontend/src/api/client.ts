@@ -1,4 +1,5 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
+import { t } from "../i18n";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1";
@@ -91,11 +92,11 @@ apiClient.interceptors.response.use(
 
 export function apiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    if (!error.response) return "Server is unavailable. Please try again later.";
+    if (!error.response) return t("Server is unavailable. Please try again later.");
     const detail = error.response.data?.detail;
-    if (typeof detail === "string") return detail;
-    if (Array.isArray(detail) && detail[0]?.msg) return detail[0].msg;
+    if (typeof detail === "string") return t(detail);
+    if (Array.isArray(detail) && detail[0]?.msg) return t(detail[0].msg);
     return error.message;
   }
-  return "Something went wrong";
+  return t("Something went wrong");
 }

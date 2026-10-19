@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import type { UserRole } from "../api/types";
 import { useAuth } from "../context/AuthContext";
+import { t } from "../i18n";
 
 export function ProtectedRoute({
   children,
@@ -14,7 +15,7 @@ export function ProtectedRoute({
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center text-ink-muted">Loading…</div>
+      <div className="flex h-screen items-center justify-center text-ink-muted">{t("Loading…")}</div>
     );
   }
 

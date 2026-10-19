@@ -4,6 +4,7 @@ import { apiErrorMessage } from "../../api/client";
 import { getSectionResult, type QuestionSection, type SectionResult } from "../../api/student";
 import { ResultView } from "../../components/results/ResultView";
 import { ErrorBox, Spinner } from "../../components/ui";
+import { t } from "../../i18n";
 
 export function SectionResultPage({ section }: { section: QuestionSection }) {
   const { sectionAttemptId } = useParams();
@@ -17,5 +18,5 @@ export function SectionResultPage({ section }: { section: QuestionSection }) {
   }, [section, sectionAttemptId]);
 
   if (!result) return error ? <ErrorBox message={error} /> : <Spinner />;
-  return <ResultView result={result} backTo="/tests" backLabel="All tests" />;
+  return <ResultView result={result} backTo="/tests" backLabel={t("All tests")} />;
 }

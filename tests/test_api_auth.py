@@ -51,3 +51,30 @@ async def test_blocked_user_cannot_login(client, student, sql):
     r = await client.post("/auth/login", json={"email": "student@example.com", "password": PASSWORD})
     assert r.status_code == 403
     assert (await client.get("/users/me", headers=student)).status_code == 401
+
+
+async def test_change_password(client, student):
+    r = await client.post("/auth/login", json={"email": "student@example.com", "password": PASSWORD})
+    other_device = r.json()["refresh_token"]
+
+    r = await client.post(
+        "/users/me/password", headers=student, json={"current_password": "wrong-pass", "new_password": "newsecret1"}
+    )
+    assert r.status_code == 400
+    r = await client.post(
+        "/users/me/password", headers=student, json={"current_password": PASSWORD, "new_password": "short"}
+    )
+    assert r.status_code == 422
+
+    r = await client.post(
+        "/users/me/password", headers=student, json={"current_password": PASSWORD, "new_password": "newsecret1"}
+    )
+    assert r.status_code == 200
+    # другие устройства вышли, текущее получило новую пару токенов
+    assert (await client.post("/auth/refresh", json={"refresh_token": other_device})).status_code == 401
+    assert (await client.post("/auth/refresh", json={"refresh_token": r.json()["refresh_token"]})).status_code == 200
+
+    r = await client.post("/auth/login", json={"email": "student@example.com", "password": PASSWORD})
+    assert r.status_code == 401
+    r = await client.post("/auth/login", json={"email": "student@example.com", "password": "newsecret1"})
+    assert r.status_code == 200

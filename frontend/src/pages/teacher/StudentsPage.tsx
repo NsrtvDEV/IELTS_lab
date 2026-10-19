@@ -6,6 +6,7 @@ import { listStudents, type SectionType, type StudentSummary } from "../../api/t
 import { Badge, Card, ErrorBox, Spinner } from "../../components/ui";
 import { initials, timeAgo } from "../../lib/format";
 import { SECTION_LABELS } from "../../lib/questionTypes";
+import { t } from "../../i18n";
 
 const SECTIONS: SectionType[] = ["listening", "reading", "writing", "speaking"];
 
@@ -33,16 +34,16 @@ export function StudentsPage() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink">Students</h1>
-          <p className="mt-1 text-ink-muted">Latest band per section and each student&apos;s test history.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink">{t("Students")}</h1>
+          <p className="mt-1 text-ink-muted">{t("Latest band per section and each student's test history.")}</p>
         </div>
         <form onSubmit={search} className="relative w-full max-w-xs" role="search">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Name or email…"
-            aria-label="Search students"
+            placeholder={t("Name or email…")}
+            aria-label={t("Search students")}
             className="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
           />
         </form>
@@ -54,7 +55,7 @@ export function StudentsPage() {
         {students && students.length === 0 && (
           <Card className="flex flex-col items-center px-6 py-14 text-center text-ink-muted">
             <UsersRound className="h-8 w-8" />
-            <p className="mt-3">{query ? "No students match your search." : "No students have registered yet."}</p>
+            <p className="mt-3">{query ? t("No students match your search.") : t("No students have registered yet.")}</p>
           </Card>
         )}
         {students && students.length > 0 && (
@@ -62,14 +63,14 @@ export function StudentsPage() {
             <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-left text-xs text-ink-muted">
-                  <th className="px-5 py-3 font-medium">Student</th>
+                  <th className="px-5 py-3 font-medium">{t("Student")}</th>
                   {SECTIONS.map((s) => (
                     <th key={s} className="px-3 py-3 text-center font-medium">
                       {SECTION_LABELS[s]}
                     </th>
                   ))}
-                  <th className="px-3 py-3 text-center font-medium">Overall</th>
-                  <th className="px-5 py-3 font-medium">Last activity</th>
+                  <th className="px-3 py-3 text-center font-medium">{t("Overall")}</th>
+                  <th className="px-5 py-3 font-medium">{t("Last activity")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -84,7 +85,7 @@ export function StudentsPage() {
                           <span className="block font-semibold text-ink hover:text-brand-600">{s.name}</span>
                           <span className="block text-xs text-ink-muted">{s.email}</span>
                         </span>
-                        {!s.is_active && <Badge color="amber">Blocked</Badge>}
+                        {!s.is_active && <Badge color="amber">{t("Blocked")}</Badge>}
                       </Link>
                     </td>
                     {SECTIONS.map((sec) => (
@@ -94,7 +95,7 @@ export function StudentsPage() {
                     ))}
                     <td className="px-3 py-3 text-center font-bold text-ink">{s.overall_band ?? "—"}</td>
                     <td className="px-5 py-3 text-ink-muted">
-                      {s.last_activity_at ? timeAgo(s.last_activity_at) : `joined ${timeAgo(s.joined_at)}`}
+                      {s.last_activity_at ? timeAgo(s.last_activity_at) : t("joined {when}", { when: timeAgo(s.joined_at) })}
                     </td>
                   </tr>
                 ))}

@@ -8,15 +8,16 @@ import { ResultView } from "../../components/results/ResultView";
 import { Badge, Card, ErrorBox, Spinner } from "../../components/ui";
 import { initials, timeAgo } from "../../lib/format";
 import { SECTION_LABELS } from "../../lib/questionTypes";
+import { t } from "../../i18n";
 
 const SECTIONS: SectionType[] = ["listening", "reading", "writing", "speaking"];
 const WITH_REVIEW: SectionType[] = ["listening", "reading"]; // разбор по вопросам есть только здесь
 
 function Status({ item }: { item: HistoryItem }) {
-  if (item.status === "abandoned") return <Badge color="gray">Abandoned</Badge>;
-  if (!item.submitted_at) return <Badge color="amber">In progress</Badge>;
-  if (item.band_score === null) return <Badge color="blue">Waiting for review</Badge>;
-  return <Badge color="green">Band {item.band_score}</Badge>;
+  if (item.status === "abandoned") return <Badge color="gray">{t("Abandoned")}</Badge>;
+  if (!item.submitted_at) return <Badge color="amber">{t("In progress")}</Badge>;
+  if (item.band_score === null) return <Badge color="blue">{t("Waiting for review")}</Badge>;
+  return <Badge color="green">{t("Band")} {item.band_score}</Badge>;
 }
 
 export function StudentDetailPage() {
@@ -35,7 +36,7 @@ export function StudentDetailPage() {
   return (
     <>
       <Link to="/teacher/students" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> All students
+        <ArrowLeft className="h-4 w-4" /> {t("All students")}
       </Link>
 
       <div className="mt-4 flex flex-wrap items-center gap-4">
@@ -45,8 +46,8 @@ export function StudentDetailPage() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink">{student.name}</h1>
           <p className="text-ink-muted">
-            {student.email} · joined {timeAgo(student.joined_at)}
-            {student.native_language ? ` · native language: ${student.native_language}` : ""}
+            {student.email} · {t("joined {when}", { when: timeAgo(student.joined_at) })}
+            {student.native_language ? ` · ${t("native language: {lang}", { lang: student.native_language })}` : ""}
           </p>
         </div>
       </div>
@@ -59,24 +60,24 @@ export function StudentDetailPage() {
           </Card>
         ))}
         <Card className="bg-brand-50 p-4">
-          <div className="text-xs font-medium text-brand-700">Overall</div>
+          <div className="text-xs font-medium text-brand-700">{t("Overall")}</div>
           <div className="mt-1 text-2xl font-extrabold text-brand-600">{student.overall_band ?? "—"}</div>
         </Card>
       </div>
 
-      <h2 className="mt-8 text-lg font-bold text-ink">History</h2>
+      <h2 className="mt-8 text-lg font-bold text-ink">{t("History")}</h2>
       {student.history.length === 0 ? (
-        <Card className="mt-3 px-6 py-10 text-center text-ink-muted">This student hasn&apos;t taken any tests yet.</Card>
+        <Card className="mt-3 px-6 py-10 text-center text-ink-muted">{t("This student hasn't taken any tests yet.")}</Card>
       ) : (
         <Card className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs text-ink-muted">
-                <th className="px-5 py-3 font-medium">Test</th>
-                <th className="px-5 py-3 font-medium">Section</th>
-                <th className="px-5 py-3 font-medium">Date</th>
-                <th className="px-5 py-3 font-medium">Score</th>
-                <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-3 font-medium">{t("Test")}</th>
+                <th className="px-5 py-3 font-medium">{t("Section")}</th>
+                <th className="px-5 py-3 font-medium">{t("Date")}</th>
+                <th className="px-5 py-3 font-medium">{t("Score")}</th>
+                <th className="px-5 py-3 font-medium">{t("Status")}</th>
                 <th className="px-5 py-3" />
               </tr>
             </thead>
@@ -86,10 +87,10 @@ export function StudentDetailPage() {
                   <td className="px-5 py-3 font-medium text-ink">{h.test_title}</td>
                   <td className="px-5 py-3 text-ink">
                     {SECTION_LABELS[h.section_type]}
-                    {h.mode === "mock" && <span className="ml-1.5 text-xs text-ink-muted">(full mock)</span>}
+                    {h.mode === "mock" && <span className="ml-1.5 text-xs text-ink-muted">({t("full mock")})</span>}
                   </td>
                   <td className="px-5 py-3 text-ink-muted">{timeAgo(h.submitted_at ?? h.started_at)}</td>
-                  <td className="px-5 py-3 text-ink">{h.raw_score !== null ? `${h.raw_score} pts` : "—"}</td>
+                  <td className="px-5 py-3 text-ink">{h.raw_score !== null ? t("{n} pts", { n: h.raw_score }) : "—"}</td>
                   <td className="px-5 py-3">
                     <Status item={h} />
                   </td>
@@ -99,7 +100,7 @@ export function StudentDetailPage() {
                         to={`/teacher/students/${student.id}/results/${h.section_attempt_id}`}
                         className="font-semibold text-brand-600 hover:text-brand-700"
                       >
-                        Answers →
+                        {t("Answers")} →
                       </Link>
                     )}
                     {h.submitted_at && (h.section_type === "writing" || h.section_type === "speaking") && h.status !== "abandoned" && (
@@ -107,7 +108,7 @@ export function StudentDetailPage() {
                         to={`/teacher/review/${h.section_type}/${h.section_attempt_id}`}
                         className="font-semibold text-brand-600 hover:text-brand-700"
                       >
-                        {h.band_score === null ? "Assess →" : h.section_type === "writing" ? "Essays →" : "Recordings →"}
+                        {h.band_score === null ? t("Assess") : h.section_type === "writing" ? t("Essays") : t("Recordings")} →
                       </Link>
                     )}
                   </td>
@@ -138,6 +139,6 @@ export function StudentResultPage() {
 
   if (!result) return error ? <ErrorBox message={error} /> : <Spinner />;
   return (
-    <ResultView result={result} backTo={`/teacher/students/${studentId}`} backLabel={name || "Student"} heading={name} />
+    <ResultView result={result} backTo={`/teacher/students/${studentId}`} backLabel={name || t("Student")} heading={name} />
   );
 }

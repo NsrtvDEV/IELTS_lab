@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { MessageSquarePlus, Trash2 } from "lucide-react";
 import type { InlineComment } from "../../api/student";
 import { Button, textareaClass } from "../ui";
+import { t } from "../../i18n";
 
 /** Позиции выделения внутри контейнера — в символах текста (номера комментариев в ::after в текст не входят) */
 function selectionIn(container: HTMLElement): { start: number; end: number } | null {
@@ -42,7 +43,7 @@ export function AnnotatedEssay({
     while (end > start && /\s/.test(text[end - 1])) end--;
     if (start >= end) return;
     if (sorted.some((c) => c.start < end && start < c.end)) {
-      setHint("This fragment overlaps an existing comment — select another one.");
+      setHint(t("This fragment overlaps an existing comment — select another one."));
       return;
     }
     setHint(null);
@@ -86,7 +87,7 @@ export function AnnotatedEssay({
   return (
     <div>
       {onChange && (
-        <p className="mb-2 text-xs text-ink-muted">Select a word or phrase in the essay to comment on it.</p>
+        <p className="mb-2 text-xs text-ink-muted">{t("Select a word or phrase in the essay to comment on it.")}</p>
       )}
       <div
         ref={box}
@@ -100,7 +101,7 @@ export function AnnotatedEssay({
       {pending && onChange && (
         <div className="mt-3 rounded-lg border border-brand-200 bg-brand-50/50 p-3">
           <p className="text-sm text-ink">
-            <span className="font-semibold">Comment on:</span>{" "}
+            <span className="font-semibold">{t("Comment on:")}</span>{" "}
             <span className="rounded-sm bg-amber-100 px-1">“{text.slice(pending.start, pending.end)}”</span>
           </p>
           <textarea
@@ -109,16 +110,16 @@ export function AnnotatedEssay({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className={`${textareaClass} mt-2`}
-            placeholder="e.g. Wrong word: “there”, not “their”."
-            aria-label="Comment"
+            placeholder={t("e.g. Wrong word: “there”, not “their”.")}
+            aria-label={t("Comment")}
             maxLength={2000}
           />
           <div className="mt-2 flex justify-end gap-2">
             <Button variant="secondary" className="h-9" onClick={() => setPending(null)}>
-              Cancel
+              {t("Cancel")}
             </Button>
             <Button className="h-9" onClick={add} disabled={!note.trim()}>
-              <MessageSquarePlus className="h-4 w-4" /> Add comment
+              <MessageSquarePlus className="h-4 w-4" /> {t("Add comment")}
             </Button>
           </div>
         </div>
@@ -134,7 +135,7 @@ export function AnnotatedEssay({
               <button
                 onClick={() => show(i)}
                 className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-200 text-[11px] font-bold text-amber-800"
-                aria-label={`Show fragment ${i + 1}`}
+                aria-label={t("Show fragment {n}", { n: i + 1 })}
               >
                 {i + 1}
               </button>
@@ -146,7 +147,7 @@ export function AnnotatedEssay({
                 <button
                   onClick={() => onChange(sorted.filter((_, j) => j !== i))}
                   className="shrink-0 rounded p-1 text-red-500 hover:bg-red-50"
-                  aria-label={`Delete comment ${i + 1}`}
+                  aria-label={t("Delete comment {n}", { n: i + 1 })}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

@@ -4,11 +4,12 @@ import { Menu, Search, X, type LucideIcon } from "lucide-react";
 import { Logo } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
 import { UserMenu } from "./UserMenu";
+import { t } from "../i18n";
 
 export interface NavItem {
   label: string;
   icon: LucideIcon;
-  to?: string; // нет ссылки — раздел «скоро»
+  to: string;
   end?: boolean;
   /** раздел активен и на других адресах (например, редактор секции — часть Tests) */
   alsoActive?: (pathname: string) => boolean;
@@ -23,38 +24,24 @@ function Sidebar({ nav, footer, onNavigate }: { nav: NavItem[]; footer: ReactNod
         <Logo />
       </div>
 
-      <nav className="mt-10 space-y-1.5" aria-label="Main">
-        {nav.map(({ label, icon: Icon, to, end, alsoActive, gapBefore }) =>
-          to ? (
-            <NavLink
-              key={label}
-              to={to}
-              end={end}
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                `${gapBefore ? "!mt-8 " : ""}flex h-11 items-center gap-4 rounded-xl px-4 text-[15px] font-medium transition ${
-                  isActive || alsoActive?.(pathname)
-                    ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
-                    : "text-ink hover:bg-slate-100"
-                }`
-              }
-            >
-              <Icon className="h-5 w-5" /> {label}
-            </NavLink>
-          ) : (
-            // разделы, которых ещё нет на бэкенде
-            <div
-              key={label}
-              className={`${gapBefore ? "!mt-8 " : ""}flex h-11 cursor-not-allowed items-center gap-4 rounded-xl px-4 text-[15px] font-medium text-slate-400`}
-              title="Coming soon"
-            >
-              <Icon className="h-5 w-5" /> {label}
-              <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">
-                Soon
-              </span>
-            </div>
-          )
-        )}
+      <nav className="mt-10 space-y-1.5" aria-label={t("Main")}>
+        {nav.map(({ label, icon: Icon, to, end, alsoActive, gapBefore }) => (
+          <NavLink
+            key={label}
+            to={to}
+            end={end}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              `${gapBefore ? "!mt-8 " : ""}flex h-11 items-center gap-4 rounded-xl px-4 text-[15px] font-medium transition ${
+                isActive || alsoActive?.(pathname)
+                  ? "bg-brand-500 text-white shadow-md shadow-brand-500/25"
+                  : "text-ink hover:bg-slate-100"
+              }`
+            }
+          >
+            <Icon className="h-5 w-5" /> {t(label)}
+          </NavLink>
+        ))}
       </nav>
 
       <div className="mt-auto pt-8">{footer}</div>
@@ -95,7 +82,7 @@ export function AppShell({
             <button
               onClick={() => setMenuOpen(false)}
               className="absolute right-3 top-3 rounded-lg p-2 text-ink-muted hover:bg-slate-100"
-              aria-label="Close menu"
+              aria-label={t("Close menu")}
             >
               <X className="h-5 w-5" />
             </button>
@@ -109,7 +96,7 @@ export function AppShell({
           <button
             onClick={() => setMenuOpen(true)}
             className="rounded-lg p-2 text-ink hover:bg-slate-100 lg:hidden"
-            aria-label="Open menu"
+            aria-label={t("Open menu")}
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -118,8 +105,8 @@ export function AppShell({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tests…"
-              aria-label="Search tests"
+              placeholder={t("Search tests…")}
+              aria-label={t("Search tests")}
               className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-4 text-sm outline-none placeholder:text-slate-400 focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
             />
           </form>

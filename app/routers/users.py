@@ -1,26 +1,34 @@
-from fastapi import APIRouter
-from sqlalchemy import Integer, cast, func, not_, select
+from fastapi import APIRouter, File, HTTPException, Request, UploadFile
+from fastapi.concurrency import run_in_threadpool
+from sqlalchemy import Integer, cast, delete, func, not_, select
 
 from app.database import db_dep
 from app.dependencies import current_user_dep
+from app.limiter import limiter
+from app.media import file_type, media_path, store
 from app.models import (
     AttemptStatus,
     IeltsTest,
     Question,
     QuestionGroup,
+    RefreshToken,
     Section,
     SectionAttempt,
     TestAttempt,
     UserAnswer,
     UserProfile,
 )
+from app.routers.auth.auth import issue_tokens
+from app.schemas.auth import TokenResponse
 from app.schemas.users import (
+    PasswordChange,
     ProfileUpdate,
     ProgressPoint,
     ProgressResponse,
     QuestionTypeStats,
     UserResponse,
 )
+from app.utils import hash_password, verify_password
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -41,6 +49,56 @@ async def update_me(session: db_dep, current_user: current_user_dep, data: Profi
     await session.commit()
     await session.refresh(current_user)
     return current_user
+
+
+# аватар загружает любой пользователь — без SVG (в нём может быть скрипт)
+AVATAR_TYPES = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp"}
+MAX_AVATAR_MB = 2
+
+
+async def drop_avatar_file(url: str | None) -> None:
+    path = media_path(url)
+    if path and path.parent.name == "avatars":
+        await run_in_threadpool(path.unlink, True)
+
+
+@router.post("/me/avatar", response_model=UserResponse)
+async def upload_avatar(session: db_dep, current_user: current_user_dep, file: UploadFile = File(...)):
+    extension = AVATAR_TYPES.get(file_type(file))
+    if not extension:
+        raise HTTPException(status_code=415, detail="Upload a PNG, JPG or WEBP image")
+    url = await store(file, "avatars", extension, MAX_AVATAR_MB)
+    if current_user.profile is None:
+        current_user.profile = UserProfile()
+    old = current_user.profile.avatar_url
+    current_user.profile.avatar_url = url
+    await session.commit()
+    await drop_avatar_file(old)
+    await session.refresh(current_user)
+    return current_user
+
+
+@router.delete("/me/avatar", response_model=UserResponse)
+async def delete_avatar(session: db_dep, current_user: current_user_dep):
+    if current_user.profile and current_user.profile.avatar_url:
+        old = current_user.profile.avatar_url
+        current_user.profile.avatar_url = None
+        await session.commit()
+        await drop_avatar_file(old)
+        await session.refresh(current_user)
+    return current_user
+
+
+@router.post("/me/password", response_model=TokenResponse)
+@limiter.limit("5/minute")
+async def change_password(request: Request, session: db_dep, current_user: current_user_dep, data: PasswordChange):
+    if not await run_in_threadpool(verify_password, data.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    current_user.password_hash = await run_in_threadpool(hash_password, data.new_password)
+    # выходим на остальных устройствах (токены удаляем, а не отзываем, чтобы их
+    # повторное использование не сработало как кража); текущему — новая пара токенов
+    await session.execute(delete(RefreshToken).where(RefreshToken.user_id == current_user.id))
+    return await issue_tokens(session, current_user)
 
 
 @router.get("/me/progress", response_model=ProgressResponse)

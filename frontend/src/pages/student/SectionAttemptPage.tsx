@@ -20,6 +20,7 @@ import { isAnswered, type Answer } from "../../lib/answers";
 import { afterSubmitPath } from "../../lib/attempts";
 import { Button, ErrorBox, Modal, Spinner } from "../../components/ui";
 import { SECTION_LABELS } from "../../lib/questionTypes";
+import { t } from "../../i18n";
 
 type SaveState = "saved" | "saving" | "error";
 
@@ -186,32 +187,32 @@ export function SectionAttemptPage({ section }: { section: QuestionSection }) {
             lowTime ? "bg-red-50 text-red-600" : "bg-slate-100 text-ink"
           }`}
           role="timer"
-          aria-label="Time left"
+          aria-label={t("Time left")}
         >
           <Clock className="h-4 w-4" /> {formatTime(remaining ?? 0)}
         </div>
         <span className="hidden w-24 text-xs text-ink-muted sm:inline-flex sm:items-center sm:gap-1" aria-live="polite">
           {saveState === "saving" && (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Saving…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("Saving…")}
             </>
           )}
           {saveState === "saved" && (
             <>
-              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> Saved
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> {t("Saved")}
             </>
           )}
           {saveState === "error" && (
             <span className="inline-flex items-center gap-1 text-red-600">
-              <TriangleAlert className="h-3.5 w-3.5" /> Not saved
+              <TriangleAlert className="h-3.5 w-3.5" /> {t("Not saved")}
             </span>
           )}
         </span>
-        <Button variant="secondary" onClick={() => setDialog("exit")} aria-label="Exit test">
-          <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Exit</span>
+        <Button variant="secondary" onClick={() => setDialog("exit")} aria-label={t("Exit test")}>
+          <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">{t("Exit")}</span>
         </Button>
         <Button onClick={() => setDialog("submit")} loading={busy === "submit"}>
-          Submit
+          {t("Submit")}
         </Button>
       </header>
 
@@ -242,34 +243,34 @@ export function SectionAttemptPage({ section }: { section: QuestionSection }) {
       )}
 
       {dialog === "submit" && (
-        <Modal title={`Submit ${SECTION_LABELS[section]}?`} onClose={() => setDialog(null)}>
+        <Modal title={t("Submit {section}?", { section: SECTION_LABELS[section] })} onClose={() => setDialog(null)}>
           <p className="text-ink">
-            You answered <strong>{answeredCount}</strong> of {questionIds.length} questions.
-            {answeredCount < questionIds.length && " Unanswered questions will count as wrong."}
+            {t("You answered {n} of {total} questions.", { n: answeredCount, total: questionIds.length })}
+            {answeredCount < questionIds.length && ` ${t("Unanswered questions will count as wrong.")}`}
           </p>
-          <p className="mt-2 text-sm text-ink-muted">After submitting you&apos;ll see your score and the correct answers.</p>
+          <p className="mt-2 text-sm text-ink-muted">{t("After submitting you'll see your score and the correct answers.")}</p>
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setDialog(null)}>
-              Keep working
+              {t("Keep working")}
             </Button>
             <Button onClick={submit} loading={busy === "submit"}>
-              Submit
+              {t("Submit")}
             </Button>
           </div>
         </Modal>
       )}
 
       {dialog === "exit" && (
-        <Modal title="Leave the test?" onClose={() => setDialog(null)}>
+        <Modal title={t("Leave the test?")} onClose={() => setDialog(null)}>
           <div className="space-y-3">
             <button
               onClick={saveAndExit}
               disabled={busy !== null}
               className="w-full rounded-xl border border-slate-200 p-4 text-left hover:border-brand-300 hover:bg-brand-50/40 disabled:opacity-50"
             >
-              <div className="font-semibold text-ink">Save and continue later</div>
+              <div className="font-semibold text-ink">{t("Save and continue later")}</div>
               <div className="mt-0.5 text-sm text-ink-muted">
-                Your answers are saved. The timer keeps running — when it ends, the test is submitted automatically.
+                {t("Your answers are saved. The timer keeps running — when it ends, the test is submitted automatically.")}
               </div>
             </button>
             <button
@@ -277,8 +278,8 @@ export function SectionAttemptPage({ section }: { section: QuestionSection }) {
               disabled={busy !== null}
               className="w-full rounded-xl border border-red-200 p-4 text-left hover:bg-red-50 disabled:opacity-50"
             >
-              <div className="font-semibold text-red-600">Abandon this test</div>
-              <div className="mt-0.5 text-sm text-ink-muted">The attempt won&apos;t be scored and won&apos;t count in your progress.</div>
+              <div className="font-semibold text-red-600">{t("Abandon this test")}</div>
+              <div className="mt-0.5 text-sm text-ink-muted">{t("The attempt won't be scored and won't count in your progress.")}</div>
             </button>
           </div>
         </Modal>

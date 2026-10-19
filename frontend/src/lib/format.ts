@@ -1,4 +1,6 @@
-const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+import { locale, t } from "../i18n";
+
+const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
 /** "2 hours ago", "yesterday" */
 export function timeAgo(iso: string): string {
@@ -14,7 +16,7 @@ export function timeAgo(iso: string): string {
   for (const [unit, size] of units) {
     if (Math.abs(seconds) >= size) return rtf.format(Math.round(seconds / size), unit);
   }
-  return "just now";
+  return t("just now");
 }
 
 export function initials(name: string): string {
@@ -24,7 +26,7 @@ export function initials(name: string): string {
 
 export function greeting(date = new Date()): string {
   const h = date.getHours();
-  if (h < 12) return "Good morning";
-  if (h < 18) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return t("Good morning");
+  if (h < 18) return t("Good afternoon");
+  return t("Good evening");
 }

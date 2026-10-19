@@ -1,18 +1,19 @@
 import type { SpeakingScores } from "../api/student";
+import { t } from "../i18n";
 import { roundBand } from "./writing";
 
 /** Четыре официальных критерия Speaking */
 export const SPEAKING_CRITERIA: { key: keyof SpeakingScores; label: string }[] = [
-  { key: "fluency_coherence", label: "Fluency & Coherence" },
-  { key: "lexical_resource", label: "Lexical Resource" },
-  { key: "grammatical_range", label: "Grammatical Range & Accuracy" },
-  { key: "pronunciation", label: "Pronunciation" },
+  { key: "fluency_coherence", label: t("Fluency & Coherence") },
+  { key: "lexical_resource", label: t("Lexical Resource") },
+  { key: "grammatical_range", label: t("Grammatical Range & Accuracy") },
+  { key: "pronunciation", label: t("Pronunciation") },
 ];
 
 export const PARTS: Record<1 | 2 | 3, { title: string; about: string }> = {
-  1: { title: "Introduction and interview", about: "Questions about yourself, your home, work or studies and familiar topics." },
-  2: { title: "Long turn", about: "You get a card with a topic. You have 1 minute to prepare and then speak for up to 2 minutes." },
-  3: { title: "Discussion", about: "More abstract questions connected with the topic of Part 2." },
+  1: { title: t("Introduction and interview"), about: t("Questions about yourself, your home, work or studies and familiar topics.") },
+  2: { title: t("Long turn"), about: t("You get a card with a topic. You have 1 minute to prepare and then speak for up to 2 minutes.") },
+  3: { title: t("Discussion"), about: t("More abstract questions connected with the topic of Part 2.") },
 };
 
 /** Band Speaking: среднее четырёх критериев */

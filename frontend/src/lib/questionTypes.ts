@@ -1,4 +1,5 @@
 import type { QuestionType, SectionType } from "../api/teacher";
+import { t } from "../i18n";
 
 export const SECTION_LABELS: Record<SectionType, string> = {
   listening: "Listening",
@@ -8,24 +9,24 @@ export const SECTION_LABELS: Record<SectionType, string> = {
 };
 
 export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
-  mcq: "Multiple choice (one answer)",
-  mcq_multi: "Multiple choice (several answers)",
-  tfng: "True / False / Not Given",
-  ynng: "Yes / No / Not Given",
-  matching_headings: "Matching headings",
-  matching_info: "Matching information",
-  matching_features: "Matching features",
-  matching_sentence_endings: "Matching sentence endings",
-  sentence_completion: "Sentence completion",
-  summary_completion: "Summary completion",
-  note_completion: "Note completion",
-  form_completion: "Form completion",
-  table_completion: "Table completion",
-  flow_chart_completion: "Flow-chart completion",
-  gap_fill: "Gap fill",
-  short_answer: "Short answer",
-  diagram_label: "Diagram labelling",
-  map_label: "Map / plan labelling",
+  mcq: t("Multiple choice (one answer)"),
+  mcq_multi: t("Multiple choice (several answers)"),
+  tfng: t("True / False / Not Given"),
+  ynng: t("Yes / No / Not Given"),
+  matching_headings: t("Matching headings"),
+  matching_info: t("Matching information"),
+  matching_features: t("Matching features"),
+  matching_sentence_endings: t("Matching sentence endings"),
+  sentence_completion: t("Sentence completion"),
+  summary_completion: t("Summary completion"),
+  note_completion: t("Note completion"),
+  form_completion: t("Form completion"),
+  table_completion: t("Table completion"),
+  flow_chart_completion: t("Flow-chart completion"),
+  gap_fill: t("Gap fill"),
+  short_answer: t("Short answer"),
+  diagram_label: t("Diagram labelling"),
+  map_label: t("Map / plan labelling"),
 };
 
 /** Как ученик отвечает и как учитель задаёт правильный ответ — повторяет app/content.py */

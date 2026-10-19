@@ -13,7 +13,7 @@ router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
 def out(n: Notification) -> NotificationOut:
-    return NotificationOut(id=n.id, kind=n.kind, text=n.text, link=n.link, read=n.read_at is not None, created_at=n.created_at)
+    return NotificationOut(id=n.id, kind=n.kind, text=n.text, params=n.params, link=n.link, read=n.read_at is not None, created_at=n.created_at)
 
 
 @router.get("", response_model=NotificationList)

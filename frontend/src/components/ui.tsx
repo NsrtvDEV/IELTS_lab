@@ -1,6 +1,7 @@
 // Небольшие общие элементы интерфейса кабинета
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Loader2, X } from "lucide-react";
+import { t } from "../i18n";
 
 type Variant = "primary" | "secondary" | "danger" | "ghost";
 
@@ -104,7 +105,7 @@ export function Modal({
           <button
             onClick={onClose}
             className="rounded-md p-1.5 text-ink-muted hover:bg-slate-100 hover:text-ink"
-            aria-label="Close"
+            aria-label={t("Close")}
           >
             <X className="h-5 w-5" />
           </button>

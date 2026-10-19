@@ -13,14 +13,15 @@ import {
 import { Badge, Button, Card, ErrorBox, Modal, Spinner } from "../../components/ui";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { SECTION_ICONS, SECTION_TINTS } from "../../lib/sectionStyle";
+import { t } from "../../i18n";
 
 // порядок секций на экзамене
 const ORDER: AvailableSection[] = ["listening", "reading", "writing", "speaking"];
 const ABOUT: Record<AvailableSection, string> = {
-  listening: "4 recordings, each played once · 40 questions",
-  reading: "3 passages · 40 questions",
-  writing: "Task 1 and Task 2",
-  speaking: "Part 1–3, answered into your microphone",
+  listening: t("4 recordings, each played once · 40 questions"),
+  reading: t("3 passages · 40 questions"),
+  writing: t("Task 1 and Task 2"),
+  speaking: t("Part 1–3, answered into your microphone"),
 };
 
 export function MockAttemptPage() {
@@ -75,37 +76,37 @@ export function MockAttemptPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <Link to="/tests" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> Mock Tests
+        <ArrowLeft className="h-4 w-4" /> {t("Mock Tests")}
       </Link>
 
       <Card className="mt-4 flex flex-wrap items-center justify-between gap-6 p-6 sm:p-8">
         <div>
-          <p className="font-semibold text-brand-600">Full mock test · {attempt.test_title}</p>
+          <p className="font-semibold text-brand-600">{t("Full mock test")} · {attempt.test_title}</p>
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink">
             {attempt.status === "finished"
-              ? "Your full mock result"
+              ? t("Your full mock result")
               : attempt.status === "pending_review"
-                ? "Waiting for assessment"
+                ? t("Waiting for assessment")
                 : attempt.status === "abandoned"
-                  ? "This mock test was abandoned"
+                  ? t("This mock test was abandoned")
                   : done === 0
-                    ? "Ready to start?"
-                    : `${done} of 4 sections done`}
+                    ? t("Ready to start?")
+                    : t("{n} of 4 sections done", { n: done })}
           </h1>
           <p className="mt-2 max-w-xl text-ink-muted">
             {attempt.status === "finished"
-              ? "The overall band is the average of your four section bands."
+              ? t("The overall band is the average of your four section bands.")
               : attempt.status === "pending_review"
-                ? "Listening and Reading are checked. A teacher will assess your Writing and Speaking — then you'll get your overall band."
+                ? t("Listening and Reading are checked. A teacher will assess your Writing and Speaking — then you'll get your overall band.")
                 : attempt.status === "abandoned"
-                  ? "It doesn't count in your progress."
-                  : "The sections go in order, like the real exam. Each section has its own timer. You can take a break between sections."}
+                  ? t("It doesn't count in your progress.")
+                  : t("The sections go in order, like the real exam. Each section has its own timer. You can take a break between sections.")}
           </p>
         </div>
         {attempt.overall_band ? (
           <div className="flex flex-col items-center rounded-2xl bg-brand-50 px-8 py-5">
             <Trophy className="h-6 w-6 text-brand-500" />
-            <span className="mt-1 text-sm font-medium text-brand-700">Overall band</span>
+            <span className="mt-1 text-sm font-medium text-brand-700">{t("Overall band")}</span>
             <span className="text-5xl font-extrabold text-brand-600">{attempt.overall_band}</span>
           </div>
         ) : (
@@ -134,7 +135,7 @@ export function MockAttemptPage() {
                   <div className="flex items-center gap-1 text-xs text-ink-muted">
                     {durations[type] && (
                       <>
-                        <Clock className="h-3.5 w-3.5" /> {durations[type]} min ·{" "}
+                        <Clock className="h-3.5 w-3.5" /> {t("{n} min", { n: durations[type] })} ·{" "}
                       </>
                     )}
                     {ABOUT[type]}
@@ -142,22 +143,22 @@ export function MockAttemptPage() {
                 </div>
                 {sa?.submitted_at ? (
                   <div className="flex items-center gap-3">
-                    {sa.band_score ? <Badge color="green">Band {sa.band_score}</Badge> : <Badge color="amber">Checking</Badge>}
+                    {sa.band_score ? <Badge color="green">{t("Band")} {sa.band_score}</Badge> : <Badge color="amber">{t("Checking")}</Badge>}
                     <Link to={`/${type}/${sa.id}/result`} className="text-sm font-semibold text-brand-600 hover:text-brand-700">
-                      Result →
+                      {t("Result")} →
                     </Link>
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-label="Done" />
+                    <CheckCircle2 className="h-5 w-5 text-emerald-500" aria-label={t("Done")} />
                   </div>
                 ) : isOpen && inProgress ? (
                   <Link to={`/${type}/${open!.id}`}>
-                    <Button>Continue</Button>
+                    <Button>{t("Continue")}</Button>
                   </Link>
                 ) : isNext ? (
                   <Button onClick={startNext} loading={starting}>
-                    Start {SECTION_LABELS[type]}
+                    {t("Start {section}", { section: SECTION_LABELS[type] })}
                   </Button>
                 ) : (
-                  <Lock className="h-4 w-4 text-slate-300" aria-label="Locked" />
+                  <Lock className="h-4 w-4 text-slate-300" aria-label={t("Locked")} />
                 )}
               </Card>
             </li>
@@ -168,22 +169,22 @@ export function MockAttemptPage() {
       {inProgress && (
         <div className="mt-6 text-right">
           <button onClick={() => setConfirmAbandon(true)} className="text-sm font-medium text-red-600 hover:text-red-700">
-            Abandon this mock test
+            {t("Abandon this mock test")}
           </button>
         </div>
       )}
 
       {confirmAbandon && (
-        <Modal title="Abandon the mock test?" onClose={() => setConfirmAbandon(false)}>
+        <Modal title={t("Abandon the mock test?")} onClose={() => setConfirmAbandon(false)}>
           <p className="text-sm text-ink-muted">
-            Sections you haven&apos;t finished won&apos;t be taken, and this mock won&apos;t count in your progress.
+            {t("Sections you haven't finished won't be taken, and this mock won't count in your progress.")}
           </p>
           <div className="mt-6 flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setConfirmAbandon(false)}>
-              Keep going
+              {t("Keep going")}
             </Button>
             <Button variant="danger" onClick={abandon}>
-              Abandon
+              {t("Abandon")}
             </Button>
           </div>
         </Modal>

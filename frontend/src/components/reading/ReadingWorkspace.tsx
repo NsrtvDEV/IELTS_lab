@@ -5,6 +5,7 @@ import type { Passage, Question, QuestionGroup } from "../../api/student";
 import { isAnswered, type Answer } from "../../lib/answers";
 import { scrollToQuestion } from "../../lib/dom";
 import { Button, inputClass } from "../ui";
+import { t } from "../../i18n";
 
 // ───────────────────────── Ввод ответа ─────────────────────────
 
@@ -87,9 +88,9 @@ function QuestionInput({
         value={answer.options[0] ?? ""}
         onChange={(e) => onChange({ text: "", options: e.target.value ? [Number(e.target.value)] : [] })}
         className={`${inputClass} mt-2 max-w-xs`}
-        aria-label={`Answer to question ${question.number}`}
+        aria-label={t("Answer to question {n}", { n: question.number })}
       >
-        <option value="">Choose…</option>
+        <option value="">{t("Choose…")}</option>
         {group.options.map((o) => (
           <option key={o.id} value={o.id}>
             {o.label}
@@ -106,8 +107,8 @@ function QuestionInput({
       onChange={(e) => onChange({ text: e.target.value, options: [] })}
       maxLength={500}
       className={`${inputClass} mt-2 max-w-sm`}
-      placeholder="Your answer"
-      aria-label={`Answer to question ${question.number}`}
+      placeholder={t("Your answer")}
+      aria-label={t("Answer to question {n}", { n: question.number })}
       autoComplete="off"
       spellCheck={false}
     />
@@ -141,7 +142,7 @@ function InlineGap({
           value={answer.options[0] ?? ""}
           onChange={(e) => onChange({ text: "", options: e.target.value ? [Number(e.target.value)] : [] })}
           className={`${box} w-20`}
-          aria-label={`Answer to question ${question.number}`}
+          aria-label={t("Answer to question {n}", { n: question.number })}
         >
           <option value="" />
           {group.options.map((o) => (
@@ -156,7 +157,7 @@ function InlineGap({
           onChange={(e) => onChange({ text: e.target.value, options: [] })}
           maxLength={500}
           className={`${box} w-36`}
-          aria-label={`Answer to question ${question.number}`}
+          aria-label={t("Answer to question {n}", { n: question.number })}
           autoComplete="off"
           spellCheck={false}
         />
@@ -278,7 +279,7 @@ export function GroupBlock({
       {group.image_url && (
         <img
           src={resolveMediaUrl(group.image_url)}
-          alt={`Illustration for: ${group.instruction}`}
+          alt={t("Illustration for: {text}", { text: group.instruction })}
           className="mt-3 max-h-[28rem] w-auto max-w-full rounded-lg border border-slate-200"
         />
       )}
@@ -311,7 +312,7 @@ export function GroupBlock({
                 />
                 {answerKey?.[q.id] && (
                   <p className="mt-1.5 text-xs font-semibold text-emerald-700">
-                    Answer: {answerKey[q.id].join(group.type === "mcq_multi" ? ", " : " / ")}
+                    {t("Answer:")} {answerKey[q.id].join(group.type === "mcq_multi" ? ", " : " / ")}
                   </p>
                 )}
               </div>
@@ -404,7 +405,7 @@ function HighlightedPassage({ passage, storageKey }: { passage: Passage; storage
         key={i}
         onClick={(ev) => removeHighlight(ev, i)}
         className="cursor-pointer rounded-sm bg-amber-200/80 text-ink"
-        title="Click to remove highlight"
+        title={t("Click to remove highlight")}
       >
         {text.slice(s, e)}
       </mark>
@@ -419,7 +420,7 @@ function HighlightedPassage({ passage, storageKey }: { passage: Passage; storage
         {passage.title && <h2 className="text-xl font-bold text-ink">{passage.title}</h2>}
         {ranges.length > 0 && (
           <button onClick={() => setRanges([])} className="shrink-0 text-xs font-medium text-ink-muted hover:text-ink">
-            Clear highlights
+            {t("Clear highlights")}
           </button>
         )}
       </div>
@@ -433,7 +434,7 @@ function HighlightedPassage({ passage, storageKey }: { passage: Passage; storage
           style={{ top: pending.top, left: pending.left }}
           className="absolute z-10 inline-flex -translate-x-1/2 items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
         >
-          <Highlighter className="h-3.5 w-3.5" /> Highlight
+          <Highlighter className="h-3.5 w-3.5" /> {t("Highlight")}
         </button>
       )}
     </div>
@@ -462,7 +463,7 @@ export function QuestionNavigator({
   const answered = all.filter(({ q }) => isAnswered(answers[q.id])).length;
 
   return (
-    <nav className="flex shrink-0 items-center gap-3 overflow-x-auto border-t border-slate-200 bg-white px-4 py-2.5 sm:px-6" aria-label="Questions">
+    <nav className="flex shrink-0 items-center gap-3 overflow-x-auto border-t border-slate-200 bg-white px-4 py-2.5 sm:px-6" aria-label={t("Questions")}>
       <span className="shrink-0 text-xs font-semibold text-ink-muted">
         {answered}/{all.length}
       </span>
@@ -476,7 +477,7 @@ export function QuestionNavigator({
               className={`h-8 w-8 shrink-0 rounded-md text-xs font-bold ${
                 done ? "bg-brand-500 text-white" : "bg-slate-100 text-ink hover:bg-slate-200"
               }`}
-              aria-label={`Question ${q.number}${done ? ", answered" : ""}`}
+              aria-label={done ? t("Question {n}, answered", { n: q.number }) : t("Question {n}", { n: q.number })}
             >
               {q.number}
             </button>
@@ -534,7 +535,7 @@ export function ReadingWorkspace({
                   i === active ? "bg-brand-500 text-white" : "bg-slate-100 text-ink-muted hover:text-ink"
                 }`}
               >
-                Passage {i + 1}
+                {t("Passage {n}", { n: i + 1 })}
               </button>
             ))}
           </div>
@@ -543,7 +544,7 @@ export function ReadingWorkspace({
               <HighlightedPassage key={current.id} passage={current} storageKey={highlightKey} />
             </article>
           )}
-          <p className="mt-6 text-xs text-ink-muted">Tip: select words in the text to highlight them.</p>
+          <p className="mt-6 text-xs text-ink-muted">{t("Tip: select words in the text to highlight them.")}</p>
         </section>
 
         <section className="min-h-0 space-y-4 overflow-y-auto bg-[#f7f9fd] px-5 py-5 sm:px-8">
@@ -552,7 +553,7 @@ export function ReadingWorkspace({
           ))}
           {active < passages.length - 1 && (
             <Button variant="secondary" onClick={() => setActive(active + 1)}>
-              Next passage →
+              {t("Next passage")} →
             </Button>
           )}
         </section>

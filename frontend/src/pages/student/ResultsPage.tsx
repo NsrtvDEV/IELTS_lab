@@ -8,8 +8,9 @@ import { Badge, Card, ErrorBox, Spinner } from "../../components/ui";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { SECTION_ICONS, SECTION_TINTS } from "../../lib/sectionStyle";
 import { SECTIONS, sectionResults } from "../../lib/studentStats";
+import { locale, t } from "../../i18n";
 
-const dateFmt = new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" });
+const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
 
 export function ResultsPage() {
   const [attempts, setAttempts] = useState<Attempt[] | null>(null);
@@ -33,11 +34,11 @@ export function ResultsPage() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink">Results</h1>
-          <p className="mt-1 text-ink-muted">Every section you&apos;ve submitted, newest first.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink">{t("Results")}</h1>
+          <p className="mt-1 text-ink-muted">{t("Every section you've submitted, newest first.")}</p>
         </div>
         <Link to="/progress" className="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 hover:text-brand-700">
-          Progress charts <ArrowRight className="h-4 w-4" />
+          {t("Progress charts")} <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
 
@@ -51,14 +52,14 @@ export function ResultsPage() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-semibold text-ink">{a.test_title}</div>
-                  <div className="text-xs text-ink-muted">Full mock · {dateFmt.format(new Date(a.finished_at ?? a.started_at))}</div>
+                  <div className="text-xs text-ink-muted">{t("Full mock")} · {dateFmt.format(new Date(a.finished_at ?? a.started_at))}</div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-ink-muted">Overall</div>
+                  <div className="text-xs text-ink-muted">{t("Overall")}</div>
                   {a.overall_band ? (
                     <div className="text-2xl font-extrabold text-brand-600">{a.overall_band}</div>
                   ) : (
-                    <Badge color="amber">{a.status === "in_progress" ? "In progress" : "Checking"}</Badge>
+                    <Badge color="amber">{a.status === "in_progress" ? t("In progress") : t("Checking")}</Badge>
                   )}
                 </div>
               </Card>
@@ -68,24 +69,24 @@ export function ResultsPage() {
       )}
 
       <div className="mt-6 flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1 text-sm font-semibold sm:inline-flex" role="tablist">
-        {(["all", ...SECTIONS] as const).map((t) => (
+        {(["all", ...SECTIONS] as const).map((s) => (
           <button
-            key={t}
+            key={s}
             role="tab"
-            aria-selected={filter === t}
-            onClick={() => setFilter(t)}
-            className={`rounded-md px-4 py-1.5 ${filter === t ? "bg-white text-ink shadow-sm" : "text-ink-muted"}`}
+            aria-selected={filter === s}
+            onClick={() => setFilter(s)}
+            className={`rounded-md px-4 py-1.5 ${filter === s ? "bg-white text-ink shadow-sm" : "text-ink-muted"}`}
           >
-            {t === "all" ? "All" : SECTION_LABELS[t]}
+            {s === "all" ? t("All") : SECTION_LABELS[s]}
           </button>
         ))}
       </div>
 
       {results.length === 0 ? (
         <Card className="mt-4 px-6 py-14 text-center text-ink-muted">
-          No results yet.{" "}
+          {t("No results yet.")}{" "}
           <Link to="/tests" className="font-semibold text-brand-600">
-            Take a test →
+            {t("Take a test")} →
           </Link>
         </Card>
       ) : (
@@ -93,11 +94,11 @@ export function ResultsPage() {
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs text-ink-muted">
-                <th className="px-5 py-3 font-medium">Section</th>
-                <th className="px-5 py-3 font-medium">Test</th>
-                <th className="px-5 py-3 font-medium">Date</th>
-                <th className="px-5 py-3 font-medium">Correct</th>
-                <th className="px-5 py-3 font-medium">Band</th>
+                <th className="px-5 py-3 font-medium">{t("Section")}</th>
+                <th className="px-5 py-3 font-medium">{t("Test")}</th>
+                <th className="px-5 py-3 font-medium">{t("Date")}</th>
+                <th className="px-5 py-3 font-medium">{t("Correct")}</th>
+                <th className="px-5 py-3 font-medium">{t("Band")}</th>
                 <th className="px-5 py-3" />
               </tr>
             </thead>
@@ -116,7 +117,7 @@ export function ResultsPage() {
                     </td>
                     <td className="px-5 py-3 text-ink">
                       {r.testTitle}
-                      {r.mode === "mock" && <span className="ml-1.5 text-xs text-ink-muted">(full mock)</span>}
+                      {r.mode === "mock" && <span className="ml-1.5 text-xs text-ink-muted">({t("full mock")})</span>}
                     </td>
                     <td className="px-5 py-3 text-ink-muted">{dateFmt.format(new Date(r.date))}</td>
                     <td className="px-5 py-3 text-ink">{r.raw !== null ? `${r.raw}/40` : "—"}</td>
@@ -124,12 +125,12 @@ export function ResultsPage() {
                       {r.band !== null ? (
                         <span className="font-bold text-ink">{r.band.toFixed(1)}</span>
                       ) : (
-                        <Badge color="amber">Checking</Badge>
+                        <Badge color="amber">{t("Checking")}</Badge>
                       )}
                     </td>
                     <td className="px-5 py-3 text-right">
                       <Link to={`/${r.type}/${r.sectionAttemptId}/result`} className="font-semibold text-brand-600 hover:text-brand-700">
-                        Review →
+                        {t("Review")} →
                       </Link>
                     </td>
                   </tr>

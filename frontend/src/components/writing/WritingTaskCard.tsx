@@ -5,6 +5,7 @@ import type { InlineComment, WritingTaskResult } from "../../api/student";
 import { CRITERIA } from "../../lib/writing";
 import { Card } from "../ui";
 import { AnnotatedEssay } from "./AnnotatedEssay";
+import { t, tn } from "../../i18n";
 
 /** Задание Writing с текстом ученика, комментариями к фрагментам и (если есть) оценкой по критериям.
  *  onCommentsChange — учитель редактирует комментарии (comments тогда берутся из пропса). */
@@ -26,13 +27,13 @@ export function WritingTaskCard({
   return (
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-        <h3 className="text-lg font-bold text-ink">Task {task.task_number}</h3>
+        <h3 className="text-lg font-bold text-ink">{t("Task {n}", { n: task.task_number })}</h3>
         <div className="flex items-center gap-3 text-sm">
           <span className={short ? "font-semibold text-amber-700" : "text-ink-muted"}>
-            {task.word_count} words{short ? ` · under ${task.min_words}` : ""}
+            {tn(task.word_count, "{n} word", "{n} words")}{short ? ` · ${t("under {n}", { n: task.min_words })}` : ""}
           </span>
           {showAssessment && a && (
-            <span className="rounded-lg bg-brand-50 px-3 py-1 font-bold text-brand-700">Band {a.band}</span>
+            <span className="rounded-lg bg-brand-50 px-3 py-1 font-bold text-brand-700">{t("Band")} {a.band}</span>
           )}
         </div>
       </div>
@@ -43,13 +44,13 @@ export function WritingTaskCard({
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700"
           aria-expanded={promptOpen}
         >
-          <ChevronDown className={`h-4 w-4 transition ${promptOpen ? "rotate-180" : ""}`} /> Task
+          <ChevronDown className={`h-4 w-4 transition ${promptOpen ? "rotate-180" : ""}`} /> {t("Task")}
         </button>
         {promptOpen && (
           <div className="mt-2 rounded-lg bg-slate-50 p-4 text-sm text-ink">
             <p className="whitespace-pre-line">{task.prompt}</p>
             {task.image_url && (
-              <img src={resolveMediaUrl(task.image_url)} alt={`Task ${task.task_number} visual`} className="mt-3 max-h-80 rounded-lg border border-slate-200" />
+              <img src={resolveMediaUrl(task.image_url)} alt={t("Task {n} visual", { n: task.task_number })} className="mt-3 max-h-80 rounded-lg border border-slate-200" />
             )}
           </div>
         )}
@@ -62,7 +63,7 @@ export function WritingTaskCard({
             />
           ) : (
             <div className="rounded-lg border border-slate-200 bg-white p-4 text-[15px] italic text-ink-muted">
-              No text was written for this task.
+              {t("No text was written for this task.")}
             </div>
           )}
         </div>

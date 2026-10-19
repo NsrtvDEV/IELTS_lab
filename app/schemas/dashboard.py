@@ -31,6 +31,8 @@ class StudentProgress(BaseModel):
     overall_band: Decimal
     change: Decimal | None  # относительно результата до последней сданной секции
     last_activity: str  # "Reading test", "Mock test · Listening"
+    last_section: SectionType  # для подписи на языке интерфейса
+    last_in_mock: bool
     last_activity_at: datetime
 
 
@@ -48,7 +50,10 @@ class Performance(BaseModel):
 class Activity(BaseModel):
     kind: Literal["joined", "section_completed", "mock_completed"]
     student: str
-    text: str
+    text: str  # на английском
+    section: SectionType | None = None  # section_completed
+    band: Decimal | None = None
+    title: str | None = None  # mock_completed: название теста
     at: datetime
 
 
@@ -68,3 +73,24 @@ class TeacherDashboard(BaseModel):
     performance: Performance
     activities: list[Activity]
     tests: list[TestSummary]
+
+
+class TeacherActivity(BaseModel):
+    kind: Literal["test_created", "work_assessed"]
+    at: datetime
+    title: str | None = None  # test_created: название теста
+    test_id: int | None = None
+    student: str | None = None  # work_assessed
+    section: SectionType | None = None
+    band: Decimal | None = None
+    section_attempt_id: int | None = None
+
+
+class TeacherProfileStats(BaseModel):
+    """Профиль учителя: его статистика и последние действия."""
+
+    students: int  # активных учеников на платформе
+    tests_created: int  # тестов, созданных этим учителем
+    works_assessed: int  # работ Writing/Speaking, оценённых этим учителем
+    waiting_review: int  # работ ждут проверки сейчас
+    activity: list[TeacherActivity]  # новые сверху

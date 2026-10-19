@@ -6,7 +6,6 @@ import {
   AuthCard,
   AuthSwitchLink,
   FormAlert,
-  GoogleButton,
   PasswordField,
   SecurityNote,
   SubmitButton,
@@ -14,6 +13,7 @@ import {
 } from "../components/AuthForm";
 import { AuthLayout } from "../components/AuthLayout";
 import { useAuth } from "../context/AuthContext";
+import { t } from "../i18n";
 
 export function LoginPage() {
   const { user, login } = useAuth();
@@ -32,7 +32,7 @@ export function LoginPage() {
     setError(null);
     setNotice(null);
     if (!email.trim() || !password) {
-      setError("Enter your email and password.");
+      setError(t("Enter your email and password."));
       return;
     }
     setSubmitting(true);
@@ -46,21 +46,21 @@ export function LoginPage() {
     }
   }
 
-  // Восстановление пароля и вход через Google на бэкенде ещё не реализованы
-  function comingSoon(feature: string) {
+  // пароль сбрасывает администратор в админке
+  function forgotPassword() {
     setError(null);
-    setNotice(`${feature} is coming soon.`);
+    setNotice(t("Ask your teacher or the administrator — they will set a new password for you."));
   }
 
   return (
     <AuthLayout>
-      <AuthSwitchLink question="Don't have an account?" to="/register" label="Sign up" />
+      <AuthSwitchLink question={t("Don't have an account?")} to="/register" label={t("Sign up")} />
 
-      <AuthCard title="Welcome back" subtitle="Log in to continue your IELTS journey">
+      <AuthCard title={t("Welcome back")} subtitle={t("Log in to continue your IELTS journey")}>
         <form onSubmit={handleSubmit} className="mt-10 space-y-6" noValidate>
           <TextField
             id="email"
-            label="Email address"
+            label={t("Email address")}
             icon={Mail}
             type="email"
             autoComplete="email"
@@ -72,28 +72,27 @@ export function LoginPage() {
           <div>
             <PasswordField
               id="password"
-              label="Password"
+              label={t("Password")}
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
+              placeholder={t("Enter your password")}
             />
             <div className="mt-3 text-right">
               <button
                 type="button"
-                onClick={() => comingSoon("Password recovery")}
+                onClick={forgotPassword}
                 className="text-sm font-medium text-brand-500 hover:text-brand-700"
               >
-                Forgot password?
+                {t("Forgot password?")}
               </button>
             </div>
           </div>
 
           <FormAlert error={error} notice={notice} />
-          <SubmitButton loading={submitting}>Log in</SubmitButton>
+          <SubmitButton loading={submitting}>{t("Log in")}</SubmitButton>
         </form>
 
-        <GoogleButton onClick={() => comingSoon("Sign in with Google")} />
         <SecurityNote />
       </AuthCard>
     </AuthLayout>

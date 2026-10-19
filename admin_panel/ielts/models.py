@@ -56,6 +56,10 @@ class UserProfile(Unmanaged):
     first_name = models.CharField("имя", max_length=100, null=True, blank=True)
     last_name = models.CharField("фамилия", max_length=100, null=True, blank=True)
     native_language = models.CharField(max_length=50, null=True, blank=True)
+    phone = models.CharField("телефон", max_length=30, null=True, blank=True)
+    location = models.CharField("город", max_length=100, null=True, blank=True)
+    bio = models.TextField("о себе", null=True, blank=True)
+    avatar_url = models.CharField("фото", max_length=500, null=True, blank=True)
 
     class Meta(Unmanaged.Meta):
         db_table = "user_profiles"
@@ -80,6 +84,9 @@ class RefreshToken(Unmanaged):
 class IeltsTest(Unmanaged):
     title = models.CharField(max_length=255)
     is_published = models.BooleanField(default=False)
+    created_by = models.ForeignKey(
+        User, models.SET_NULL, null=True, blank=True, db_column="created_by_id", verbose_name="автор"
+    )
     created_at = models.DateTimeField(db_default=Now(), editable=False)
     updated_at = models.DateTimeField(db_default=Now(), auto_now=True)
 

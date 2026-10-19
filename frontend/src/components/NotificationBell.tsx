@@ -9,9 +9,35 @@ import {
   type NotificationKind,
   type NotificationList,
 } from "../api/notifications";
+import type { SectionType } from "../api/teacher";
 import { timeAgo } from "../lib/format";
+import { SECTION_LABELS } from "../lib/questionTypes";
+import { t, tn } from "../i18n";
 
 const POLL_MS = 30_000;
+
+/** Текст на языке интерфейса; у старых уведомлений нет params — показываем готовый текст */
+function notificationText(n: AppNotification): string {
+  const p = n.params;
+  if (!p) return n.text;
+  const section = SECTION_LABELS[p.section as SectionType] ?? String(p.section ?? "");
+  switch (n.kind) {
+    case "assessed":
+      return p.updated
+        ? t("Your {section} assessment was updated — band {band}", { section, band: String(p.band) })
+        : t("Your {section} has been assessed — band {band}", { section, band: String(p.band) });
+    case "auto_submitted":
+      return t("Time ran out — your {section} was submitted automatically", { section });
+    case "test_published":
+      return t("New test available: {title}", { title: String(p.title) });
+    case "review_submitted":
+      return t("{name} submitted {section} — waiting for review", { name: String(p.name), section });
+    case "review_waiting":
+      return tn(Number(p.count), "{n} work has been waiting for review for more than 2 days", "{n} works have been waiting for review for more than 2 days");
+    default:
+      return n.text;
+  }
+}
 
 const KIND_ICONS: Record<NotificationKind, { icon: LucideIcon; tint: string }> = {
   assessed: { icon: Trophy, tint: "bg-emerald-50 text-emerald-600" },
@@ -76,7 +102,7 @@ export function NotificationBell() {
       <button
         onClick={toggle}
         className="relative rounded-xl p-2.5 text-ink-muted hover:bg-slate-100"
-        aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+        aria-label={unread ? t("Notifications, {n} unread", { n: unread }) : t("Notifications")}
         aria-expanded={open}
         aria-haspopup="dialog"
       >
@@ -91,23 +117,23 @@ export function NotificationBell() {
       {open && (
         <div
           role="dialog"
-          aria-label="Notifications"
+          aria-label={t("Notifications")}
           className="absolute right-0 z-50 mt-2 w-[min(380px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
         >
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-            <span className="font-bold text-ink">Notifications</span>
+            <span className="font-bold text-ink">{t("Notifications")}</span>
             {unread > 0 && (
               <button onClick={readAll} className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-700">
-                <CheckCheck className="h-4 w-4" /> Mark all as read
+                <CheckCheck className="h-4 w-4" /> {t("Mark all as read")}
               </button>
             )}
           </div>
           {!data ? (
-            <p className="px-4 py-10 text-center text-sm text-ink-muted">Loading…</p>
+            <p className="px-4 py-10 text-center text-sm text-ink-muted">{t("Loading…")}</p>
           ) : data.items.length === 0 ? (
             <div className="flex flex-col items-center px-4 py-10 text-center text-sm text-ink-muted">
               <Bell className="h-7 w-7 text-slate-300" />
-              <p className="mt-2">No notifications yet.</p>
+              <p className="mt-2">{t("No notifications yet.")}</p>
             </div>
           ) : (
             <ul className="max-h-[420px] divide-y divide-slate-100 overflow-y-auto">
@@ -123,10 +149,10 @@ export function NotificationBell() {
                         <Icon className="h-4 w-4" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className={`block text-sm ${n.read ? "text-ink-muted" : "font-semibold text-ink"}`}>{n.text}</span>
+                        <span className={`block text-sm ${n.read ? "text-ink-muted" : "font-semibold text-ink"}`}>{notificationText(n)}</span>
                         <span className="mt-0.5 block text-xs text-ink-muted">{timeAgo(n.created_at)}</span>
                       </span>
-                      {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-500" aria-label="Unread" />}
+                      {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-500" aria-label={t("Unread")} />}
                     </button>
                   </li>
                 );

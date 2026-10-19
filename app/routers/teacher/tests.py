@@ -23,6 +23,7 @@ async def create_test(session: db_dep, teacher: teacher_dep, data: TestCreate):
     """Новый mock-тест сразу с 4 секциями и стандартным временем IELTS."""
     test = IeltsTest(
         title=data.title,
+        created_by_id=teacher.id,
         sections=[
             Section(type=section_type, duration_min=minutes, position=i)
             for i, (section_type, minutes) in enumerate(DEFAULT_SECTIONS)

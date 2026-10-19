@@ -5,7 +5,8 @@ export type NotificationKind = "assessed" | "auto_submitted" | "test_published" 
 export interface AppNotification {
   id: number;
   kind: NotificationKind;
-  text: string;
+  text: string; // на английском
+  params: Record<string, string | number | boolean> | null; // для текста на языке интерфейса
   link: string | null; // путь на сайте
   read: boolean;
   created_at: string;

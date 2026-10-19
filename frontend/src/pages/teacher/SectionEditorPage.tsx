@@ -20,6 +20,7 @@ import { Badge, Button, Card, ErrorBox, Modal, Spinner } from "../../components/
 import { QUESTION_TYPE_LABELS, SECTION_LABELS } from "../../lib/questionTypes";
 import { isLocked } from "../../lib/tests";
 import { LockedNotice } from "./TestDetailPage";
+import { t, tn } from "../../i18n";
 
 function formatDuration(sec: number) {
   return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
@@ -66,13 +67,13 @@ function GroupCard({
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold text-ink">Questions {range}</span>
+            <span className="text-sm font-bold text-ink">{t("Questions {range}", { range })}</span>
             <Badge color="blue">{QUESTION_TYPE_LABELS[group.type]}</Badge>
             {passageName && <Badge color="gray">{passageName}</Badge>}
             {group.word_limit && (
               <Badge color="amber">
-                ≤ {group.word_limit} word{group.word_limit > 1 ? "s" : ""}
-                {group.allow_number ? " + number" : ""}
+                ≤ {tn(group.word_limit, "{n} word", "{n} words")}
+                {group.allow_number ? ` + ${t("number")}` : ""}
               </Badge>
             )}
           </div>
@@ -83,10 +84,10 @@ function GroupCard({
         </div>
         {!locked && (
           <div className="flex gap-1">
-            <button onClick={onEdit} className="rounded-lg p-2 text-ink-muted hover:bg-slate-100 hover:text-ink" aria-label={`Edit questions ${range}`}>
+            <button onClick={onEdit} className="rounded-lg p-2 text-ink-muted hover:bg-slate-100 hover:text-ink" aria-label={t("Edit questions {range}", { range })}>
               <Pencil className="h-4 w-4" />
             </button>
-            <button onClick={onDelete} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-600" aria-label={`Delete questions ${range}`}>
+            <button onClick={onDelete} className="rounded-lg p-2 text-ink-muted hover:bg-red-50 hover:text-red-600" aria-label={t("Delete questions {range}", { range })}>
               <Trash2 className="h-4 w-4" />
             </button>
           </div>
@@ -110,7 +111,7 @@ function GroupCard({
               {q.number}
             </span>
             <div className="min-w-0 flex-1">
-              <span className="text-ink">{q.text || <em className="text-ink-muted">no text</em>}</span>
+              <span className="text-ink">{q.text || <em className="text-ink-muted">{t("no text")}</em>}</span>
               {q.options.length > 0 && (
                 <span className="ml-2 text-ink-muted">({q.options.map((o) => `${o.label}. ${o.text}`).join("; ")})</span>
               )}
@@ -166,7 +167,7 @@ export function SectionEditorPage() {
   const listening = section.type === "listening";
   const passageName = (id: number | null) => {
     const i = section.passages.findIndex((p) => p.id === id);
-    return i === -1 ? null : listening ? `Part ${i + 1}` : `Passage ${i + 1}`;
+    return i === -1 ? null : listening ? t("Part {n}", { n: i + 1 }) : t("Passage {n}", { n: i + 1 });
   };
   const count = section.question_numbers.length;
   // Listening: секция должна вмещать все записи + 2 минуты на проверку ответов
@@ -176,7 +177,7 @@ export function SectionEditorPage() {
   const tooShort = neededMin !== null && section.duration_min < neededMin;
 
   async function removePassage(p: TeacherPassage) {
-    if (!window.confirm("Delete this passage? Its questions will stay but lose the link to it.")) return;
+    if (!window.confirm(t("Delete this passage? Its questions will stay but lose the link to it."))) return;
     try {
       await deletePassage(p.id);
       await load();
@@ -186,7 +187,7 @@ export function SectionEditorPage() {
   }
 
   async function removeGroup(g: TeacherQuestionGroup) {
-    if (!window.confirm(`Delete ${g.questions.length} question(s)?`)) return;
+    if (!window.confirm(t("Delete {n} question(s)?", { n: g.questions.length }))) return;
     try {
       await deleteQuestionGroup(g.id);
       await load();
@@ -210,7 +211,7 @@ export function SectionEditorPage() {
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink">{SECTION_LABELS[section.type]}</h1>
           <p className="mt-1 text-ink-muted">
-            {section.duration_min} minutes · {count} of 40 questions
+            {t("{n} min", { n: section.duration_min })} · {t("{n} of 40 questions", { n: count })}
           </p>
         </div>
         <div className="w-full max-w-xs">
@@ -222,7 +223,7 @@ export function SectionEditorPage() {
           </div>
           {count < 40 && (
             <p className="mt-1.5 text-right text-xs text-ink-muted">
-              Missing: {missingRanges(section.question_numbers)}
+              {t("Missing:")} {missingRanges(section.question_numbers)}
             </p>
           )}
         </div>
@@ -235,10 +236,10 @@ export function SectionEditorPage() {
           <p
             className={`rounded-xl px-4 py-3 text-sm ${tooShort ? "bg-amber-50 text-amber-800" : "bg-slate-50 text-ink-muted"}`}
           >
-            Recordings last <strong>{formatDuration(totalAudio)}</strong>. Section time is {section.duration_min} min
+            {t("Recordings last {time}. Section time is {n} min", { time: formatDuration(totalAudio), n: section.duration_min })}
             {tooShort
-              ? ` — set it to at least ${neededMin} min on the test page (recordings + 2 min to check answers).`
-              : " — enough for the recordings and 2 minutes to check answers."}
+              ? ` — ${t("set it to at least {n} min on the test page (recordings + 2 min to check answers).", { n: neededMin ?? 0 })}`
+              : ` — ${t("enough for the recordings and 2 minutes to check answers.")}`}
           </p>
         )}
       </div>
@@ -247,17 +248,17 @@ export function SectionEditorPage() {
         {/* тексты / записи */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-bold text-ink">{listening ? "Recordings" : "Passages"}</h2>
+            <h2 className="font-bold text-ink">{listening ? t("Recordings") : t("Passages")}</h2>
             {!locked && (
               <Button variant="ghost" className="h-8 px-2" onClick={() => setEditing({ kind: "passage" })}>
-                <Plus className="h-4 w-4" /> Add
+                <Plus className="h-4 w-4" /> {t("Add")}
               </Button>
             )}
           </div>
           <div className="space-y-3">
             {section.passages.length === 0 && (
               <Card className="px-5 py-8 text-center text-sm text-ink-muted">
-                {listening ? "Add the recordings for Parts 1–4." : "Add Reading Passages 1–3."}
+                {listening ? t("Add the recordings for Parts 1–4.") : t("Add Reading Passages 1–3.")}
               </Card>
             )}
             {section.passages.map((p, i) => {
@@ -268,15 +269,15 @@ export function SectionEditorPage() {
                     <Icon className="mt-0.5 h-5 w-5 shrink-0 text-brand-500" />
                     <div className="min-w-0 flex-1">
                       <div className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
-                        {listening ? `Part ${i + 1}` : `Passage ${i + 1}`}
+                        {listening ? t("Part {n}", { n: i + 1 }) : t("Passage {n}", { n: i + 1 })}
                         {listening && p.audio_duration_sec ? ` · ${formatDuration(p.audio_duration_sec)}` : ""}
                       </div>
-                      <div className="truncate font-semibold text-ink">{p.title || "Untitled"}</div>
+                      <div className="truncate font-semibold text-ink">{p.title || t("Untitled")}</div>
                       {listening ? (
                         p.audio_url ? (
                           <audio controls preload="none" src={resolveMediaUrl(p.audio_url)} className="mt-2 h-9 w-full" />
                         ) : (
-                          <p className="mt-1 text-sm font-medium text-red-600">No recording yet</p>
+                          <p className="mt-1 text-sm font-medium text-red-600">{t("No recording yet")}</p>
                         )
                       ) : (
                         <p className="mt-1 line-clamp-3 text-sm text-ink-muted">{p.text}</p>
@@ -284,10 +285,10 @@ export function SectionEditorPage() {
                     </div>
                     {!locked && (
                       <div className="flex">
-                        <button onClick={() => setEditing({ kind: "passage", passage: p })} className="rounded-lg p-1.5 text-ink-muted hover:bg-slate-100 hover:text-ink" aria-label="Edit passage">
+                        <button onClick={() => setEditing({ kind: "passage", passage: p })} className="rounded-lg p-1.5 text-ink-muted hover:bg-slate-100 hover:text-ink" aria-label={t("Edit passage")}>
                           <Pencil className="h-4 w-4" />
                         </button>
-                        <button onClick={() => removePassage(p)} className="rounded-lg p-1.5 text-ink-muted hover:bg-red-50 hover:text-red-600" aria-label="Delete passage">
+                        <button onClick={() => removePassage(p)} className="rounded-lg p-1.5 text-ink-muted hover:bg-red-50 hover:text-red-600" aria-label={t("Delete passage")}>
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -302,18 +303,18 @@ export function SectionEditorPage() {
         {/* группы вопросов */}
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-bold text-ink">Questions</h2>
+            <h2 className="font-bold text-ink">{t("Questions")}</h2>
             <div className="flex gap-2">
               {count > 0 && (
                 <Link to={`/teacher/sections/${section.id}/preview`}>
                   <Button variant="secondary" className="h-9">
-                    <Eye className="h-4 w-4" /> Preview
+                    <Eye className="h-4 w-4" /> {t("Preview")}
                   </Button>
                 </Link>
               )}
               {!locked && count < 40 && (
                 <Button className="h-9" onClick={() => setEditing({ kind: "group" })}>
-                  <Plus className="h-4 w-4" /> Add questions
+                  <Plus className="h-4 w-4" /> {t("Add questions")}
                 </Button>
               )}
             </div>
@@ -321,8 +322,7 @@ export function SectionEditorPage() {
           <div className="space-y-4">
             {section.question_groups.length === 0 && (
               <Card className="px-5 py-12 text-center text-sm text-ink-muted">
-                No questions yet. Questions are added in groups with one instruction — for example
-                “Questions 1–5, TRUE / FALSE / NOT GIVEN”.
+                {t("No questions yet. Questions are added in groups with one instruction — for example “Questions 1–5, TRUE / FALSE / NOT GIVEN”.")}
               </Card>
             )}
             {section.question_groups.map((g) => (
@@ -341,7 +341,7 @@ export function SectionEditorPage() {
 
       {editing?.kind === "passage" && (
         <Modal
-          title={editing.passage ? "Edit" : listening ? "Add recording" : "Add passage"}
+          title={editing.passage ? t("Edit") : listening ? t("Add recording") : t("Add passage")}
           onClose={() => setEditing(null)}
           wide={!listening}
         >
@@ -356,7 +356,7 @@ export function SectionEditorPage() {
         </Modal>
       )}
       {editing?.kind === "group" && (
-        <Modal title={editing.group ? "Edit questions" : "Add questions"} onClose={() => setEditing(null)} wide>
+        <Modal title={editing.group ? t("Edit questions") : t("Add questions")} onClose={() => setEditing(null)} wide>
           <QuestionGroupForm section={section} group={editing.group} onSaved={saved} onCancel={() => setEditing(null)} />
         </Modal>
       )}

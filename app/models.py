@@ -147,6 +147,10 @@ class UserProfile(Base):
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     native_language: Mapped[str | None] = mapped_column(String(50))
+    phone: Mapped[str | None] = mapped_column(String(30))
+    location: Mapped[str | None] = mapped_column(String(100))
+    bio: Mapped[str | None] = mapped_column(Text)  # «о себе» — показывается в профиле
+    avatar_url: Mapped[str | None] = mapped_column(String(500))  # /media/avatars/...
 
     user: Mapped["User"] = relationship(back_populates="profile")
 
@@ -185,6 +189,9 @@ class IeltsTest(TimestampMixin, Base):
     title: Mapped[str] = mapped_column(String(255))
     is_published: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default=expression.false()
+    )
+    created_by_id: Mapped[int | None] = mapped_column(  # кто создал (профиль учителя)
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
 
     sections: Mapped[list["Section"]] = relationship(
@@ -435,7 +442,9 @@ class Notification(Base):
         ForeignKey("users.id", ondelete="CASCADE"), index=True
     )
     kind: Mapped[str] = mapped_column(String(40))  # assessed, review_submitted, ...
-    text: Mapped[str] = mapped_column(String(500))
+    text: Mapped[str] = mapped_column(String(500))  # готовый текст на английском
+    # данные для текста на языке интерфейса: {"section": "writing", "band": "6.5", ...}
+    params: Mapped[dict | None] = mapped_column(JSONB)
     link: Mapped[str | None] = mapped_column(String(500))  # куда ведёт клик (путь фронтенда)
     # к чему относится: review:<section_attempt_id>, test:<id> — чтобы убрать или не дублировать
     ref_key: Mapped[str | None] = mapped_column(String(100), index=True)

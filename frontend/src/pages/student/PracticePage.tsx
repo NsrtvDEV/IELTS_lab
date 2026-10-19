@@ -16,15 +16,16 @@ import { isUnfinished } from "../../lib/attempts";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { SECTION_ICONS, SECTION_TINTS } from "../../lib/sectionStyle";
 import { SECTIONS, sectionResults, sectionSummaries, signed } from "../../lib/studentStats";
+import { locale, t } from "../../i18n";
 
 const ABOUT: Record<AvailableSection, string> = {
-  reading: "3 passages · 40 questions. Answers are checked as soon as you finish.",
-  listening: "4 recordings, each played once · 40 questions. Answers are checked as soon as you finish.",
-  writing: "Task 1 (150+ words) and Task 2 (250+ words). A teacher assesses your essays.",
-  speaking: "Part 1–3 answered into your microphone. A teacher assesses your recordings.",
+  reading: t("3 passages · 40 questions. Answers are checked as soon as you finish."),
+  listening: t("4 recordings, each played once · 40 questions. Answers are checked as soon as you finish."),
+  writing: t("Task 1 (150+ words) and Task 2 (250+ words). A teacher assesses your essays."),
+  speaking: t("Part 1–3 answered into your microphone. A teacher assesses your recordings."),
 };
 
-const dateFmt = new Intl.DateTimeFormat("en", { day: "numeric", month: "short", year: "numeric" });
+const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
 
 export function PracticePage() {
   const { section } = useParams();
@@ -76,7 +77,7 @@ export function PracticePage() {
           <p className="mt-1 text-ink-muted">{ABOUT[type]}</p>
         </div>
         <div className="rounded-2xl bg-white px-6 py-4 text-center shadow-sm">
-          <div className="text-xs font-medium text-ink-muted">Latest band</div>
+          <div className="text-xs font-medium text-ink-muted">{t("Latest band")}</div>
           <div className="text-3xl font-extrabold text-ink">{summary.band?.toFixed(1) ?? "—"}</div>
           {summary.change !== null && summary.change !== 0 && (
             <div className={`inline-flex items-center gap-0.5 text-xs font-semibold ${summary.change > 0 ? "text-emerald-600" : "text-red-600"}`}>
@@ -92,9 +93,9 @@ export function PracticePage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <Card className="p-5">
-          <h2 className="text-lg font-bold text-ink">Tests</h2>
+          <h2 className="text-lg font-bold text-ink">{t("Tests")}</h2>
           {tests.length === 0 ? (
-            <p className="py-10 text-center text-sm text-ink-muted">No tests are published yet. Check back soon!</p>
+            <p className="py-10 text-center text-sm text-ink-muted">{t("No tests are published yet. Check back soon!")}</p>
           ) : (
             <ul className="mt-2 divide-y divide-slate-100">
               {tests.map((test) => {
@@ -107,10 +108,10 @@ export function PracticePage() {
                     <div className="min-w-48 flex-1">
                       <div className="flex items-center gap-2 font-semibold text-ink">
                         {test.title}
-                        {done && <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-label="Completed" />}
+                        {done && <CheckCircle2 className="h-4 w-4 text-emerald-500" aria-label={t("Completed")} />}
                       </div>
                       <div className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
-                        <Clock className="h-3.5 w-3.5" /> {s.duration_min} min
+                        <Clock className="h-3.5 w-3.5" /> {t("{n} min", { n: s.duration_min })}
                       </div>
                     </div>
                     {last && (
@@ -118,11 +119,11 @@ export function PracticePage() {
                         to={`/${type}/${last.sectionAttemptId}/result`}
                         className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
                       >
-                        {last.band !== null ? <Badge color="green">{last.band.toFixed(1)}</Badge> : <Badge color="amber">Checking</Badge>} Result
+                        {last.band !== null ? <Badge color="green">{last.band.toFixed(1)}</Badge> : <Badge color="amber">{t("Checking")}</Badge>} {t("Result")}
                       </Link>
                     )}
                     <Button className="h-9" onClick={() => start(test.id)} loading={starting === test.id} disabled={unfinished}>
-                      {done ? "Retake" : "Start"}
+                      {done ? t("Retake") : t("Start")}
                     </Button>
                   </li>
                 );
@@ -132,9 +133,9 @@ export function PracticePage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="text-lg font-bold text-ink">Your {SECTION_LABELS[type]} history</h2>
+          <h2 className="text-lg font-bold text-ink">{t("Your {section} history", { section: SECTION_LABELS[type] })}</h2>
           {results.length === 0 ? (
-            <p className="py-10 text-center text-sm text-ink-muted">You haven&apos;t taken {SECTION_LABELS[type]} yet.</p>
+            <p className="py-10 text-center text-sm text-ink-muted">{t("You haven't taken {section} yet.", { section: SECTION_LABELS[type] })}</p>
           ) : (
             <ul className="mt-2 divide-y divide-slate-100">
               {[...results].reverse().map((r) => (
@@ -143,11 +144,11 @@ export function PracticePage() {
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium text-ink">
                         {r.testTitle}
-                        {r.mode === "mock" && <span className="ml-1.5 text-xs text-ink-muted">(full mock)</span>}
+                        {r.mode === "mock" && <span className="ml-1.5 text-xs text-ink-muted">({t("full mock")})</span>}
                       </div>
                       <div className="text-xs text-ink-muted">{dateFmt.format(new Date(r.date))}</div>
                     </div>
-                    {r.band !== null ? <span className="font-bold text-ink">{r.band.toFixed(1)}</span> : <Badge color="amber">Checking</Badge>}
+                    {r.band !== null ? <span className="font-bold text-ink">{r.band.toFixed(1)}</span> : <Badge color="amber">{t("Checking")}</Badge>}
                   </Link>
                 </li>
               ))}

@@ -8,6 +8,7 @@ import { StudentLayout } from "./components/StudentLayout";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { ProgressPage } from "./pages/student/ProgressPage";
 import { SectionAttemptPage } from "./pages/student/SectionAttemptPage";
 import { SectionResultPage } from "./pages/student/SectionResultPage";
@@ -30,7 +31,9 @@ import { SectionPreviewPage } from "./pages/teacher/SectionPreviewPage";
 import { StudentDetailPage, StudentResultPage } from "./pages/teacher/StudentDetailPage";
 import { StudentsPage } from "./pages/teacher/StudentsPage";
 import { TestDetailPage } from "./pages/teacher/TestDetailPage";
+import { TeacherProfilePage } from "./pages/teacher/TeacherProfilePage";
 import { TestsPage } from "./pages/teacher/TestsPage";
+import { t } from "./i18n";
 
 function Teacher({ children }: { children: ReactNode }) {
   return (
@@ -44,7 +47,7 @@ function Teacher({ children }: { children: ReactNode }) {
 function Home() {
   const { user, loading } = useAuth();
   if (loading) {
-    return <div className="flex h-screen items-center justify-center text-ink-muted">Loading…</div>;
+    return <div className="flex h-screen items-center justify-center text-ink-muted">{t("Loading…")}</div>;
   }
   if (!user) return <LandingPage />;
   if (TEACHER_ROLES.includes(user.role)) return <Navigate to="/teacher" replace />;
@@ -93,6 +96,7 @@ export default function App() {
             ["/results", ResultsPage],
             ["/progress", ProgressPage],
             ["/profile", ProfilePage],
+            ["/settings", SettingsPage],
           ] as const
         ).map(([path, Page]) => (
           <Route key={path} path={path} element={<ProtectedRoute><StudentLayout><Page /></StudentLayout></ProtectedRoute>} />
@@ -108,6 +112,8 @@ export default function App() {
         <Route path="/teacher/review" element={<Teacher><ReviewQueuePage /></Teacher>} />
         <Route path="/teacher/review/writing/:sectionAttemptId" element={<Teacher><ReviewWritingPage /></Teacher>} />
         <Route path="/teacher/review/speaking/:sectionAttemptId" element={<Teacher><ReviewSpeakingPage /></Teacher>} />
+        <Route path="/teacher/profile" element={<Teacher><TeacherProfilePage /></Teacher>} />
+        <Route path="/teacher/settings" element={<Teacher><SettingsPage /></Teacher>} />
         <Route path="/teacher/students" element={<Teacher><StudentsPage /></Teacher>} />
         <Route path="/teacher/students/:studentId" element={<Teacher><StudentDetailPage /></Teacher>} />
         <Route path="/teacher/students/:studentId/results/:sectionAttemptId" element={<Teacher><StudentResultPage /></Teacher>} />

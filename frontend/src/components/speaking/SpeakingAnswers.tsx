@@ -4,6 +4,7 @@ import { apiErrorMessage } from "../../api/client";
 import { getRecording, type SpeakingTaskResult } from "../../api/student";
 import { PARTS, formatSeconds } from "../../lib/speaking";
 import { Card } from "../ui";
+import { t } from "../../i18n";
 
 /** Запись ответа: файл скачивается с токеном и играет из памяти браузера */
 export function RecordingPlayer({ responseId }: { responseId: number }) {
@@ -41,7 +42,7 @@ function SampleAnswer({ text }: { text: string }) {
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-600 hover:text-brand-700"
         aria-expanded={open}
       >
-        <Lightbulb className="h-4 w-4" /> Sample answer
+        <Lightbulb className="h-4 w-4" /> {t("Sample answer")}
         <ChevronDown className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} />
       </button>
       {open && <p className="mt-2 whitespace-pre-line rounded-lg bg-amber-50/70 p-3 text-sm leading-6 text-ink">{text}</p>}
@@ -54,46 +55,46 @@ export function SpeakingAnswers({ tasks }: { tasks: SpeakingTaskResult[] }) {
   return (
     <div className="space-y-5">
       {([1, 2, 3] as const).map((part) => {
-        const items = tasks.filter((t) => t.part === part);
+        const items = tasks.filter((task) => task.part === part);
         if (!items.length) return null;
         return (
           <Card key={part} className="overflow-hidden">
             <div className="border-b border-slate-100 px-5 py-4">
               <h3 className="text-lg font-bold text-ink">
-                Part {part} <span className="font-medium text-ink-muted">· {PARTS[part].title}</span>
+                {t("Part {n}", { n: part })} <span className="font-medium text-ink-muted">· {PARTS[part].title}</span>
               </h3>
             </div>
             <ol className="divide-y divide-slate-100">
-              {items.map((t, i) => (
-                <li key={t.id} className="px-5 py-4">
+              {items.map((task, i) => (
+                <li key={task.id} className="px-5 py-4">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <p className="font-medium text-ink">
                       {part !== 2 && <span className="mr-2 text-ink-muted">{i + 1}.</span>}
-                      {t.prompt}
+                      {task.prompt}
                     </p>
-                    {t.duration_sec !== null && (
+                    {task.duration_sec !== null && (
                       <span className="text-xs text-ink-muted">
-                        {formatSeconds(t.duration_sec)} / {formatSeconds(t.speak_time_sec)}
+                        {formatSeconds(task.duration_sec)} / {formatSeconds(task.speak_time_sec)}
                       </span>
                     )}
                   </div>
-                  {t.cue_card_points.length > 0 && (
+                  {task.cue_card_points.length > 0 && (
                     <ul className="mt-2 list-disc space-y-0.5 pl-5 text-sm text-ink-muted">
-                      {t.cue_card_points.map((p) => (
+                      {task.cue_card_points.map((p) => (
                         <li key={p}>{p}</li>
                       ))}
                     </ul>
                   )}
                   <div className="mt-3">
-                    {t.response_id !== null ? (
-                      <RecordingPlayer responseId={t.response_id} />
+                    {task.response_id !== null ? (
+                      <RecordingPlayer responseId={task.response_id} />
                     ) : (
                       <p className="inline-flex items-center gap-1.5 text-sm italic text-ink-muted">
-                        <MicOff className="h-4 w-4" /> No answer recorded
+                        <MicOff className="h-4 w-4" /> {t("No answer recorded")}
                       </p>
                     )}
                   </div>
-                  {t.sample_answer && <SampleAnswer text={t.sample_answer} />}
+                  {task.sample_answer && <SampleAnswer text={task.sample_answer} />}
                 </li>
               ))}
             </ol>

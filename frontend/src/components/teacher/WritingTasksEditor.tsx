@@ -13,19 +13,20 @@ import {
 import { isLocked } from "../../lib/tests";
 import { Badge, Button, Card, ErrorBox, Label, inputBase, textareaClass } from "../ui";
 import { ImageField } from "./ImageField";
+import { t } from "../../i18n";
 
 const DEFAULTS: Record<1 | 2, { minWords: number; minutes: number; hint: string; placeholder: string }> = {
   1: {
     minWords: 150,
     minutes: 20,
-    hint: "Task 1: describe a graph, table, chart, map or process. Upload the visual below.",
+    hint: t("Task 1: describe a graph, table, chart, map or process. Upload the visual below."),
     placeholder:
       "The chart below shows the number of visitors to three museums in London between 2010 and 2020.\n\nSummarise the information by selecting and reporting the main features, and make comparisons where relevant.",
   },
   2: {
     minWords: 250,
     minutes: 40,
-    hint: "Task 2: an essay giving an opinion, discussing views or solving a problem.",
+    hint: t("Task 2: an essay giving an opinion, discussing views or solving a problem."),
     placeholder:
       "Some people believe that university education should be free for everyone. Others think students should pay for it.\n\nDiscuss both views and give your own opinion.\n\nGive reasons for your answer and include any relevant examples from your own knowledge or experience.",
   },
@@ -57,7 +58,7 @@ function TaskForm({
     e.preventDefault();
     setError(null);
     setSaved(false);
-    if (!prompt.trim()) return setError("Write the task for students.");
+    if (!prompt.trim()) return setError(t("Write the task for students."));
     const input = {
       prompt: prompt.trim(),
       image_url: imageUrl,
@@ -78,7 +79,7 @@ function TaskForm({
   }
 
   async function remove() {
-    if (!task || !window.confirm(`Delete Task ${number}?`)) return;
+    if (!task || !window.confirm(t("Delete Task {n}?", { n: number }))) return;
     try {
       await deleteWritingTask(task.id);
       onSaved();
@@ -90,17 +91,17 @@ function TaskForm({
   if (locked) {
     return (
       <Card className="p-5">
-        <h2 className="text-lg font-bold text-ink">Task {number}</h2>
+        <h2 className="text-lg font-bold text-ink">{t("Task {n}", { n: number })}</h2>
         {task ? (
           <>
             <p className="mt-1 text-sm text-ink-muted">
-              At least {task.min_words} words · about {task.recommended_min} min
+              {t("At least {n} words · about {m} min", { n: task.min_words, m: task.recommended_min })}
             </p>
             <p className="mt-3 whitespace-pre-line text-sm text-ink">{task.prompt}</p>
             {task.image_url && <img src={resolveMediaUrl(task.image_url)} alt="" className="mt-3 max-h-64 rounded-lg border border-slate-200" />}
           </>
         ) : (
-          <p className="mt-2 text-sm text-ink-muted">Not created.</p>
+          <p className="mt-2 text-sm text-ink-muted">{t("Not created.")}</p>
         )}
       </Card>
     );
@@ -110,12 +111,12 @@ function TaskForm({
     <Card className="p-5">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-ink">Task {number}</h2>
-          {task ? <Badge color="green">Saved</Badge> : <Badge color="amber">Not created</Badge>}
+          <h2 className="text-lg font-bold text-ink">{t("Task {n}", { n: number })}</h2>
+          {task ? <Badge color="green">{t("Saved")}</Badge> : <Badge color="amber">{t("Not created")}</Badge>}
         </div>
         <p className="text-sm text-ink-muted">{d.hint}</p>
         <div>
-          <Label htmlFor={`task-${number}-prompt`}>Task for students</Label>
+          <Label htmlFor={`task-${number}-prompt`}>{t("Task for students")}</Label>
           <textarea
             id={`task-${number}-prompt`}
             rows={6}
@@ -129,28 +130,28 @@ function TaskForm({
         <ImageField
           value={imageUrl}
           onChange={setImageUrl}
-          hint={number === 1 ? "The chart, table, map or process diagram to describe." : "Usually not needed for Task 2."}
+          hint={number === 1 ? t("The chart, table, map or process diagram to describe.") : t("Usually not needed for Task 2.")}
         />
         <div className="flex flex-wrap gap-6">
           <div>
-            <Label htmlFor={`task-${number}-words`}>Minimum words</Label>
+            <Label htmlFor={`task-${number}-words`}>{t("Minimum words")}</Label>
             <input id={`task-${number}-words`} type="number" min={20} max={1000} value={minWords} onChange={(e) => setMinWords(e.target.value)} className={`${inputBase} w-28`} />
           </div>
           <div>
-            <Label htmlFor={`task-${number}-minutes`}>Recommended time, min</Label>
+            <Label htmlFor={`task-${number}-minutes`}>{t("Recommended time, min")}</Label>
             <input id={`task-${number}-minutes`} type="number" min={1} max={120} value={minutes} onChange={(e) => setMinutes(e.target.value)} className={`${inputBase} w-28`} />
           </div>
         </div>
         <ErrorBox message={error} />
         <div className="flex items-center justify-end gap-3">
-          {saved && <span className="text-sm text-emerald-600">Saved</span>}
+          {saved && <span className="text-sm text-emerald-600">{t("Saved")}</span>}
           {task && (
             <Button type="button" variant="danger" onClick={remove}>
-              <Trash2 className="h-4 w-4" /> Delete
+              <Trash2 className="h-4 w-4" /> {t("Delete")}
             </Button>
           )}
           <Button type="submit" loading={saving}>
-            {task ? "Save changes" : `Create Task ${number}`}
+            {task ? t("Save changes") : t("Create Task {n}", { n: number })}
           </Button>
         </div>
       </form>
@@ -171,7 +172,7 @@ export function WritingTasksEditor({
   lockedNotice: ReactNode;
 }) {
   const locked = isLocked(test);
-  const byNumber = (n: 1 | 2) => section.writing_tasks.find((t) => t.task_number === n);
+  const byNumber = (n: 1 | 2) => section.writing_tasks.find((task) => task.task_number === n);
 
   return (
     <>
@@ -180,7 +181,7 @@ export function WritingTasksEditor({
       </Link>
       <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink">Writing</h1>
       <p className="mt-1 text-ink-muted">
-        {section.duration_min} minutes · Task 2 counts twice as much as Task 1 in the band score
+        {t("{n} min", { n: section.duration_min })} · {t("Task 2 counts twice as much as Task 1 in the band score")}
       </p>
       <div className="mt-6">{lockedNotice}</div>
       <div className="mt-6 grid gap-6 xl:grid-cols-2">

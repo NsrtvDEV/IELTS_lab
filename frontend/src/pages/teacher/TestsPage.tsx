@@ -5,11 +5,12 @@ import { apiErrorMessage } from "../../api/client";
 import { createTest, listTests, type TeacherTest } from "../../api/teacher";
 import { Badge, Button, Card, ErrorBox, Label, Modal, Spinner, inputClass } from "../../components/ui";
 import { SECTION_LABELS } from "../../lib/questionTypes";
+import { t, tn } from "../../i18n";
 
 export function TestStatus({ test }: { test: TeacherTest }) {
-  if (test.is_published) return <Badge color="green">Published</Badge>;
-  if (test.problems.length === 0) return <Badge color="blue">Ready to publish</Badge>;
-  return <Badge color="gray">Draft</Badge>;
+  if (test.is_published) return <Badge color="green">{t("Published")}</Badge>;
+  if (test.problems.length === 0) return <Badge color="blue">{t("Ready to publish")}</Badge>;
+  return <Badge color="gray">{t("Draft")}</Badge>;
 }
 
 function CreateTestModal({ onClose }: { onClose: () => void }) {
@@ -21,7 +22,7 @@ function CreateTestModal({ onClose }: { onClose: () => void }) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!title.trim()) {
-      setError("Enter a title");
+      setError(t("Enter a title"));
       return;
     }
     setSaving(true);
@@ -35,31 +36,30 @@ function CreateTestModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Modal title="New mock test" onClose={onClose}>
+    <Modal title={t("New mock test")} onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <Label htmlFor="test-title">Title</Label>
+          <Label htmlFor="test-title">{t("Title")}</Label>
           <input
             id="test-title"
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Cambridge IELTS 19 — Test 1"
+            placeholder={t("e.g. Cambridge IELTS 19 — Test 1")}
             className={inputClass}
             maxLength={255}
           />
           <p className="mt-2 text-sm text-ink-muted">
-            The test gets 4 sections with standard IELTS timing: Listening 30 min, Reading 60,
-            Writing 60, Speaking 14.
+            {t("The test gets 4 sections with standard IELTS timing: Listening 30 min, Reading 60, Writing 60, Speaking 14.")}
           </p>
         </div>
         <ErrorBox message={error} />
         <div className="flex justify-end gap-3">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            {t("Cancel")}
           </Button>
           <Button type="submit" loading={saving}>
-            Create test
+            {t("Create test")}
           </Button>
         </div>
       </form>
@@ -73,7 +73,7 @@ export function TestsPage() {
   const [tests, setTests] = useState<TeacherTest[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(params.get("new") === "1");
-  const shown = tests?.filter((t) => t.title.toLowerCase().includes(query)) ?? null;
+  const shown = tests?.filter((test) => test.title.toLowerCase().includes(query)) ?? null;
 
   useEffect(() => {
     listTests()
@@ -85,11 +85,11 @@ export function TestsPage() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-ink">Mock tests</h1>
-          <p className="mt-1 text-ink-muted">Create tests, fill in sections and publish them for students.</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-ink">{t("Mock tests")}</h1>
+          <p className="mt-1 text-ink-muted">{t("Create tests, fill in sections and publish them for students.")}</p>
         </div>
         <Button onClick={() => setCreating(true)}>
-          <Plus className="h-4 w-4" /> New test
+          <Plus className="h-4 w-4" /> {t("New test")}
         </Button>
       </div>
 
@@ -101,18 +101,18 @@ export function TestsPage() {
             <span className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-50">
               <FileText className="h-7 w-7 text-brand-500" />
             </span>
-            <h2 className="mt-4 text-lg font-bold text-ink">No tests yet</h2>
-            <p className="mt-1 text-sm text-ink-muted">Create your first mock test to get started.</p>
+            <h2 className="mt-4 text-lg font-bold text-ink">{t("No tests yet")}</h2>
+            <p className="mt-1 text-sm text-ink-muted">{t("Create your first mock test to get started.")}</p>
             <Button className="mt-6" onClick={() => setCreating(true)}>
-              <Plus className="h-4 w-4" /> New test
+              <Plus className="h-4 w-4" /> {t("New test")}
             </Button>
           </Card>
         )}
         {query && tests && (
           <div className="mb-4 flex items-center gap-3 text-sm text-ink-muted">
-            {shown?.length} result(s) for “{params.get("q")}”
+            {t("{n} result(s) for “{q}”", { n: shown?.length ?? 0, q: params.get("q") ?? "" })}
             <button onClick={() => setParams({})} className="font-semibold text-brand-600 hover:text-brand-700">
-              Clear
+              {t("Clear")}
             </button>
           </div>
         )}
@@ -132,7 +132,7 @@ export function TestsPage() {
                         <div className="text-sm font-semibold text-ink">
                           {s.type === "listening" || s.type === "reading"
                             ? `${s.question_count}/40`
-                            : `${s.duration_min} min`}
+                            : t("{n} min", { n: s.duration_min })}
                         </div>
                       </div>
                     ))}
@@ -140,11 +140,11 @@ export function TestsPage() {
                   <div className="mt-4 text-sm">
                     {test.is_published || test.problems.length === 0 ? (
                       <span className="inline-flex items-center gap-1.5 text-emerald-700">
-                        <CheckCircle2 className="h-4 w-4" /> Complete
+                        <CheckCircle2 className="h-4 w-4" /> {t("Complete")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 text-amber-700">
-                        <AlertTriangle className="h-4 w-4" /> {test.problems.length} thing(s) to finish
+                        <AlertTriangle className="h-4 w-4" /> {tn(test.problems.length, "{n} thing to finish", "{n} things to finish")}
                       </span>
                     )}
                   </div>

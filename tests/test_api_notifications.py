@@ -39,6 +39,7 @@ async def test_review_flow(client, student, teacher, make_user, published_test):
         items = (await inbox(client, headers))["items"]
         assert items[0]["kind"] == "review_submitted"
         assert items[0]["text"] == "Aziza Karimova submitted Writing — waiting for review"
+        assert items[0]["params"] == {"section": "writing", "name": "Aziza Karimova"}
         assert items[0]["link"] == f"/teacher/review/writing/{sa}"
 
     body = {"tasks": [{"task_id": t["id"], **SCORES} for t in tasks]}
@@ -49,6 +50,7 @@ async def test_review_flow(client, student, teacher, make_user, published_test):
         assert not [n for n in (await inbox(client, headers))["items"] if n["kind"] == "review_submitted"]
     latest = (await inbox(client, student))["items"][0]
     assert latest["kind"] == "assessed" and latest["text"] == "Your Writing has been assessed — band 6.5"
+    assert latest["params"] == {"section": "writing", "band": "6.5", "updated": False}
     assert latest["link"] == f"/writing/{sa}/result"
 
     body = {"tasks": [{"task_id": t["id"], **{k: 7 for k in SCORES}} for t in tasks]}
@@ -97,6 +99,7 @@ async def test_teacher_reminder_for_old_works(client, student, teacher, publishe
     reminders = [n for n in items if n["kind"] == "review_waiting"]
     assert len(reminders) == 1
     assert reminders[0]["text"] == "1 work has been waiting for review for more than 2 days"
+    assert reminders[0]["params"] == {"count": 1}
     assert len([n for n in (await inbox(client, teacher))["items"] if n["kind"] == "review_waiting"]) == 1  # не чаще раза в сутки
 
 

@@ -8,6 +8,7 @@ import { SpeakingAnswers } from "../../components/speaking/SpeakingAnswers";
 import { Button, Card, ErrorBox, Label, Spinner, textareaClass } from "../../components/ui";
 import { timeAgo } from "../../lib/format";
 import { SPEAKING_CRITERIA, speakingBand } from "../../lib/speaking";
+import { t } from "../../i18n";
 
 const BANDS = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
 const EMPTY: SpeakingScores = { fluency_coherence: -1, lexical_resource: -1, grammatical_range: -1, pronunciation: -1 };
@@ -38,7 +39,7 @@ export function ReviewSpeakingPage() {
 
   const ready = SPEAKING_CRITERIA.every((c) => scores[c.key] >= 0);
   const band = ready ? speakingBand(scores) : null;
-  const answered = detail.tasks.filter((t) => t.response_id !== null).length;
+  const answered = detail.tasks.filter((task) => task.response_id !== null).length;
 
   async function save() {
     setError(null);
@@ -55,19 +56,19 @@ export function ReviewSpeakingPage() {
   return (
     <>
       <Link to="/teacher/review" className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> Review queue
+        <ArrowLeft className="h-4 w-4" /> {t("Review queue")}
       </Link>
       <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-ink">{detail.student_name}</h1>
           <p className="mt-1 text-ink-muted">
-            Speaking · {detail.test_title} · submitted {detail.submitted_at ? timeAgo(detail.submitted_at) : "—"} ·{" "}
-            {answered} of {detail.tasks.length} questions answered
-            {detail.band_score && ` · current band ${detail.band_score}`}
+            Speaking · {detail.test_title} · {t("submitted {when}", { when: detail.submitted_at ? timeAgo(detail.submitted_at) : "—" })} ·{" "}
+            {t("{n} of {total} questions answered", { n: answered, total: detail.tasks.length })}
+            {detail.band_score && ` · ${t("current band {band}", { band: detail.band_score })}`}
           </p>
         </div>
         <Link to={`/teacher/students/${detail.student_id}`} className="text-sm font-semibold text-brand-600 hover:text-brand-700">
-          Student profile →
+          {t("Student profile")} →
         </Link>
       </div>
 
@@ -76,7 +77,7 @@ export function ReviewSpeakingPage() {
 
         <Card className="p-5 xl:sticky xl:top-24 xl:self-start">
           <div className="flex items-center justify-between">
-            <h2 className="font-bold text-ink">Assessment</h2>
+            <h2 className="font-bold text-ink">{t("Assessment")}</h2>
             <span className="text-3xl font-extrabold text-brand-600">{band?.toFixed(1) ?? "—"}</span>
           </div>
           <div className="mt-4 space-y-3">
@@ -102,20 +103,20 @@ export function ReviewSpeakingPage() {
             ))}
           </div>
           <div className="mt-4">
-            <Label htmlFor="speaking-feedback">Feedback</Label>
+            <Label htmlFor="speaking-feedback">{t("Feedback")}</Label>
             <textarea
               id="speaking-feedback"
               rows={5}
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
               className={textareaClass}
-              placeholder="What was done well and what to improve…"
+              placeholder={t("What was done well and what to improve…")}
             />
           </div>
-          <p className="mt-2 text-xs text-ink-muted">Speaking band = average of the 4 criteria.</p>
+          <p className="mt-2 text-xs text-ink-muted">{t("Speaking band = average of the 4 criteria.")}</p>
           <ErrorBox message={error} />
           <Button className="mt-4 w-full" onClick={save} loading={saving} disabled={!ready}>
-            {detail.band_score ? "Update assessment" : "Save assessment"}
+            {detail.band_score ? t("Update assessment") : t("Save assessment")}
           </Button>
         </Card>
       </div>
