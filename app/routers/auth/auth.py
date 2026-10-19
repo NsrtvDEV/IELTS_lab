@@ -26,14 +26,11 @@ async def issue_tokens(session: AsyncSession, user: User) -> TokenResponse:
         RefreshToken(
             user_id=user.id,
             token_hash=hash_token(refresh_token),
-            expires_at=datetime.now(UTC)
-            + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+            expires_at=datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
         )
     )
     await session.commit()
-    return TokenResponse(
-        access_token=generate_access_token(user.id), refresh_token=refresh_token
-    )
+    return TokenResponse(access_token=generate_access_token(user.id), refresh_token=refresh_token)
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -42,9 +39,7 @@ async def login(request: Request, session: db_dep, data: LoginRequest):
     user = await session.scalar(select(User).where(User.email == data.email.lower()))
 
     # argon2 намеренно медленный — считаем в потоке, чтобы не блокировать event loop
-    if not user or not await run_in_threadpool(
-        verify_password, data.password, user.password_hash
-    ):
+    if not user or not await run_in_threadpool(verify_password, data.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="User is blocked")
@@ -55,9 +50,7 @@ async def login(request: Request, session: db_dep, data: LoginRequest):
 @router.post("/refresh", response_model=TokenResponse)
 @limiter.limit("20/minute")
 async def refresh(request: Request, session: db_dep, data: RefreshRequest):
-    stored = await session.scalar(
-        select(RefreshToken).where(RefreshToken.token_hash == hash_token(data.refresh_token))
-    )
+    stored = await session.scalar(select(RefreshToken).where(RefreshToken.token_hash == hash_token(data.refresh_token)))
 
     if not stored:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
@@ -65,11 +58,7 @@ async def refresh(request: Request, session: db_dep, data: RefreshRequest):
     if stored.revoked:
         # отозванный токен использовали повторно — вероятно, его украли:
         # отзываем все сессии пользователя
-        await session.execute(
-            update(RefreshToken)
-            .where(RefreshToken.user_id == stored.user_id)
-            .values(revoked=True)
-        )
+        await session.execute(update(RefreshToken).where(RefreshToken.user_id == stored.user_id).values(revoked=True))
         await session.commit()
         raise HTTPException(status_code=401, detail="Refresh token revoked")
 
@@ -87,9 +76,7 @@ async def refresh(request: Request, session: db_dep, data: RefreshRequest):
 
 @router.post("/logout", status_code=204)
 async def logout(session: db_dep, data: RefreshRequest):
-    stored = await session.scalar(
-        select(RefreshToken).where(RefreshToken.token_hash == hash_token(data.refresh_token))
-    )
+    stored = await session.scalar(select(RefreshToken).where(RefreshToken.token_hash == hash_token(data.refresh_token)))
 
     if stored:
         stored.revoked = True

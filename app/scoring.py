@@ -1,7 +1,6 @@
 """Проверка ответов и подсчёт band по правилам IELTS (разделы 2.6–2.8 TZ.md)."""
 
 import re
-
 from datetime import UTC, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -56,9 +55,7 @@ def round_band(value: Decimal) -> Decimal:
     return (halves / 2).quantize(Decimal("0.1"))  # всегда с одним знаком: 7.0, а не 7
 
 
-async def band_from_raw(
-    session: AsyncSession, section_type: SectionType, raw: int
-) -> Decimal | None:
+async def band_from_raw(session: AsyncSession, section_type: SectionType, raw: int) -> Decimal | None:
     """Band по таблице band_conversion: строка с наибольшим raw_score <= raw."""
     return await session.scalar(
         select(BandConversion.band)
@@ -75,9 +72,7 @@ async def band_from_raw(
 
 
 def section_deadline(section_attempt: SectionAttempt) -> datetime:
-    return section_attempt.started_at + timedelta(
-        minutes=section_attempt.section.duration_min
-    )
+    return section_attempt.started_at + timedelta(minutes=section_attempt.section.duration_min)
 
 
 def is_expired(section_attempt: SectionAttempt) -> bool:
@@ -123,7 +118,7 @@ def accepted_variants(correct: str) -> set[str]:
 
 
 def within_word_limit(answer: str, group: QuestionGroup) -> bool:
-    """"NO MORE THAN TWO WORDS AND/OR A NUMBER": число не считается словом.
+    """ "NO MORE THAN TWO WORDS AND/OR A NUMBER": число не считается словом.
 
     Считаем по тому, что написал ученик: "well-known" — одно слово.
     """
@@ -161,9 +156,7 @@ def grade_answer(question: Question, answer: UserAnswer | None) -> int:
     for c in question.correct_answers:
         if c.answer_text:
             accepted |= accepted_variants(c.answer_text)
-    if normalize(answer.answer_text) in accepted and within_word_limit(
-        answer.answer_text, question.group
-    ):
+    if normalize(answer.answer_text) in accepted and within_word_limit(answer.answer_text, question.group):
         return question.points
     return 0
 
@@ -186,16 +179,12 @@ async def load_section_questions(
 
 
 async def load_answers(session: AsyncSession, section_attempt_id: int) -> dict[int, UserAnswer]:
-    answers = await session.scalars(
-        select(UserAnswer).where(UserAnswer.section_attempt_id == section_attempt_id)
-    )
+    answers = await session.scalars(select(UserAnswer).where(UserAnswer.section_attempt_id == section_attempt_id))
     return {a.question_id: a for a in answers}
 
 
 async def grade_question_section(session: AsyncSession, section_attempt: SectionAttempt) -> None:
-    questions = await load_section_questions(
-        session, section_attempt.section_id, with_answers=True
-    )
+    questions = await load_section_questions(session, section_attempt.section_id, with_answers=True)
     answers = await load_answers(session, section_attempt.id)
 
     raw = 0
@@ -207,9 +196,7 @@ async def grade_question_section(session: AsyncSession, section_attempt: Section
             answer.is_correct = earned == question.points
 
     section_attempt.raw_score = raw
-    section_attempt.band_score = await band_from_raw(
-        session, section_attempt.section.type, raw
-    )
+    section_attempt.band_score = await band_from_raw(session, section_attempt.section.type, raw)
 
 
 # ───────────────────────── Attempt ─────────────────────────
@@ -257,9 +244,7 @@ async def submit_section(session: AsyncSession, section_attempt: SectionAttempt,
 
     # если время вышло, сдачей считается конец таймера, а не момент запроса
     section_attempt.submitted_at = min(datetime.now(UTC), section_deadline(section_attempt))
-    section_attempt.time_spent_sec = int(
-        (section_attempt.submitted_at - section_attempt.started_at).total_seconds()
-    )
+    section_attempt.time_spent_sec = int((section_attempt.submitted_at - section_attempt.started_at).total_seconds())
 
     if section_attempt.section.type in AUTO_GRADED:
         await grade_question_section(session, section_attempt)
@@ -272,14 +257,10 @@ async def submit_section(session: AsyncSession, section_attempt: SectionAttempt,
 
 async def ensure_writing_responses(session: AsyncSession, section_attempt: SectionAttempt) -> None:
     """Несданное задание Writing тоже идёт на проверку — как пустой текст."""
-    tasks = await session.scalars(
-        select(WritingTask.id).where(WritingTask.section_id == section_attempt.section_id)
-    )
+    tasks = await session.scalars(select(WritingTask.id).where(WritingTask.section_id == section_attempt.section_id))
     existing = set(
         await session.scalars(
-            select(WritingResponse.task_id).where(
-                WritingResponse.section_attempt_id == section_attempt.id
-            )
+            select(WritingResponse.task_id).where(WritingResponse.section_attempt_id == section_attempt.id)
         )
     )
     for task_id in tasks:

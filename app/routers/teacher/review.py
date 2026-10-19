@@ -40,8 +40,16 @@ async def review_queue(
 ):
     """Сданные работы Writing и Speaking: сначала самые давние (их ждут дольше всех)."""
     stmt = (
-        select(SectionAttempt, Section.type, TestAttempt.user_id, TestAttempt.section_type, IeltsTest.title,
-               User.email, UserProfile.first_name, UserProfile.last_name)
+        select(
+            SectionAttempt,
+            Section.type,
+            TestAttempt.user_id,
+            TestAttempt.section_type,
+            IeltsTest.title,
+            User.email,
+            UserProfile.first_name,
+            UserProfile.last_name,
+        )
         .join(SectionAttempt.attempt)
         .join(SectionAttempt.section)
         .join(TestAttempt.test)
@@ -147,9 +155,7 @@ async def review_writing(section_attempt_id: int, session: db_dep, teacher: teac
 
 
 @router.post("/writing/{section_attempt_id}", response_model=ReviewDetail)
-async def assess_writing(
-    section_attempt_id: int, session: db_dep, teacher: teacher_dep, data: WritingAssessmentIn
-):
+async def assess_writing(section_attempt_id: int, session: db_dep, teacher: teacher_dep, data: WritingAssessmentIn):
     """Оценить оба задания: 4 критерия 0–9 и отзыв; band считается автоматически."""
     sa = await submitted_work(session, section_attempt_id, SectionType.WRITING)
     await writing.assess(session, sa, teacher, data)
@@ -168,9 +174,7 @@ async def review_speaking(section_attempt_id: int, session: db_dep, teacher: tea
 
 
 @router.post("/speaking/{section_attempt_id}", response_model=SpeakingReviewDetail)
-async def assess_speaking(
-    section_attempt_id: int, session: db_dep, teacher: teacher_dep, data: SpeakingAssessmentIn
-):
+async def assess_speaking(section_attempt_id: int, session: db_dep, teacher: teacher_dep, data: SpeakingAssessmentIn):
     """Оценить всю секцию: 4 критерия 0–9 и отзыв; band — их среднее."""
     sa = await submitted_work(session, section_attempt_id, SectionType.SPEAKING)
     await speaking.assess(session, sa, teacher, data)

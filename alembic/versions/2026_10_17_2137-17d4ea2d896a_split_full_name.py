@@ -5,15 +5,16 @@ Revises: 5a688244f511
 Create Date: 2026-10-17 21:37:18.127237
 
 """
+
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = '17d4ea2d896a'
-down_revision: Union[str, Sequence[str], None] = '5a688244f511'
+revision: str = "17d4ea2d896a"
+down_revision: Union[str, Sequence[str], None] = "5a688244f511"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -35,8 +36,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.add_column("user_profiles", sa.Column("full_name", sa.String(255), nullable=True))
-    op.execute(
-        "UPDATE user_profiles SET full_name = nullif(concat_ws(' ', first_name, last_name), '')"
-    )
+    op.execute("UPDATE user_profiles SET full_name = nullif(concat_ws(' ', first_name, last_name), '')")
     op.drop_column("user_profiles", "last_name")
     op.drop_column("user_profiles", "first_name")

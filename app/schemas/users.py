@@ -1,6 +1,5 @@
 from datetime import datetime
 from decimal import Decimal
-
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
@@ -36,7 +35,9 @@ class ProfileUpdate(BaseModel):
     first_name: Name | None = None
     last_name: Name | None = None
     native_language: str | None = Field(default=None, max_length=50)
-    phone: Annotated[str, StringConstraints(strip_whitespace=True, max_length=30, pattern=r"^[0-9+()\- ]*$")] | None = None
+    phone: Annotated[str, StringConstraints(strip_whitespace=True, max_length=30, pattern=r"^[0-9+()\- ]*$")] | None = (
+        None
+    )
     location: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
     bio: Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)] | None = None
 

@@ -22,7 +22,11 @@ async def test_new_test_has_four_sections(client, teacher):
     test = r.json()
     assert r.status_code == 201 and test["title"] == "Cambridge 19"
     assert [(s["type"], s["duration_min"]) for s in test["sections"]] == [
-        ("listening", 30), ("reading", 60), ("writing", 60), ("speaking", 14)]
+        ("listening", 30),
+        ("reading", 60),
+        ("writing", 60),
+        ("speaking", 14),
+    ]
     assert len(test["problems"]) == 5
     assert "listening: add the recordings (Part 1–4)" in test["problems"]
     r = await client.post(f"/teacher/tests/{test['id']}/publish", headers=teacher)
@@ -38,25 +42,72 @@ async def make_section(client, teacher):
     "body, message",
     [
         ({"type": "gap_fill", "questions": [{"number": 1}]}, "either correct_options or correct_texts"),
-        ({"type": "mcq", "questions": [{"number": 1, "options": [{"label": "A", "text": "a"}],
-                                         "correct_options": ["A"], "correct_texts": ["a"]}]}, "either"),
-        ({"type": "mcq", "questions": [{"number": 1, "options": [{"label": "A", "text": "a"}],
-                                         "correct_options": ["Z"]}]}, "unknown option"),
-        ({"type": "mcq", "questions": [{"number": 1, "options": [{"label": "A", "text": "a"}, {"label": "B", "text": "b"}],
-                                         "correct_options": ["A", "B"]}]}, "exactly 1"),
+        (
+            {
+                "type": "mcq",
+                "questions": [
+                    {
+                        "number": 1,
+                        "options": [{"label": "A", "text": "a"}],
+                        "correct_options": ["A"],
+                        "correct_texts": ["a"],
+                    }
+                ],
+            },
+            "either",
+        ),
+        (
+            {
+                "type": "mcq",
+                "questions": [{"number": 1, "options": [{"label": "A", "text": "a"}], "correct_options": ["Z"]}],
+            },
+            "unknown option",
+        ),
+        (
+            {
+                "type": "mcq",
+                "questions": [
+                    {
+                        "number": 1,
+                        "options": [{"label": "A", "text": "a"}, {"label": "B", "text": "b"}],
+                        "correct_options": ["A", "B"],
+                    }
+                ],
+            },
+            "exactly 1",
+        ),
         ({"type": "tfng", "questions": [{"number": 1, "correct_texts": ["TRUE"]}]}, "needs correct_options"),
-        ({"type": "short_answer", "options": [{"label": "A", "text": "a"}],
-          "questions": [{"number": 1, "correct_options": ["A"]}]}, "answered with text"),
+        (
+            {
+                "type": "short_answer",
+                "options": [{"label": "A", "text": "a"}],
+                "questions": [{"number": 1, "correct_options": ["A"]}],
+            },
+            "answered with text",
+        ),
         ({"type": "gap_fill", "passage_id": 999_999, "questions": [{"number": 1, "correct_texts": ["a"]}]}, "Passage"),
-        ({"type": "mcq", "word_limit": 2, "questions": [{"number": 1, "options": [{"label": "A", "text": "a"}],
-                                                          "correct_options": ["A"]}]}, "word_limit"),
-        ({"type": "gap_fill", "questions": [{"number": 1, "correct_texts": ["a"]}, {"number": 1, "correct_texts": ["b"]}]}, "unique"),
+        (
+            {
+                "type": "mcq",
+                "word_limit": 2,
+                "questions": [{"number": 1, "options": [{"label": "A", "text": "a"}], "correct_options": ["A"]}],
+            },
+            "word_limit",
+        ),
+        (
+            {
+                "type": "gap_fill",
+                "questions": [{"number": 1, "correct_texts": ["a"]}, {"number": 1, "correct_texts": ["b"]}],
+            },
+            "unique",
+        ),
     ],
 )
 async def test_invalid_question_groups_rejected(client, teacher, body, message):
     sec = await make_section(client, teacher)
-    r = await client.post(f"/teacher/sections/{sec['reading']}/question-groups", headers=teacher,
-                          json={"instruction": "x", **body})
+    r = await client.post(
+        f"/teacher/sections/{sec['reading']}/question-groups", headers=teacher, json={"instruction": "x", **body}
+    )
     assert r.status_code == 400, r.text
     assert message in r.json()["detail"]
 
@@ -75,32 +126,47 @@ async def test_question_numbers_are_unique_per_section(client, teacher):
 
 async def test_tfng_options_are_created_automatically(client, teacher):
     sec = await make_section(client, teacher)
-    r = await client.post(f"/teacher/sections/{sec['reading']}/question-groups", headers=teacher, json={
-        "type": "ynng", "instruction": "x", "questions": [{"number": 1, "correct_options": ["NOT GIVEN"]}]})
+    r = await client.post(
+        f"/teacher/sections/{sec['reading']}/question-groups",
+        headers=teacher,
+        json={"type": "ynng", "instruction": "x", "questions": [{"number": 1, "correct_options": ["NOT GIVEN"]}]},
+    )
     assert [o["label"] for o in r.json()["options"]] == ["YES", "NO", "NOT GIVEN"]
 
 
 async def test_summary_completion_with_word_list(client, teacher, student, sql):
-    """"Complete the summary using the list of words A–F" — ответ буквой."""
+    """ "Complete the summary using the list of words A–F" — ответ буквой."""
     test = await build_test(client, teacher, sql, publish=False)
     sec = test["sections"]["reading"]
     groups = (await client.get(f"/teacher/sections/{sec}", headers=teacher)).json()["question_groups"]
     gap = next(g for g in groups if g["type"] == "gap_fill")
     # заменяем Q7–40 на summary со списком слов
-    r = await client.put(f"/teacher/question-groups/{gap['id']}", headers=teacher, json={
-        "type": "summary_completion", "instruction": "Questions 7–40. Choose from the box.",
-        "options": [{"label": L, "text": f"word {L}"} for L in "ABCDEF"],
-        "questions": [{"number": n, "text": f"gap {n}", "correct_options": ["C"]} for n in range(7, 41)]})
+    r = await client.put(
+        f"/teacher/question-groups/{gap['id']}",
+        headers=teacher,
+        json={
+            "type": "summary_completion",
+            "instruction": "Questions 7–40. Choose from the box.",
+            "options": [{"label": L, "text": f"word {L}"} for L in "ABCDEF"],
+            "questions": [{"number": n, "text": f"gap {n}", "correct_options": ["C"]} for n in range(7, 41)],
+        },
+    )
     assert r.status_code == 200, r.text
     await client.post(f"/teacher/tests/{test['id']}/publish", headers=teacher)
 
     content = await start_reading(client, student, test["id"])
     q = by_number(content)
     sa = content["section_attempt_id"]
-    await client.put(f"/reading/{sa}/answers", headers=student, json={"answers": [
-        {"question_id": q[7][0]["id"], "option_ids": [option_id(*q[7], "C")]},
-        {"question_id": q[8][0]["id"], "option_ids": [option_id(*q[8], "A")]},
-    ]})
+    await client.put(
+        f"/reading/{sa}/answers",
+        headers=student,
+        json={
+            "answers": [
+                {"question_id": q[7][0]["id"], "option_ids": [option_id(*q[7], "C")]},
+                {"question_id": q[8][0]["id"], "option_ids": [option_id(*q[8], "A")]},
+            ]
+        },
+    )
     await client.post(f"/reading/{sa}/submit", headers=student)
     result = (await client.get(f"/reading/{sa}/result", headers=student)).json()
     assert result["correct_count"] == 1
@@ -122,7 +188,9 @@ async def test_image_upload_and_group_image(client, teacher, student, sql):
     sec = test["sections"]["reading"]
     first = (await client.get(f"/teacher/sections/{sec}", headers=teacher)).json()["question_groups"][0]
     body = {k: first[k] for k in ("passage_id", "type", "instruction", "position")}
-    body["questions"] = [{"number": q["number"], "text": q["text"], "correct_options": q["correct_options"]} for q in first["questions"]]
+    body["questions"] = [
+        {"number": q["number"], "text": q["text"], "correct_options": q["correct_options"]} for q in first["questions"]
+    ]
     r = await client.put(f"/teacher/question-groups/{first['id']}", headers=teacher, json={**body, "image_url": url})
     assert r.json()["image_url"] == url
     await client.post(f"/teacher/tests/{test['id']}/publish", headers=teacher)
@@ -161,8 +229,11 @@ async def test_students_list_detail_and_result(client, teacher, student, make_us
     content = await start_reading(client, student, published_test["id"])
     sa = content["section_attempt_id"]
     q = by_number(content)
-    await client.put(f"/reading/{sa}/answers", headers=student, json={"answers": [
-        {"question_id": q[1][0]["id"], "option_ids": [option_id(*q[1], "TRUE")]}]})
+    await client.put(
+        f"/reading/{sa}/answers",
+        headers=student,
+        json={"answers": [{"question_id": q[1][0]["id"], "option_ids": [option_id(*q[1], "TRUE")]}]},
+    )
     await client.post(f"/reading/{sa}/submit", headers=student)
 
     students = (await client.get("/teacher/students", headers=teacher)).json()

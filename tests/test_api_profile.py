@@ -12,10 +12,17 @@ PNG = (
 
 
 async def test_profile_contacts_and_avatar(client, teacher):
-    r = await client.patch("/users/me", headers=teacher, json={
-        "first_name": "John", "last_name": "Smith", "phone": " +998 90 123 45 67 ",
-        "location": "Tashkent, Uzbekistan", "bio": "IELTS trainer with 5+ years of experience.",
-    })
+    r = await client.patch(
+        "/users/me",
+        headers=teacher,
+        json={
+            "first_name": "John",
+            "last_name": "Smith",
+            "phone": " +998 90 123 45 67 ",
+            "location": "Tashkent, Uzbekistan",
+            "bio": "IELTS trainer with 5+ years of experience.",
+        },
+    )
     assert r.status_code == 200, r.text
     profile = r.json()["profile"]
     assert profile["phone"] == "+998 90 123 45 67"

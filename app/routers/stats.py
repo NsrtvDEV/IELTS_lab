@@ -17,9 +17,7 @@ class PublicStats(BaseModel):
 @router.get("", response_model=PublicStats)
 async def public_stats(session: db_dep):
     """Цифры для главной страницы — без авторизации, только агрегаты."""
-    students = await session.scalar(
-        select(func.count()).where(User.role == UserRole.STUDENT, User.is_active)
-    )
+    students = await session.scalar(select(func.count()).where(User.role == UserRole.STUDENT, User.is_active))
     tests = await session.scalar(select(func.count()).where(IeltsTest.is_published))
     sections_completed = await session.scalar(
         select(func.count(SectionAttempt.id))

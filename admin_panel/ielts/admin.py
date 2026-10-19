@@ -1,9 +1,9 @@
+import uuid
+from pathlib import Path
+
 from django import forms
 from django.contrib import admin, messages
 from django.db.models import Count
-
-import uuid
-from pathlib import Path
 
 from app.config import settings as app_settings
 from app.media import _duration, media_path
@@ -96,9 +96,7 @@ def publish_errors(test: IeltsTest) -> list[str]:
         section = sections.get(section_type.value)
         if not section:
             continue
-        questions = Question.objects.filter(group__section=section).annotate(
-            n_correct=Count("correct_answers")
-        )
+        questions = Question.objects.filter(group__section=section).annotate(n_correct=Count("correct_answers"))
         if questions.count() != 40:
             errors.append(f"{section_type.value}: {questions.count()} вопросов вместо 40")
         without_answer = [q.number for q in questions if q.n_correct == 0]
@@ -150,9 +148,7 @@ class IeltsTestAdmin(admin.ModelAdmin):
         for test in queryset:
             errors = publish_errors(test)
             if errors:
-                self.message_user(
-                    request, f"«{test}» не опубликован: {'; '.join(errors)}", messages.ERROR
-                )
+                self.message_user(request, f"«{test}» не опубликован: {'; '.join(errors)}", messages.ERROR)
             else:
                 test.is_published = True
                 test.save(update_fields=["is_published"])
@@ -288,9 +284,7 @@ class CorrectAnswerInline(admin.TabularInline):
     model = CorrectAnswer
     extra = 1
     fields = ["option", "answer_text"]
-    verbose_name_plural = (
-        "правильные ответы: вариант (все обязательны) или текст (любой из вариантов написания)"
-    )
+    verbose_name_plural = "правильные ответы: вариант (все обязательны) или текст (любой из вариантов написания)"
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         # только варианты этого вопроса и его группы
@@ -298,9 +292,9 @@ class CorrectAnswerInline(admin.TabularInline):
             object_id = request.resolver_match.kwargs.get("object_id")
             question = Question.objects.filter(pk=object_id).first()
             if question:
-                kwargs["queryset"] = QuestionOption.objects.filter(
-                    question=question
-                ) | QuestionOption.objects.filter(group=question.group)
+                kwargs["queryset"] = QuestionOption.objects.filter(question=question) | QuestionOption.objects.filter(
+                    group=question.group
+                )
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
@@ -375,8 +369,13 @@ class SpeakingAssessmentInline(admin.TabularInline):
     model = SpeakingAssessment
     extra = 0
     fields = [
-        "grader", "fluency_coherence", "lexical_resource",
-        "grammatical_range", "pronunciation", "band", "feedback",
+        "grader",
+        "fluency_coherence",
+        "lexical_resource",
+        "grammatical_range",
+        "pronunciation",
+        "band",
+        "feedback",
     ]
     readonly_fields = fields
     can_delete = False

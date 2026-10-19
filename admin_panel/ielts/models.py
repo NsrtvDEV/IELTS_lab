@@ -33,9 +33,7 @@ class Unmanaged(models.Model):
 class User(Unmanaged):
     email = models.EmailField(max_length=255, unique=True)
     password_hash = models.CharField(max_length=255, editable=False)
-    role = models.CharField(
-        max_length=20, choices=choices(UserRole), default=UserRole.STUDENT.value
-    )
+    role = models.CharField(max_length=20, choices=choices(UserRole), default=UserRole.STUDENT.value)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(db_default=Now(), editable=False)
     updated_at = models.DateTimeField(db_default=Now(), auto_now=True)
@@ -50,9 +48,7 @@ class User(Unmanaged):
 
 
 class UserProfile(Unmanaged):
-    user = models.OneToOneField(
-        User, models.CASCADE, primary_key=True, related_name="profile"
-    )
+    user = models.OneToOneField(User, models.CASCADE, primary_key=True, related_name="profile")
     first_name = models.CharField("имя", max_length=100, null=True, blank=True)
     last_name = models.CharField("фамилия", max_length=100, null=True, blank=True)
     native_language = models.CharField(max_length=50, null=True, blank=True)
@@ -136,9 +132,7 @@ class Passage(Unmanaged):
 
 class QuestionGroup(Unmanaged):
     section = models.ForeignKey(Section, models.CASCADE, related_name="question_groups")
-    passage = models.ForeignKey(
-        Passage, models.SET_NULL, null=True, blank=True, related_name="question_groups"
-    )
+    passage = models.ForeignKey(Passage, models.SET_NULL, null=True, blank=True, related_name="question_groups")
     type = models.CharField(max_length=40, choices=choices(QuestionType))
     instruction = models.TextField()
     word_limit = models.SmallIntegerField(null=True, blank=True)
@@ -177,12 +171,8 @@ class Question(Unmanaged):
 
 
 class QuestionOption(Unmanaged):
-    question = models.ForeignKey(
-        Question, models.CASCADE, null=True, blank=True, related_name="options"
-    )
-    group = models.ForeignKey(
-        QuestionGroup, models.CASCADE, null=True, blank=True, related_name="options"
-    )
+    question = models.ForeignKey(Question, models.CASCADE, null=True, blank=True, related_name="options")
+    group = models.ForeignKey(QuestionGroup, models.CASCADE, null=True, blank=True, related_name="options")
     label = models.CharField(max_length=10)
     text = models.TextField()
     position = models.IntegerField(default=0)
@@ -268,9 +258,7 @@ class TestAttempt(Unmanaged):
     user = models.ForeignKey(User, models.CASCADE, related_name="attempts")
     test = models.ForeignKey(IeltsTest, models.PROTECT, related_name="attempts")
     status = models.CharField(max_length=20, choices=choices(AttemptStatus))
-    section_type = models.CharField(
-        max_length=20, choices=choices(SectionType), null=True, blank=True
-    )
+    section_type = models.CharField(max_length=20, choices=choices(SectionType), null=True, blank=True)
     started_at = models.DateTimeField(db_default=Now())
     finished_at = models.DateTimeField(null=True, blank=True)
     overall_band = models.DecimalField(max_digits=2, decimal_places=1, null=True)
@@ -313,9 +301,7 @@ class UserAnswer(Unmanaged):
 
 
 class WritingResponse(Unmanaged):
-    section_attempt = models.ForeignKey(
-        SectionAttempt, models.CASCADE, related_name="writing_responses"
-    )
+    section_attempt = models.ForeignKey(SectionAttempt, models.CASCADE, related_name="writing_responses")
     task = models.ForeignKey(WritingTask, models.PROTECT)
     text = models.TextField(default="")
     word_count = models.IntegerField(default=0)
@@ -328,9 +314,7 @@ class WritingResponse(Unmanaged):
 
 
 class SpeakingResponse(Unmanaged):
-    section_attempt = models.ForeignKey(
-        SectionAttempt, models.CASCADE, related_name="speaking_responses"
-    )
+    section_attempt = models.ForeignKey(SectionAttempt, models.CASCADE, related_name="speaking_responses")
     task = models.ForeignKey(SpeakingTask, models.PROTECT)
     audio_url = models.CharField(max_length=500, null=True)
     transcript = models.TextField(null=True)
@@ -360,9 +344,7 @@ class WritingAssessment(Unmanaged):
 
 
 class SpeakingAssessment(Unmanaged):
-    section_attempt = models.ForeignKey(
-        SectionAttempt, models.CASCADE, related_name="speaking_assessments"
-    )
+    section_attempt = models.ForeignKey(SectionAttempt, models.CASCADE, related_name="speaking_assessments")
     grader = models.ForeignKey(User, models.SET_NULL, null=True, related_name="+")
     fluency_coherence = models.SmallIntegerField()
     lexical_resource = models.SmallIntegerField()

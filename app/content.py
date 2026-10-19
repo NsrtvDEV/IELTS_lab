@@ -20,8 +20,6 @@ from app.models import (
     TestAttempt,
     WritingTask,
 )
-from app.speaking import section_tasks as speaking_tasks
-from app.speaking import task_out, teacher_task_out
 from app.schemas.teacher import (
     QuestionGroupCreate,
     TeacherQuestion,
@@ -30,6 +28,8 @@ from app.schemas.teacher import (
     TeacherSectionContent,
     TeacherTest,
 )
+from app.speaking import section_tasks as speaking_tasks
+from app.speaking import task_out, teacher_task_out
 
 # стандартное время секций IELTS Academic, минуты
 DEFAULT_SECTIONS = [
@@ -46,6 +46,8 @@ SPEAKING_QUESTION_SEC = 10  # время, пока звучит вопрос Spe
 
 def clock(seconds: int) -> str:
     return f"{seconds // 60}:{seconds % 60:02d}"
+
+
 QUESTIONS_PER_SECTION = 40
 
 # ответ — выбор варианта
@@ -103,9 +105,7 @@ async def ensure_editable(session: AsyncSession, test: IeltsTest) -> None:
     if test.is_published:
         raise HTTPException(status_code=409, detail="Unpublish the test before editing")
     if await has_attempts(session, test.id):
-        raise HTTPException(
-            status_code=409, detail="Students already took this test — it can't be edited"
-        )
+        raise HTTPException(status_code=409, detail="Students already took this test — it can't be edited")
 
 
 async def question_counts(session: AsyncSession, section_ids: list[int]) -> dict[int, int]:
@@ -150,9 +150,7 @@ async def test_problems(session: AsyncSession, test: IeltsTest) -> list[str]:
 
     if listening := sections.get(SectionType.LISTENING):
         parts = list(
-            await session.scalars(
-                select(Passage).where(Passage.section_id == listening.id).order_by(Passage.position)
-            )
+            await session.scalars(select(Passage).where(Passage.section_id == listening.id).order_by(Passage.position))
         )
         if not parts:
             problems.append("listening: add the recordings (Part 1–4)")
@@ -172,9 +170,7 @@ async def test_problems(session: AsyncSession, test: IeltsTest) -> list[str]:
 
     if writing := sections.get(SectionType.WRITING):
         numbers = set(
-            await session.scalars(
-                select(WritingTask.task_number).where(WritingTask.section_id == writing.id)
-            )
+            await session.scalars(select(WritingTask.task_number).where(WritingTask.section_id == writing.id))
         )
         if numbers != {1, 2}:
             problems.append("writing: Task 1 and Task 2 are required")
@@ -186,7 +182,9 @@ async def test_problems(session: AsyncSession, test: IeltsTest) -> list[str]:
             problems.append("speaking: Part 1, 2 and 3 are required")
         without_sample = [f"Part {t.part}: {t.prompt[:40]}" for t in rows if not (t.sample_answer or "").strip()]
         if without_sample:
-            problems.append(f"speaking: add a sample answer to {len(without_sample)} question(s) — " + "; ".join(without_sample[:3]))
+            problems.append(
+                f"speaking: add a sample answer to {len(without_sample)} question(s) — " + "; ".join(without_sample[:3])
+            )
         if sum(t.part == 2 for t in tasks) > 1:
             problems.append("speaking: Part 2 has one cue card")
         # все ответы должны поместиться во время секции (плюс время на вопрос)
@@ -239,9 +237,7 @@ def ensure_question_section(section: Section) -> None:
 
 async def load_groups(session: AsyncSession, **where) -> list[QuestionGroup]:
     stmt = select(QuestionGroup).options(
-        selectinload(QuestionGroup.questions)
-        .selectinload(Question.correct_answers)
-        .selectinload(CorrectAnswer.option)
+        selectinload(QuestionGroup.questions).selectinload(Question.correct_answers).selectinload(CorrectAnswer.option)
     )
     for column, value in where.items():
         stmt = stmt.where(getattr(QuestionGroup, column) == value)
@@ -278,9 +274,7 @@ def group_response(group: QuestionGroup) -> TeacherQuestionGroup:
 
 
 async def section_content(session: AsyncSession, section: Section) -> TeacherSectionContent:
-    passages = await session.scalars(
-        select(Passage).where(Passage.section_id == section.id).order_by(Passage.position)
-    )
+    passages = await session.scalars(select(Passage).where(Passage.section_id == section.id).order_by(Passage.position))
     groups = await load_groups(session, section_id=section.id)
     tasks = await session.scalars(
         select(WritingTask).where(WritingTask.section_id == section.id).order_by(WritingTask.task_number)
@@ -400,10 +394,7 @@ def build_group(section: Section, data: QuestionGroupCreate) -> QuestionGroup:
             answers_required=q.answers_required,
             points=q.points or q.answers_required,
             meta=q.meta,
-            options=[
-                QuestionOption(label=o.label, text=o.text, position=i)
-                for i, o in enumerate(q.options)
-            ],
+            options=[QuestionOption(label=o.label, text=o.text, position=i) for i, o in enumerate(q.options)],
             correct_answers=[],
         )
         own = {o.label: o for o in question.options}

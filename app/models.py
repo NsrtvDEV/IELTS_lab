@@ -26,9 +26,7 @@ from app.database import Base
 
 
 class TimestampMixin:
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
@@ -120,9 +118,7 @@ class User(TimestampMixin, Base):
         default=UserRole.STUDENT,
         server_default=UserRole.STUDENT.value,
     )
-    is_active: Mapped[bool] = mapped_column(
-        Boolean, default=True, server_default=expression.true()
-    )
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default=expression.true())
 
     profile: Mapped["UserProfile | None"] = relationship(
         back_populates="user",
@@ -141,9 +137,7 @@ class User(TimestampMixin, Base):
 class UserProfile(Base):
     __tablename__ = "user_profiles"
 
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     native_language: Mapped[str | None] = mapped_column(String(50))
@@ -159,17 +153,11 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     token_hash: Mapped[str] = mapped_column(String(255), unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    revoked: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default=expression.false()
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False, server_default=expression.false())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user: Mapped["User"] = relationship(back_populates="refresh_tokens")
 
@@ -187,9 +175,7 @@ class IeltsTest(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255))
-    is_published: Mapped[bool] = mapped_column(
-        Boolean, default=False, server_default=expression.false()
-    )
+    is_published: Mapped[bool] = mapped_column(Boolean, default=False, server_default=expression.false())
     created_by_id: Mapped[int | None] = mapped_column(  # кто создал (профиль учителя)
         ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
@@ -207,9 +193,7 @@ class Section(Base):
     __table_args__ = (UniqueConstraint("test_id", "type"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    test_id: Mapped[int] = mapped_column(
-        ForeignKey("tests.id", ondelete="CASCADE"), index=True
-    )
+    test_id: Mapped[int] = mapped_column(ForeignKey("tests.id", ondelete="CASCADE"), index=True)
     type: Mapped[SectionType] = mapped_column(SECTION_TYPE)
     duration_min: Mapped[int] = mapped_column(Integer)
     position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
@@ -247,9 +231,7 @@ class Passage(Base):
     __tablename__ = "passages"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    section_id: Mapped[int] = mapped_column(
-        ForeignKey("sections.id", ondelete="CASCADE"), index=True
-    )
+    section_id: Mapped[int] = mapped_column(ForeignKey("sections.id", ondelete="CASCADE"), index=True)
     title: Mapped[str | None] = mapped_column(String(255))
     text: Mapped[str | None] = mapped_column(Text)
     audio_url: Mapped[str | None] = mapped_column(String(500))
@@ -258,9 +240,7 @@ class Passage(Base):
     position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     section: Mapped["Section"] = relationship(back_populates="passages")
-    question_groups: Mapped[list["QuestionGroup"]] = relationship(
-        back_populates="passage", lazy="raise"
-    )
+    question_groups: Mapped[list["QuestionGroup"]] = relationship(back_populates="passage", lazy="raise")
 
 
 class QuestionGroup(Base):
@@ -269,12 +249,8 @@ class QuestionGroup(Base):
     __tablename__ = "question_groups"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    section_id: Mapped[int] = mapped_column(
-        ForeignKey("sections.id", ondelete="CASCADE"), index=True
-    )
-    passage_id: Mapped[int | None] = mapped_column(
-        ForeignKey("passages.id", ondelete="SET NULL"), index=True
-    )
+    section_id: Mapped[int] = mapped_column(ForeignKey("sections.id", ondelete="CASCADE"), index=True)
+    passage_id: Mapped[int | None] = mapped_column(ForeignKey("passages.id", ondelete="SET NULL"), index=True)
     type: Mapped[QuestionType] = mapped_column(QUESTION_TYPE)
     instruction: Mapped[str] = mapped_column(Text)
     # лимит слов для completion-заданий ("NO MORE THAN TWO WORDS" → 2)
@@ -306,20 +282,14 @@ class QuestionGroup(Base):
 
 class Question(Base):
     __tablename__ = "questions"
-    __table_args__ = (
-        CheckConstraint("answers_required >= 1", name="answers_required_positive"),
-    )
+    __table_args__ = (CheckConstraint("answers_required >= 1", name="answers_required_positive"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    group_id: Mapped[int] = mapped_column(
-        ForeignKey("question_groups.id", ondelete="CASCADE"), index=True
-    )
+    group_id: Mapped[int] = mapped_column(ForeignKey("question_groups.id", ondelete="CASCADE"), index=True)
     number: Mapped[int] = mapped_column(SmallInteger)  # сквозной номер в секции, 1–40
     text: Mapped[str | None] = mapped_column(Text)  # у пропуска в summary может не быть
     # сколько вариантов нужно выбрать (MCQ_MULTI: "Choose TWO" → 2)
-    answers_required: Mapped[int] = mapped_column(
-        SmallInteger, default=1, server_default="1"
-    )
+    answers_required: Mapped[int] = mapped_column(SmallInteger, default=1, server_default="1")
     points: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     meta: Mapped[dict | None] = mapped_column(JSONB)
 
@@ -339,19 +309,11 @@ class QuestionOption(Base):
     """Вариант ответа: свой у вопроса (MCQ) или общий у группы (matching)."""
 
     __tablename__ = "question_options"
-    __table_args__ = (
-        CheckConstraint(
-            "(question_id IS NULL) <> (group_id IS NULL)", name="single_owner"
-        ),
-    )
+    __table_args__ = (CheckConstraint("(question_id IS NULL) <> (group_id IS NULL)", name="single_owner"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    question_id: Mapped[int | None] = mapped_column(
-        ForeignKey("questions.id", ondelete="CASCADE"), index=True
-    )
-    group_id: Mapped[int | None] = mapped_column(
-        ForeignKey("question_groups.id", ondelete="CASCADE"), index=True
-    )
+    question_id: Mapped[int | None] = mapped_column(ForeignKey("questions.id", ondelete="CASCADE"), index=True)
+    group_id: Mapped[int | None] = mapped_column(ForeignKey("question_groups.id", ondelete="CASCADE"), index=True)
     label: Mapped[str] = mapped_column(String(10))  # "A", "B", "iv"
     text: Mapped[str] = mapped_column(Text)
     position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
@@ -368,19 +330,11 @@ class CorrectAnswer(Base):
     """
 
     __tablename__ = "correct_answers"
-    __table_args__ = (
-        CheckConstraint(
-            "(option_id IS NULL) <> (answer_text IS NULL)", name="single_kind"
-        ),
-    )
+    __table_args__ = (CheckConstraint("(option_id IS NULL) <> (answer_text IS NULL)", name="single_kind"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    question_id: Mapped[int] = mapped_column(
-        ForeignKey("questions.id", ondelete="CASCADE"), index=True
-    )
-    option_id: Mapped[int | None] = mapped_column(
-        ForeignKey("question_options.id", ondelete="CASCADE")
-    )
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id", ondelete="CASCADE"), index=True)
+    option_id: Mapped[int | None] = mapped_column(ForeignKey("question_options.id", ondelete="CASCADE"))
     answer_text: Mapped[str | None] = mapped_column(String(255))
 
     question: Mapped["Question"] = relationship(back_populates="correct_answers")
@@ -397,9 +351,7 @@ class WritingTask(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    section_id: Mapped[int] = mapped_column(
-        ForeignKey("sections.id", ondelete="CASCADE")
-    )
+    section_id: Mapped[int] = mapped_column(ForeignKey("sections.id", ondelete="CASCADE"))
     task_number: Mapped[int] = mapped_column(SmallInteger)
     prompt: Mapped[str] = mapped_column(Text)
     image_url: Mapped[str | None] = mapped_column(String(500))  # график/диаграмма для Task 1
@@ -416,9 +368,7 @@ class SpeakingTask(Base):
     __table_args__ = (CheckConstraint("part IN (1, 2, 3)", name="part_valid"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    section_id: Mapped[int] = mapped_column(
-        ForeignKey("sections.id", ondelete="CASCADE"), index=True
-    )
+    section_id: Mapped[int] = mapped_column(ForeignKey("sections.id", ondelete="CASCADE"), index=True)
     part: Mapped[int] = mapped_column(SmallInteger)
     position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     prompt: Mapped[str] = mapped_column(Text)  # вопрос или тема карточки
@@ -438,9 +388,7 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     kind: Mapped[str] = mapped_column(String(40))  # assessed, review_submitted, ...
     text: Mapped[str] = mapped_column(String(500))  # готовый текст на английском
     # данные для текста на языке интерфейса: {"section": "writing", "band": "6.5", ...}
@@ -449,9 +397,7 @@ class Notification(Base):
     # к чему относится: review:<section_attempt_id>, test:<id> — чтобы убрать или не дублировать
     ref_key: Mapped[str | None] = mapped_column(String(100), index=True)
     read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # ───────────────────────── Attempts ─────────────────────────
@@ -472,12 +418,8 @@ class TestAttempt(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        ForeignKey("users.id", ondelete="CASCADE"), index=True
-    )
-    test_id: Mapped[int] = mapped_column(
-        ForeignKey("tests.id", ondelete="RESTRICT"), index=True
-    )
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    test_id: Mapped[int] = mapped_column(ForeignKey("tests.id", ondelete="RESTRICT"), index=True)
     status: Mapped[AttemptStatus] = mapped_column(
         ATTEMPT_STATUS,
         default=AttemptStatus.IN_PROGRESS,
@@ -485,9 +427,7 @@ class TestAttempt(Base):
     )
     # NULL — полный экзамен (4 секции подряд), иначе — только эта секция
     section_type: Mapped[SectionType | None] = mapped_column(SECTION_TYPE)
-    started_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     overall_band: Mapped[Decimal | None] = mapped_column(Numeric(2, 1))
 
@@ -506,16 +446,10 @@ class SectionAttempt(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    attempt_id: Mapped[int] = mapped_column(
-        ForeignKey("test_attempts.id", ondelete="CASCADE"), index=True
-    )
-    section_id: Mapped[int] = mapped_column(
-        ForeignKey("sections.id", ondelete="RESTRICT")
-    )
+    attempt_id: Mapped[int] = mapped_column(ForeignKey("test_attempts.id", ondelete="CASCADE"), index=True)
+    section_id: Mapped[int] = mapped_column(ForeignKey("sections.id", ondelete="RESTRICT"))
     # таймер секции считается по серверному времени
-    started_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     # Listening: докуда дослушана запись {"part": индекс, "position": сек, "finished": bool}
     playback: Mapped[dict | None] = mapped_column(JSONB)
@@ -523,9 +457,7 @@ class SectionAttempt(Base):
     band_score: Mapped[Decimal | None] = mapped_column(Numeric(2, 1))
     time_spent_sec: Mapped[int | None] = mapped_column(Integer)
 
-    attempt: Mapped["TestAttempt"] = relationship(
-        back_populates="section_attempts", lazy="joined"
-    )
+    attempt: Mapped["TestAttempt"] = relationship(back_populates="section_attempts", lazy="joined")
     section: Mapped["Section"] = relationship(lazy="joined")
     answers: Mapped[list["UserAnswer"]] = relationship(
         back_populates="section_attempt", cascade="all, delete-orphan", lazy="raise"
@@ -547,19 +479,13 @@ class UserAnswer(Base):
     __table_args__ = (UniqueConstraint("section_attempt_id", "question_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    section_attempt_id: Mapped[int] = mapped_column(
-        ForeignKey("section_attempts.id", ondelete="CASCADE")
-    )
-    question_id: Mapped[int] = mapped_column(
-        ForeignKey("questions.id", ondelete="RESTRICT"), index=True
-    )
+    section_attempt_id: Mapped[int] = mapped_column(ForeignKey("section_attempts.id", ondelete="CASCADE"))
+    question_id: Mapped[int] = mapped_column(ForeignKey("questions.id", ondelete="RESTRICT"), index=True)
     answer_text: Mapped[str | None] = mapped_column(Text)  # completion / short answer
     is_correct: Mapped[bool | None] = mapped_column(Boolean)  # NULL = ещё не проверено
 
     section_attempt: Mapped["SectionAttempt"] = relationship(back_populates="answers")
-    selected_options: Mapped[list["UserAnswerOption"]] = relationship(
-        cascade="all, delete-orphan", lazy="selectin"
-    )
+    selected_options: Mapped[list["UserAnswerOption"]] = relationship(cascade="all, delete-orphan", lazy="selectin")
 
 
 class UserAnswerOption(Base):
@@ -567,12 +493,8 @@ class UserAnswerOption(Base):
 
     __tablename__ = "user_answer_options"
 
-    user_answer_id: Mapped[int] = mapped_column(
-        ForeignKey("user_answers.id", ondelete="CASCADE"), primary_key=True
-    )
-    option_id: Mapped[int] = mapped_column(
-        ForeignKey("question_options.id", ondelete="RESTRICT"), primary_key=True
-    )
+    user_answer_id: Mapped[int] = mapped_column(ForeignKey("user_answers.id", ondelete="CASCADE"), primary_key=True)
+    option_id: Mapped[int] = mapped_column(ForeignKey("question_options.id", ondelete="RESTRICT"), primary_key=True)
 
     option: Mapped["QuestionOption"] = relationship(lazy="joined")
 
@@ -582,19 +504,13 @@ class WritingResponse(Base):
     __table_args__ = (UniqueConstraint("section_attempt_id", "task_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    section_attempt_id: Mapped[int] = mapped_column(
-        ForeignKey("section_attempts.id", ondelete="CASCADE")
-    )
-    task_id: Mapped[int] = mapped_column(
-        ForeignKey("writing_tasks.id", ondelete="RESTRICT"), index=True
-    )
+    section_attempt_id: Mapped[int] = mapped_column(ForeignKey("section_attempts.id", ondelete="CASCADE"))
+    task_id: Mapped[int] = mapped_column(ForeignKey("writing_tasks.id", ondelete="RESTRICT"), index=True)
     text: Mapped[str] = mapped_column(Text, default="", server_default="")
     word_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
-    section_attempt: Mapped["SectionAttempt"] = relationship(
-        back_populates="writing_responses"
-    )
+    section_attempt: Mapped["SectionAttempt"] = relationship(back_populates="writing_responses")
     task: Mapped["WritingTask"] = relationship(lazy="joined")
     assessments: Mapped[list["WritingAssessment"]] = relationship(
         back_populates="response", cascade="all, delete-orphan", lazy="raise"
@@ -606,19 +522,13 @@ class SpeakingResponse(Base):
     __table_args__ = (UniqueConstraint("section_attempt_id", "task_id"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    section_attempt_id: Mapped[int] = mapped_column(
-        ForeignKey("section_attempts.id", ondelete="CASCADE")
-    )
-    task_id: Mapped[int] = mapped_column(
-        ForeignKey("speaking_tasks.id", ondelete="RESTRICT"), index=True
-    )
+    section_attempt_id: Mapped[int] = mapped_column(ForeignKey("section_attempts.id", ondelete="CASCADE"))
+    task_id: Mapped[int] = mapped_column(ForeignKey("speaking_tasks.id", ondelete="RESTRICT"), index=True)
     audio_url: Mapped[str | None] = mapped_column(String(500))
     transcript: Mapped[str | None] = mapped_column(Text)
     duration_sec: Mapped[int | None] = mapped_column(Integer)
 
-    section_attempt: Mapped["SectionAttempt"] = relationship(
-        back_populates="speaking_responses"
-    )
+    section_attempt: Mapped["SectionAttempt"] = relationship(back_populates="speaking_responses")
     task: Mapped["SpeakingTask"] = relationship(lazy="joined")
 
 
@@ -635,9 +545,7 @@ class WritingAssessment(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    response_id: Mapped[int] = mapped_column(
-        ForeignKey("writing_responses.id", ondelete="CASCADE"), index=True
-    )
+    response_id: Mapped[int] = mapped_column(ForeignKey("writing_responses.id", ondelete="CASCADE"), index=True)
     grader_id: Mapped[int | None] = mapped_column(  # преподаватель, поставивший оценку
         ForeignKey("users.id", ondelete="SET NULL")
     )
@@ -649,9 +557,7 @@ class WritingAssessment(Base):
     feedback: Mapped[str | None] = mapped_column(Text)
     # комментарии к фрагментам текста: [{"start", "end", "quote", "text"}], позиции — символы эссе
     comments: Mapped[list | None] = mapped_column(JSONB)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     response: Mapped["WritingResponse"] = relationship(back_populates="assessments")
 
@@ -669,9 +575,7 @@ class SpeakingAssessment(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    section_attempt_id: Mapped[int] = mapped_column(
-        ForeignKey("section_attempts.id", ondelete="CASCADE"), index=True
-    )
+    section_attempt_id: Mapped[int] = mapped_column(ForeignKey("section_attempts.id", ondelete="CASCADE"), index=True)
     grader_id: Mapped[int | None] = mapped_column(  # преподаватель, поставивший оценку
         ForeignKey("users.id", ondelete="SET NULL")
     )
@@ -681,13 +585,9 @@ class SpeakingAssessment(Base):
     pronunciation: Mapped[int] = mapped_column(SmallInteger)
     band: Mapped[Decimal] = mapped_column(Numeric(2, 1))
     feedback: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    section_attempt: Mapped["SectionAttempt"] = relationship(
-        back_populates="speaking_assessments"
-    )
+    section_attempt: Mapped["SectionAttempt"] = relationship(back_populates="speaking_assessments")
 
 
 class BandConversion(Base):
@@ -697,9 +597,7 @@ class BandConversion(Base):
     __table_args__ = (
         UniqueConstraint("section_type", "raw_score"),
         CheckConstraint("raw_score BETWEEN 0 AND 40", name="raw_score_range"),
-        CheckConstraint(
-            "section_type IN ('listening', 'reading')", name="section_type_scored"
-        ),
+        CheckConstraint("section_type IN ('listening', 'reading')", name="section_type_scored"),
         band_check("band"),
     )
 

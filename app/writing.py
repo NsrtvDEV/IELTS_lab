@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import notifications
 from app.models import (
     SectionAttempt,
     User,
@@ -23,7 +24,6 @@ from app.schemas.writing import (
     WritingTaskOut,
     WritingTaskResult,
 )
-from app import notifications
 from app.scoring import criteria_band, section_deadline, update_attempt_status, writing_band
 from app.utils import count_words
 
@@ -62,9 +62,7 @@ async def save_draft(session: AsyncSession, sa: SectionAttempt, task_id: int, te
     if not task or task.section_id != sa.section_id:
         raise HTTPException(status_code=404, detail="Writing task not found")
     response = await session.scalar(
-        select(WritingResponse).where(
-            WritingResponse.section_attempt_id == sa.id, WritingResponse.task_id == task.id
-        )
+        select(WritingResponse).where(WritingResponse.section_attempt_id == sa.id, WritingResponse.task_id == task.id)
     )
     if response is None:
         response = WritingResponse(section_attempt_id=sa.id, task_id=task.id)
@@ -142,7 +140,7 @@ def checked_comments(text: str, comments: list[InlineComment], task_number: int)
     """Фрагменты должны совпадать с текстом эссе и не пересекаться."""
     ordered = sorted(comments, key=lambda c: c.start)
     for i, c in enumerate(ordered):
-        if c.end > len(text) or c.start >= c.end or text[c.start:c.end] != c.quote:
+        if c.end > len(text) or c.start >= c.end or text[c.start : c.end] != c.quote:
             raise HTTPException(status_code=400, detail=f"Task {task_number}: a comment doesn't match the essay text")
         if i and c.start < ordered[i - 1].end:
             raise HTTPException(status_code=400, detail=f"Task {task_number}: commented fragments overlap")

@@ -28,8 +28,7 @@ def generate_access_token(user_id: int) -> str:
         {
             "sub": str(user_id),
             "type": "access",
-            "exp": datetime.now(UTC)
-            + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+            "exp": datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         },
         key=settings.SECRET_KEY,
         algorithm=settings.ALGORITHM,
@@ -40,9 +39,9 @@ def decode_jwt_token(token: str) -> dict:
     try:
         return jwt.decode(token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
+        raise HTTPException(status_code=401, detail="Token expired") from None
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token") from None
 
 
 def generate_refresh_token() -> str:

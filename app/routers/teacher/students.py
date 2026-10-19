@@ -51,9 +51,7 @@ async def history_rows(session, user_ids: list[int]):
 
 
 def summarize(user: User, profile: UserProfile | None, rows) -> StudentSummary:
-    graded = [
-        r for r in rows if r.band_score is not None and r.status != AttemptStatus.ABANDONED
-    ]
+    graded = [r for r in rows if r.band_score is not None and r.status != AttemptStatus.ABANDONED]
     latest: dict = {}
     for r in sorted(graded, key=lambda r: r.submitted_at):  # старые -> новые
         latest[r.type] = r.band_score
@@ -139,9 +137,7 @@ async def get_student(student_id: int, session: db_dep, teacher: teacher_dep):
 
 
 @router.get("/{student_id}/results/{section_attempt_id}", response_model=QuestionSectionResult)
-async def student_result(
-    student_id: int, section_attempt_id: int, session: db_dep, teacher: teacher_dep
-):
+async def student_result(student_id: int, section_attempt_id: int, session: db_dep, teacher: teacher_dep):
     """Разбор сданной секции ученика (Reading / Listening): ответы и правильные ответы."""
     sa = await session.get(SectionAttempt, section_attempt_id)
     if not sa or sa.attempt.user_id != student_id or sa.section.type not in QUESTION_SECTIONS:

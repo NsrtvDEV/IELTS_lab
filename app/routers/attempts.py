@@ -41,9 +41,7 @@ async def create_attempt(session: db_dep, current_user: current_user_dep, data: 
 async def list_attempts(session: db_dep, current_user: current_user_dep):
     attempts = (
         await session.scalars(
-            select(TestAttempt)
-            .where(TestAttempt.user_id == current_user.id)
-            .order_by(TestAttempt.started_at.desc())
+            select(TestAttempt).where(TestAttempt.user_id == current_user.id).order_by(TestAttempt.started_at.desc())
         )
     ).unique()
 

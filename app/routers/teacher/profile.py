@@ -27,12 +27,8 @@ ACTIVITY_SHOWN = 6
 
 @router.get("", response_model=TeacherProfileStats)
 async def profile_stats(session: db_dep, teacher: teacher_dep):
-    students = await session.scalar(
-        select(func.count()).where(User.role == UserRole.STUDENT, User.is_active)
-    )
-    tests_created = await session.scalar(
-        select(func.count()).where(IeltsTest.created_by_id == teacher.id)
-    )
+    students = await session.scalar(select(func.count()).where(User.role == UserRole.STUDENT, User.is_active))
+    tests_created = await session.scalar(select(func.count()).where(IeltsTest.created_by_id == teacher.id))
     # Writing оценивается по заданиям — считаем секции, а не задания
     writing_done = await session.scalar(
         select(func.count(distinct(WritingResponse.section_attempt_id)))
@@ -40,8 +36,9 @@ async def profile_stats(session: db_dep, teacher: teacher_dep):
         .where(WritingAssessment.grader_id == teacher.id)
     )
     speaking_done = await session.scalar(
-        select(func.count(distinct(SpeakingAssessment.section_attempt_id)))
-        .where(SpeakingAssessment.grader_id == teacher.id)
+        select(func.count(distinct(SpeakingAssessment.section_attempt_id))).where(
+            SpeakingAssessment.grader_id == teacher.id
+        )
     )
     waiting = await session.scalar(
         select(func.count())
@@ -84,8 +81,15 @@ async def profile_stats(session: db_dep, teacher: teacher_dep):
     )
     graded = writing.union_all(speaking).subquery()
     rows = await session.execute(
-        select(graded.c.sa_id, graded.c.at, Section.type, SectionAttempt.band_score,
-               User.email, UserProfile.first_name, UserProfile.last_name)
+        select(
+            graded.c.sa_id,
+            graded.c.at,
+            Section.type,
+            SectionAttempt.band_score,
+            User.email,
+            UserProfile.first_name,
+            UserProfile.last_name,
+        )
         .join(SectionAttempt, SectionAttempt.id == graded.c.sa_id)
         .join(SectionAttempt.section)
         .join(SectionAttempt.attempt)

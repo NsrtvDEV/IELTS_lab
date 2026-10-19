@@ -21,8 +21,10 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.7.0",
     "pytest>=9.1.1",
     "pytest-asyncio>=1.4.0",
+    "ruff>=0.17.1",
 ]
 
 [tool.pytest.ini_options]
@@ -32,3 +34,23 @@ asyncio_mode = "auto"
 # один event loop на все тесты: asyncpg-соединения пула привязаны к своему loop
 asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = ["frontend", "docs", "media"]
+
+[tool.ruff.lint]
+# E/F — ошибки и pyflakes, I — порядок импортов, B — типичные баги, UP — современный синтаксис
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]  # длину строк выравнивает форматтер; длинные строки текста не ломаем
+
+[tool.ruff.lint.per-file-ignores]
+"alembic/versions/*" = ["UP"]  # миграции генерирует alembic — оставляем как есть
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI: значения по умолчанию File(...), Query(...) и т.п. — так и задумано
+extend-immutable-calls = ["fastapi.File", "fastapi.Query", "fastapi.Depends", "fastapi.Form", "fastapi.Body"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "tests"]

@@ -10,8 +10,8 @@ from app.content import (
     test_response,
 )
 from app.database import db_dep
-from app.media import remove_unused
 from app.dependencies import teacher_dep
+from app.media import remove_unused
 from app.models import IeltsTest, Passage, QuestionGroup, Section, WritingTask
 from app.schemas.teacher import TeacherTest, TestCreate, TestUpdate
 
@@ -60,18 +60,12 @@ async def update_test(test_id: int, session: db_dep, teacher: teacher_dep, data:
 async def delete_test(test_id: int, session: db_dep, teacher: teacher_dep):
     test = await get_test(session, test_id)
     if await has_attempts(session, test.id):
-        raise HTTPException(
-            status_code=409, detail="Students already took this test — unpublish it instead"
-        )
+        raise HTTPException(status_code=409, detail="Students already took this test — unpublish it instead")
     section_ids = [s.id for s in test.sections]
-    files = list(
-        await session.scalars(select(Passage.audio_url).where(Passage.section_id.in_(section_ids)))
-    ) + list(
-        await session.scalars(
-            select(QuestionGroup.image_url).where(QuestionGroup.section_id.in_(section_ids))
-        )
-    ) + list(
-        await session.scalars(select(WritingTask.image_url).where(WritingTask.section_id.in_(section_ids)))
+    files = (
+        list(await session.scalars(select(Passage.audio_url).where(Passage.section_id.in_(section_ids))))
+        + list(await session.scalars(select(QuestionGroup.image_url).where(QuestionGroup.section_id.in_(section_ids))))
+        + list(await session.scalars(select(WritingTask.image_url).where(WritingTask.section_id.in_(section_ids))))
     )
     # секции, тексты и вопросы удаляет сама БД (ON DELETE CASCADE)
     await session.execute(delete(IeltsTest).where(IeltsTest.id == test.id))
@@ -101,4 +95,3 @@ async def unpublish_test(test_id: int, session: db_dep, teacher: teacher_dep):
     await session.commit()
     await session.refresh(test)
     return await test_response(session, test)
-

@@ -14,12 +14,10 @@ from app.content import (
     validate_group,
 )
 from app.database import db_dep
-from app.media import audio_duration, remove_unused
 from app.dependencies import teacher_dep
+from app.media import audio_duration, remove_unused
 from app.models import Passage, QuestionGroup, Section, SectionType, SpeakingTask, WritingTask
 from app.schemas.speaking import SpeakingTaskCreate, SpeakingTaskUpdate, TeacherSpeakingTask
-from app.schemas.writing import WritingTaskCreate, WritingTaskOut, WritingTaskUpdate
-from app.speaking import teacher_task_out
 from app.schemas.teacher import (
     PassageCreate,
     PassageUpdate,
@@ -29,6 +27,8 @@ from app.schemas.teacher import (
     TeacherQuestionGroup,
     TeacherSectionContent,
 )
+from app.schemas.writing import WritingTaskCreate, WritingTaskOut, WritingTaskUpdate
+from app.speaking import teacher_task_out
 
 router = APIRouter(prefix="/teacher", tags=["Teacher: content"])
 
@@ -44,9 +44,7 @@ async def get_section_content(section_id: int, session: db_dep, teacher: teacher
 
 
 @router.patch("/sections/{section_id}", response_model=TeacherSectionContent)
-async def update_section(
-    section_id: int, session: db_dep, teacher: teacher_dep, data: SectionUpdate
-):
+async def update_section(section_id: int, session: db_dep, teacher: teacher_dep, data: SectionUpdate):
     section, test = await get_section(session, section_id)
     await ensure_editable(session, test)
     section.duration_min = data.duration_min
@@ -73,12 +71,8 @@ async def editable_passage(session, passage_id: int) -> Passage:
     return passage
 
 
-@router.post(
-    "/sections/{section_id}/passages", response_model=TeacherPassage, status_code=201
-)
-async def create_passage(
-    section_id: int, session: db_dep, teacher: teacher_dep, data: PassageCreate
-):
+@router.post("/sections/{section_id}/passages", response_model=TeacherPassage, status_code=201)
+async def create_passage(section_id: int, session: db_dep, teacher: teacher_dep, data: PassageCreate):
     """Reading — текст (Passage 1–3), Listening — аудио части (Part 1–4)."""
     section = await editable_question_section(session, section_id)
     passage = Passage(section_id=section.id, **data.model_dump())
@@ -90,9 +84,7 @@ async def create_passage(
 
 
 @router.patch("/passages/{passage_id}", response_model=TeacherPassage)
-async def update_passage(
-    passage_id: int, session: db_dep, teacher: teacher_dep, data: PassageUpdate
-):
+async def update_passage(passage_id: int, session: db_dep, teacher: teacher_dep, data: PassageUpdate):
     passage = await editable_passage(session, passage_id)
     old_audio = passage.audio_url
     for field, value in data.model_dump(exclude_unset=True).items():
@@ -139,9 +131,7 @@ async def saved_group(session, group_id: int) -> TeacherQuestionGroup:
     response_model=TeacherQuestionGroup,
     status_code=201,
 )
-async def create_question_group(
-    section_id: int, session: db_dep, teacher: teacher_dep, data: QuestionGroupCreate
-):
+async def create_question_group(section_id: int, session: db_dep, teacher: teacher_dep, data: QuestionGroupCreate):
     """Группа вопросов целиком: инструкция, варианты, вопросы и правильные ответы.
 
     Правильные варианты указываются буквами (`correct_options: ["A"]`), текстовые
@@ -158,9 +148,7 @@ async def create_question_group(
 
 
 @router.put("/question-groups/{group_id}", response_model=TeacherQuestionGroup)
-async def replace_question_group(
-    group_id: int, session: db_dep, teacher: teacher_dep, data: QuestionGroupCreate
-):
+async def replace_question_group(group_id: int, session: db_dep, teacher: teacher_dep, data: QuestionGroupCreate):
     """Заменить группу целиком — как создание, но на месте старой."""
     old, section = await editable_group(session, group_id)
     await validate_group(session, section, data, replacing_group_id=old.id)
@@ -184,7 +172,6 @@ async def delete_question_group(group_id: int, session: db_dep, teacher: teacher
     await remove_unused(session, [image])
 
 
-
 # ───────────────────────── Writing tasks ─────────────────────────
 
 WRITING_DEFAULTS = {1: (150, 20), 2: (250, 40)}  # минимум слов, рекомендуемые минуты
@@ -200,18 +187,14 @@ async def editable_writing_task(session, task_id: int) -> WritingTask:
 
 
 @router.post("/sections/{section_id}/writing-tasks", response_model=WritingTaskOut, status_code=201)
-async def create_writing_task(
-    section_id: int, session: db_dep, teacher: teacher_dep, data: WritingTaskCreate
-):
+async def create_writing_task(section_id: int, session: db_dep, teacher: teacher_dep, data: WritingTaskCreate):
     """Task 1 (график/таблица/процесс, 150+ слов) или Task 2 (эссе, 250+ слов)."""
     section, test = await get_section(session, section_id)
     if section.type != SectionType.WRITING:
         raise HTTPException(status_code=400, detail=f"{section.type} section has no writing tasks")
     await ensure_editable(session, test)
     exists = await session.scalar(
-        select(WritingTask.id).where(
-            WritingTask.section_id == section.id, WritingTask.task_number == data.task_number
-        )
+        select(WritingTask.id).where(WritingTask.section_id == section.id, WritingTask.task_number == data.task_number)
     )
     if exists:
         raise HTTPException(status_code=400, detail=f"Task {data.task_number} already exists — edit it instead")
@@ -268,9 +251,7 @@ async def editable_speaking_task(session, task_id: int) -> SpeakingTask:
 
 
 @router.post("/sections/{section_id}/speaking-tasks", response_model=TeacherSpeakingTask, status_code=201)
-async def create_speaking_task(
-    section_id: int, session: db_dep, teacher: teacher_dep, data: SpeakingTaskCreate
-):
+async def create_speaking_task(section_id: int, session: db_dep, teacher: teacher_dep, data: SpeakingTaskCreate):
     """Part 1 и Part 3 — вопросы (по одному), Part 2 — одна карточка с пунктами; у каждого — примерный ответ."""
     section, test = await get_section(session, section_id)
     if section.type != SectionType.SPEAKING:

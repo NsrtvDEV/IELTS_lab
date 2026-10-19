@@ -7,7 +7,9 @@ MP3 = b"ID3\x03\x00\x00\x00\x00\x00\x0f" + b"\xff\xfb\x90\x00" * 64  # загл�
 
 
 async def start_listening(client, headers, test_id):
-    attempt = (await client.post("/attempts", headers=headers, json={"test_id": test_id, "section_type": "listening"})).json()
+    attempt = (
+        await client.post("/attempts", headers=headers, json={"test_id": test_id, "section_type": "listening"})
+    ).json()
     r = await client.post(f"/listening/attempts/{attempt['id']}/start", headers=headers)
     assert r.status_code == 200, r.text
     return r.json()
@@ -21,7 +23,9 @@ async def test_audio_upload(client, teacher, student, monkeypatch):
     served = await client.get(f"http://test{url}")
     assert served.status_code == 200 and served.content == MP3
 
-    r = await client.post("/teacher/uploads/audio", headers=teacher, files={"file": ("x.pdf", b"%PDF", "application/pdf")})
+    r = await client.post(
+        "/teacher/uploads/audio", headers=teacher, files={"file": ("x.pdf", b"%PDF", "application/pdf")}
+    )
     assert r.status_code == 415
     r = await client.post("/teacher/uploads/audio", headers=teacher, files={"file": ("e.mp3", b"", "audio/mpeg")})
     assert r.status_code == 400
@@ -99,7 +103,9 @@ def wav(seconds: float) -> bytes:
 
 
 async def upload(client, teacher, seconds):
-    r = await client.post("/teacher/uploads/audio", headers=teacher, files={"file": ("p.wav", wav(seconds), "audio/wav")})
+    r = await client.post(
+        "/teacher/uploads/audio", headers=teacher, files={"file": ("p.wav", wav(seconds), "audio/wav")}
+    )
     assert r.status_code == 201, r.text
     return r.json()
 
@@ -115,8 +121,11 @@ async def test_upload_reports_duration_and_passage_stores_it(client, teacher):
     sec = next(s["id"] for s in test["sections"] if s["type"] == "listening")
     p = (await client.post(f"/teacher/sections/{sec}/passages", headers=teacher, json={"audio_url": up["url"]})).json()
     assert p["audio_duration_sec"] == 3
-    ext = (await client.post(f"/teacher/sections/{sec}/passages", headers=teacher,
-                             json={"audio_url": "https://cdn.example.com/x.mp3"})).json()
+    ext = (
+        await client.post(
+            f"/teacher/sections/{sec}/passages", headers=teacher, json={"audio_url": "https://cdn.example.com/x.mp3"}
+        )
+    ).json()
     assert ext["audio_duration_sec"] is None  # длина внешней ссылки неизвестна
 
 
@@ -152,14 +161,18 @@ async def test_playback_only_moves_forward(client, student, published_test):
 
     reloaded = (await client.get(f"/listening/{sa}", headers=student)).json()
     assert reloaded["playback"]["finished"] is True
-    assert (await client.put(f"/reading/{sa}/playback", headers=student, json={"part": 0, "position": 0})).status_code in (404, 405)
+    assert (
+        await client.put(f"/reading/{sa}/playback", headers=student, json={"part": 0, "position": 0})
+    ).status_code in (404, 405)
 
 
 async def test_replaced_and_deleted_files_are_removed(client, teacher):
     test = (await client.post("/teacher/tests", headers=teacher, json={"title": "T"})).json()
     sec = next(s["id"] for s in test["sections"] if s["type"] == "listening")
     first, second = await upload(client, teacher, 1), await upload(client, teacher, 1)
-    p = (await client.post(f"/teacher/sections/{sec}/passages", headers=teacher, json={"audio_url": first["url"]})).json()
+    p = (
+        await client.post(f"/teacher/sections/{sec}/passages", headers=teacher, json={"audio_url": first["url"]})
+    ).json()
     assert file_of(first["url"]).exists()
 
     await client.patch(f"/teacher/passages/{p['id']}", headers=teacher, json={"audio_url": second["url"]})
@@ -173,8 +186,12 @@ async def test_replaced_and_deleted_files_are_removed(client, teacher):
 async def test_layout_template_validation(client, teacher):
     test = (await client.post("/teacher/tests", headers=teacher, json={"title": "T"})).json()
     sec = next(s["id"] for s in test["sections"] if s["type"] == "listening")
-    group = {"type": "form_completion", "instruction": "Questions 1–2", "word_limit": 2,
-             "questions": [{"number": 1, "correct_texts": ["Smith"]}, {"number": 2, "correct_texts": ["14"]}]}
+    group = {
+        "type": "form_completion",
+        "instruction": "Questions 1–2",
+        "word_limit": 2,
+        "questions": [{"number": 1, "correct_texts": ["Smith"]}, {"number": 2, "correct_texts": ["14"]}],
+    }
     url = f"/teacher/sections/{sec}/question-groups"
 
     r = await client.post(url, headers=teacher, json={**group, "meta": {"template": "Name: {1}\nAge: {3}"}})

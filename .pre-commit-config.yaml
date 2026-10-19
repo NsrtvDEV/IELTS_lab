@@ -1,0 +1,43 @@
+# Проверки перед каждым коммитом. Установка (один раз): uv run pre-commit install
+# Вручную по всему проекту: uv run pre-commit run --all-files
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+        exclude: ^scripts/demo/  # записи демо-теста
+      - id: detect-private-key
+
+  # ruff — та же версия, что в uv.lock
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi]
+
+      # фронтенд: линтер и проверка типов — только если менялись файлы frontend/
+      - id: oxlint
+        name: oxlint (frontend)
+        entry: bash -c 'cd frontend && npx oxlint'
+        language: system
+        files: ^frontend/src/
+        pass_filenames: false
+      - id: tsc
+        name: tsc (frontend)
+        entry: bash -c 'cd frontend && npx tsc -b'
+        language: system
+        files: ^frontend/(src/|tsconfig|package\.json)
+        pass_filenames: false

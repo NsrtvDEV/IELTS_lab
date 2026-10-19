@@ -5,15 +5,17 @@ Revises: 9def0ac3d9fa
 Create Date: 2026-10-17 20:57:21.136172
 
 """
+
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
-revision: str = 'e6d0cc75e203'
-down_revision: Union[str, Sequence[str], None] = '9def0ac3d9fa'
+revision: str = "e6d0cc75e203"
+down_revision: Union[str, Sequence[str], None] = "9def0ac3d9fa"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -29,9 +31,7 @@ def upgrade() -> None:
     op.execute("DELETE FROM band_conversion WHERE test_type = 'general'")
     # удаление колонки из PK удаляет и сам PK — создаём новый
     op.drop_column("band_conversion", "test_type")
-    op.create_primary_key(
-        "pk_band_conversion", "band_conversion", ["section_type", "raw_score"]
-    )
+    op.create_primary_key("pk_band_conversion", "band_conversion", ["section_type", "raw_score"])
     op.create_check_constraint(
         op.f("ck_band_conversion_section_type_scored"),
         "band_conversion",
@@ -53,14 +53,10 @@ def downgrade() -> None:
     op.alter_column("tests", "type", server_default=None)
     op.add_column(
         "tests",
-        sa.Column(
-            "is_mock", sa.Boolean(), server_default=sa.text("false"), nullable=False
-        ),
+        sa.Column("is_mock", sa.Boolean(), server_default=sa.text("false"), nullable=False),
     )
 
-    op.drop_constraint(
-        op.f("ck_band_conversion_section_type_scored"), "band_conversion"
-    )
+    op.drop_constraint(op.f("ck_band_conversion_section_type_scored"), "band_conversion")
     op.drop_constraint("pk_band_conversion", "band_conversion", type_="primary")
     op.add_column(
         "band_conversion",

@@ -8,7 +8,6 @@
 from pathlib import Path
 
 from gtts import gTTS
-
 from listening import PARTS
 
 HERE = Path(__file__).parent

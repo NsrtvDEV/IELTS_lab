@@ -46,14 +46,13 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture(scope="session")
 def database():
     """Создаёт тестовую базу (если нет) и применяет миграции."""
-    from alembic import command
     from alembic.config import Config
+
+    from alembic import command
 
     admin = create_engine(DB_URL.set(database="postgres"), isolation_level="AUTOCOMMIT")
     with admin.connect() as conn:
-        exists = conn.execute(
-            text("SELECT 1 FROM pg_database WHERE datname = :n"), {"n": settings.DB_NAME}
-        ).scalar()
+        exists = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = :n"), {"n": settings.DB_NAME}).scalar()
         if not exists:
             conn.execute(text(f'CREATE DATABASE "{settings.DB_NAME}"'))
     admin.dispose()
@@ -134,27 +133,62 @@ async def student(make_user):
 
 READING_GROUPS = [
     # Q1–2 TFNG: TRUE, FALSE
-    {"type": "tfng", "instruction": "Questions 1–2. TRUE / FALSE / NOT GIVEN",
-     "questions": [{"number": 1, "text": "s1", "correct_options": ["TRUE"]},
-                   {"number": 2, "text": "s2", "correct_options": ["FALSE"]}]},
+    {
+        "type": "tfng",
+        "instruction": "Questions 1–2. TRUE / FALSE / NOT GIVEN",
+        "questions": [
+            {"number": 1, "text": "s1", "correct_options": ["TRUE"]},
+            {"number": 2, "text": "s2", "correct_options": ["FALSE"]},
+        ],
+    },
     # Q3 MCQ: B
-    {"type": "mcq", "instruction": "Question 3",
-     "questions": [{"number": 3, "text": "When?", "options": [{"label": L, "text": L} for L in "ABCD"],
-                    "correct_options": ["B"]}]},
+    {
+        "type": "mcq",
+        "instruction": "Question 3",
+        "questions": [
+            {
+                "number": 3,
+                "text": "When?",
+                "options": [{"label": L, "text": L} for L in "ABCD"],
+                "correct_options": ["B"],
+            }
+        ],
+    },
     # Q4 matching headings: ii
-    {"type": "matching_headings", "instruction": "Question 4",
-     "options": [{"label": "i", "text": "Intro"}, {"label": "ii", "text": "Rome"}, {"label": "iii", "text": "Now"}],
-     "questions": [{"number": 4, "text": "Paragraph B", "correct_options": ["ii"]}]},
+    {
+        "type": "matching_headings",
+        "instruction": "Question 4",
+        "options": [{"label": "i", "text": "Intro"}, {"label": "ii", "text": "Rome"}, {"label": "iii", "text": "Now"}],
+        "questions": [{"number": 4, "text": "Paragraph B", "correct_options": ["ii"]}],
+    },
     # Q5 completion, лимит 2 слова
-    {"type": "sentence_completion", "instruction": "Question 5", "word_limit": 2,
-     "questions": [{"number": 5, "text": "Made in ____", "correct_texts": ["Mesopotamia"]}]},
+    {
+        "type": "sentence_completion",
+        "instruction": "Question 5",
+        "word_limit": 2,
+        "questions": [{"number": 5, "text": "Made in ____", "correct_texts": ["Mesopotamia"]}],
+    },
     # Q6 Choose TWO: A, C (2 балла)
-    {"type": "mcq_multi", "instruction": "Question 6",
-     "questions": [{"number": 6, "text": "Which TWO?", "answers_required": 2,
-                    "options": [{"label": L, "text": L} for L in "ABCD"], "correct_options": ["A", "C"]}]},
+    {
+        "type": "mcq_multi",
+        "instruction": "Question 6",
+        "questions": [
+            {
+                "number": 6,
+                "text": "Which TWO?",
+                "answers_required": 2,
+                "options": [{"label": L, "text": L} for L in "ABCD"],
+                "correct_options": ["A", "C"],
+            }
+        ],
+    },
     # Q7–40 gap fill
-    {"type": "gap_fill", "instruction": "Questions 7–40", "word_limit": 1,
-     "questions": [{"number": n, "text": f"gap {n}", "correct_texts": [f"x{n}"]} for n in range(7, 41)]},
+    {
+        "type": "gap_fill",
+        "instruction": "Questions 7–40",
+        "word_limit": 1,
+        "questions": [{"number": n, "text": f"gap {n}", "correct_texts": [f"x{n}"]} for n in range(7, 41)],
+    },
 ]
 
 
@@ -162,26 +196,48 @@ async def build_test(client, teacher, sql, publish=True):
     """Тест с полным Reading (40 вопросов разных типов), Listening, Writing и Speaking."""
     test = (await client.post("/teacher/tests", headers=teacher, json={"title": "Mock 1"})).json()
     sec = {s["type"]: s["id"] for s in test["sections"]}
-    passage = (await client.post(f"/teacher/sections/{sec['reading']}/passages", headers=teacher,
-                                 json={"title": "Glass", "text": "Glass was first made in Mesopotamia."})).json()
+    passage = (
+        await client.post(
+            f"/teacher/sections/{sec['reading']}/passages",
+            headers=teacher,
+            json={"title": "Glass", "text": "Glass was first made in Mesopotamia."},
+        )
+    ).json()
     for i, g in enumerate(READING_GROUPS):
-        r = await client.post(f"/teacher/sections/{sec['reading']}/question-groups", headers=teacher,
-                              json={**g, "passage_id": passage["id"], "position": i})
+        r = await client.post(
+            f"/teacher/sections/{sec['reading']}/question-groups",
+            headers=teacher,
+            json={**g, "passage_id": passage["id"], "position": i},
+        )
         assert r.status_code == 201, r.text
-    part = (await client.post(f"/teacher/sections/{sec['listening']}/passages", headers=teacher,
-                              json={"audio_url": "https://cdn.example.com/p1.mp3"})).json()
-    r = await client.post(f"/teacher/sections/{sec['listening']}/question-groups", headers=teacher, json={
-        "passage_id": part["id"], "type": "gap_fill", "instruction": "Questions 1–40",
-        "questions": [{"number": n, "correct_texts": ["a"]} for n in range(1, 41)]})
+    part = (
+        await client.post(
+            f"/teacher/sections/{sec['listening']}/passages",
+            headers=teacher,
+            json={"audio_url": "https://cdn.example.com/p1.mp3"},
+        )
+    ).json()
+    r = await client.post(
+        f"/teacher/sections/{sec['listening']}/question-groups",
+        headers=teacher,
+        json={
+            "passage_id": part["id"],
+            "type": "gap_fill",
+            "instruction": "Questions 1–40",
+            "questions": [{"number": n, "correct_texts": ["a"]} for n in range(1, 41)],
+        },
+    )
     assert r.status_code == 201, r.text
     sql(
         "INSERT INTO writing_tasks (section_id, task_number, prompt, min_words, recommended_min) "
         "VALUES (:s, 1, 'Describe', 150, 20), (:s, 2, 'Discuss', 250, 40)",
         s=sec["writing"],
     )
-    sql("INSERT INTO speaking_tasks (section_id, part, prompt, sample_answer) "
+    sql(
+        "INSERT INTO speaking_tasks (section_id, part, prompt, sample_answer) "
         "VALUES (:s, 1, 'p1', 'a1'), (:s, 2, 'p2', 'a2'), (:s, 3, 'p3', 'a3')",
-        s=sec["speaking"])
+        s=sec["speaking"],
+    )
     if publish:
         r = await client.post(f"/teacher/tests/{test['id']}/publish", headers=teacher)
         assert r.status_code == 200, r.text

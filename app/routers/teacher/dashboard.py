@@ -63,10 +63,7 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
 
     # ── ученики ──
     total_students = await session.scalar(select(func.count()).where(is_student)) or 0
-    students_month_ago = (
-        await session.scalar(select(func.count()).where(is_student, User.created_at < month_ago))
-        or 0
-    )
+    students_month_ago = await session.scalar(select(func.count()).where(is_student, User.created_at < month_ago)) or 0
 
     # ── тесты ──
     test_rows = list(await session.scalars(select(IeltsTest).order_by(IeltsTest.updated_at.desc())))
@@ -86,10 +83,7 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
         )
 
     tests_completed = (
-        await session.scalar(
-            select(func.count()).where(TestAttempt.status == AttemptStatus.FINISHED)
-        )
-        or 0
+        await session.scalar(select(func.count()).where(TestAttempt.status == AttemptStatus.FINISHED)) or 0
     )
     completed_change = percent_change(
         await finished_between(month_ago, now), await finished_between(two_months_ago, month_ago)
@@ -136,9 +130,7 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
     for r in graded:
         by_section[r.type].append(r)
     sections = [
-        SectionPerformance(
-            section_type=t, band=average(by_section[t]), attempts=len(by_section[t])
-        )
+        SectionPerformance(section_type=t, band=average(by_section[t]), attempts=len(by_section[t]))
         for t in SECTION_ORDER
     ]
     section_avgs = {s.section_type: s.band for s in sections if s.band is not None}
@@ -166,9 +158,7 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
                 email=last.email,
                 overall_band=now_band,
                 change=now_band - prev_band if prev_band is not None else None,
-                last_activity=f"{section_name} test"
-                if last.section_type
-                else f"Mock test · {section_name}",
+                last_activity=f"{section_name} test" if last.section_type else f"Mock test · {section_name}",
                 last_section=last.type,
                 last_in_mock=not last.section_type,
                 last_activity_at=last.submitted_at,
@@ -190,8 +180,14 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
     ]
     finished_mocks = (
         await session.execute(
-            select(TestAttempt.overall_band, TestAttempt.finished_at, IeltsTest.title, User.email,
-                   UserProfile.first_name, UserProfile.last_name)
+            select(
+                TestAttempt.overall_band,
+                TestAttempt.finished_at,
+                IeltsTest.title,
+                User.email,
+                UserProfile.first_name,
+                UserProfile.last_name,
+            )
             .join(TestAttempt.test)
             .join(User, User.id == TestAttempt.user_id)
             .outerjoin(UserProfile, UserProfile.user_id == User.id)
@@ -233,9 +229,7 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
 
     # ── тесты учителя ──
     shown = test_rows[:TESTS_SHOWN]
-    counts = await question_counts(
-        session, [s.id for t in shown for s in t.sections]
-    )
+    counts = await question_counts(session, [s.id for t in shown for s in t.sections])
     tests = [
         TestSummary(
             id=t.id,
@@ -253,18 +247,14 @@ async def dashboard(session: db_dep, teacher: teacher_dep):
                 value=total_students,
                 change=percent_change(total_students, students_month_ago),
             ),
-            published_tests=Stat(
-                value=published, change=percent_change(published, published_month_ago)
-            ),
+            published_tests=Stat(value=published, change=percent_change(published, published_month_ago)),
             draft_tests=len(test_rows) - published,
             tests_completed=Stat(value=tests_completed, change=completed_change),
             average_band=Stat(value=avg_all, change=band_change),
         ),
         students=students[:STUDENTS_SHOWN],
         performance=Performance(
-            overall_band=round_band(sum(section_avgs.values()) / len(section_avgs))
-            if section_avgs
-            else None,
+            overall_band=round_band(sum(section_avgs.values()) / len(section_avgs)) if section_avgs else None,
             sections=sections,
         ),
         activities=activities[:ACTIVITIES_SHOWN],

@@ -12,14 +12,18 @@ def recording(content=AUDIO, content_type="audio/webm;codecs=opus"):
 
 async def start_speaking(client, headers, test_id, attempt_id=None):
     if attempt_id is None:
-        attempt_id = (await client.post("/attempts", headers=headers, json={"test_id": test_id, "section_type": "speaking"})).json()["id"]
+        attempt_id = (
+            await client.post("/attempts", headers=headers, json={"test_id": test_id, "section_type": "speaking"})
+        ).json()["id"]
     r = await client.post(f"/speaking/attempts/{attempt_id}/start", headers=headers)
     assert r.status_code == 200, r.text
     return r.json()
 
 
 async def answer(client, headers, sa, task_id, duration=25):
-    return await client.post(f"/speaking/{sa}/tasks/{task_id}", headers=headers, files=recording(), data={"duration_sec": duration})
+    return await client.post(
+        f"/speaking/{sa}/tasks/{task_id}", headers=headers, files=recording(), data={"duration_sec": duration}
+    )
 
 
 async def test_teacher_speaking_questions(client, teacher, student):
@@ -27,39 +31,81 @@ async def test_teacher_speaking_questions(client, teacher, student):
     sec = {s["type"]: s["id"] for s in test["sections"]}
     url = f"/teacher/sections/{sec['speaking']}/speaking-tasks"
 
-    q1 = (await client.post(url, headers=teacher, json={
-        "part": 1, "prompt": " Do you work or study? ", "sample_answer": " I'm a student at a university. "})).json()
-    assert (q1["prompt"], q1["position"], q1["prep_time_sec"], q1["speak_time_sec"]) == ("Do you work or study?", 0, 0, 30)
+    q1 = (
+        await client.post(
+            url,
+            headers=teacher,
+            json={"part": 1, "prompt": " Do you work or study? ", "sample_answer": " I'm a student at a university. "},
+        )
+    ).json()
+    assert (q1["prompt"], q1["position"], q1["prep_time_sec"], q1["speak_time_sec"]) == (
+        "Do you work or study?",
+        0,
+        0,
+        30,
+    )
     assert q1["sample_answer"] == "I'm a student at a university."
     q2 = (await client.post(url, headers=teacher, json={"part": 1, "prompt": "Where do you live?"})).json()
     assert q2["position"] == 1  # в конец части
-    card = (await client.post(url, headers=teacher, json={
-        "part": 2, "prompt": "Describe a book you enjoyed.", "cue_card_points": ["what it was", "why you liked it"],
-        "sample_answer": "I'd like to talk about..."})).json()
-    assert (card["prep_time_sec"], card["speak_time_sec"], card["cue_card_points"]) == (60, 120, ["what it was", "why you liked it"])
+    card = (
+        await client.post(
+            url,
+            headers=teacher,
+            json={
+                "part": 2,
+                "prompt": "Describe a book you enjoyed.",
+                "cue_card_points": ["what it was", "why you liked it"],
+                "sample_answer": "I'd like to talk about...",
+            },
+        )
+    ).json()
+    assert (card["prep_time_sec"], card["speak_time_sec"], card["cue_card_points"]) == (
+        60,
+        120,
+        ["what it was", "why you liked it"],
+    )
 
     r = await client.post(url, headers=teacher, json={"part": 2, "prompt": "Another card"})
     assert r.status_code == 400  # карточка одна
     r = await client.post(url, headers=teacher, json={"part": 1, "prompt": "x", "cue_card_points": ["a"]})
     assert r.status_code == 400
     assert (await client.post(url, headers=teacher, json={"part": 4, "prompt": "x"})).status_code == 422
-    assert (await client.post(f"/teacher/sections/{sec['writing']}/speaking-tasks", headers=teacher, json={"part": 1, "prompt": "x"})).status_code == 400
+    assert (
+        await client.post(
+            f"/teacher/sections/{sec['writing']}/speaking-tasks", headers=teacher, json={"part": 1, "prompt": "x"}
+        )
+    ).status_code == 400
     assert (await client.post(url, headers=student, json={"part": 1, "prompt": "x"})).status_code == 403
 
     problems = (await client.get(f"/teacher/tests/{test['id']}", headers=teacher)).json()["problems"]
     assert "speaking: Part 1, 2 and 3 are required" in problems
-    await client.post(url, headers=teacher, json={
-        "part": 3, "prompt": "Why do people read less today?", "speak_time_sec": 90, "sample_answer": "Mostly because..."})
+    await client.post(
+        url,
+        headers=teacher,
+        json={
+            "part": 3,
+            "prompt": "Why do people read less today?",
+            "speak_time_sec": 90,
+            "sample_answer": "Mostly because...",
+        },
+    )
 
     # у Where do you live? нет примерного ответа — публиковать нельзя
     problems = (await client.get(f"/teacher/tests/{test['id']}", headers=teacher)).json()["problems"]
     assert "speaking: add a sample answer to 1 question(s) — Part 1: Where do you live?" in problems
-    r = await client.patch(f"/teacher/speaking-tasks/{q2['id']}", headers=teacher, json={
-        "prompt": "Describe your hometown.", "position": 0, "sample_answer": "My hometown is Samarkand."})
+    r = await client.patch(
+        f"/teacher/speaking-tasks/{q2['id']}",
+        headers=teacher,
+        json={"prompt": "Describe your hometown.", "position": 0, "sample_answer": "My hometown is Samarkand."},
+    )
     assert r.json()["prompt"] == "Describe your hometown." and r.json()["sample_answer"] == "My hometown is Samarkand."
     content = (await client.get(f"/teacher/sections/{sec['speaking']}", headers=teacher)).json()
     assert [(t["part"], t["prompt"][:8]) for t in content["speaking_tasks"]] == [
-        (1, "Do you w"), (1, "Describe"), (2, "Describe"), (3, "Why do p")]
+        (1, "Do you w"),
+        (1, "Describe"),
+        (2, "Describe"),
+        (3, "Why do p"),
+    ]
     problems = (await client.get(f"/teacher/tests/{test['id']}", headers=teacher)).json()["problems"]
     assert not any(p.startswith("speaking") for p in problems)
 
@@ -158,7 +204,9 @@ async def test_speaking_needs_open_section(client, student, teacher, published_t
 async def test_full_exam_gets_overall_band(client, student, teacher, published_test):
     attempt = (await client.post("/attempts", headers=student, json={"test_id": published_test["id"]})).json()
     for section in ("listening", "reading", "writing"):
-        sa = (await client.post(f"/{section}/attempts/{attempt['id']}/start", headers=student)).json()["section_attempt_id"]
+        sa = (await client.post(f"/{section}/attempts/{attempt['id']}/start", headers=student)).json()[
+            "section_attempt_id"
+        ]
         await client.post(f"/{section}/{sa}/submit", headers=student)
     content = await start_speaking(client, student, published_test["id"], attempt_id=attempt["id"])
     sa = content["section_attempt_id"]
@@ -173,8 +221,11 @@ async def test_full_exam_gets_overall_band(client, student, teacher, published_t
     writing_sa = next(q["section_attempt_id"] for q in queue if q["section_type"] == "writing")
     tasks = (await client.get(f"/teacher/review/writing/{writing_sa}", headers=teacher)).json()["tasks"]
     scores = {"task_response": 5, "coherence_cohesion": 5, "lexical_resource": 5, "grammatical_range": 5}
-    await client.post(f"/teacher/review/writing/{writing_sa}", headers=teacher,
-                      json={"tasks": [{"task_id": t["task_id"], **scores} for t in tasks]})
+    await client.post(
+        f"/teacher/review/writing/{writing_sa}",
+        headers=teacher,
+        json={"tasks": [{"task_id": t["task_id"], **scores} for t in tasks]},
+    )
     await client.post(f"/teacher/review/speaking/{sa}", headers=teacher, json={k: 7 for k in SCORES})
 
     state = (await client.get(f"/attempts/{attempt['id']}", headers=student)).json()
@@ -186,6 +237,8 @@ async def test_full_exam_gets_overall_band(client, student, teacher, published_t
 
 async def test_speaking_question_needs_editable_test(client, teacher, sql):
     test = await build_test(client, teacher, sql)  # опубликован
-    tasks = (await client.get(f"/teacher/sections/{test['sections']['speaking']}", headers=teacher)).json()["speaking_tasks"]
+    tasks = (await client.get(f"/teacher/sections/{test['sections']['speaking']}", headers=teacher)).json()[
+        "speaking_tasks"
+    ]
     r = await client.patch(f"/teacher/speaking-tasks/{tasks[0]['id']}", headers=teacher, json={"prompt": "x"})
     assert r.status_code == 409

@@ -39,8 +39,13 @@ def result_link(sa: SectionAttempt) -> str:
 
 
 def add(
-    session: AsyncSession, user_ids, kind: str, text: str, link: str | None,
-    ref_key: str | None = None, params: dict | None = None,
+    session: AsyncSession,
+    user_ids,
+    kind: str,
+    text: str,
+    link: str | None,
+    ref_key: str | None = None,
+    params: dict | None = None,
 ) -> None:
     for user_id in user_ids:
         session.add(Notification(user_id=user_id, kind=kind, text=text, params=params, link=link, ref_key=ref_key))
@@ -68,15 +73,25 @@ async def section_submitted(session: AsyncSession, sa: SectionAttempt, *, timed_
     """Секция сдана: Writing/Speaking — учителям на проверку; по времени — сообщить ученику."""
     section = sa.section.type.capitalize()
     if timed_out:
-        add(session, [sa.attempt.user_id], "auto_submitted",
-            f"Time ran out — your {section} was submitted automatically", result_link(sa),
-            params={"section": sa.section.type.value})
+        add(
+            session,
+            [sa.attempt.user_id],
+            "auto_submitted",
+            f"Time ran out — your {section} was submitted automatically",
+            result_link(sa),
+            params={"section": sa.section.type.value},
+        )
     if sa.section.type in REVIEWED:
         name = await student_name(session, sa.attempt.user_id)
-        add(session, await teacher_ids(session), "review_submitted",
+        add(
+            session,
+            await teacher_ids(session),
+            "review_submitted",
             f"{name} submitted {section} — waiting for review",
-            f"/teacher/review/{sa.section.type}/{sa.id}", review_key(sa),
-            params={"section": sa.section.type.value, "name": name})
+            f"/teacher/review/{sa.section.type}/{sa.id}",
+            review_key(sa),
+            params={"section": sa.section.type.value, "name": name},
+        )
 
 
 async def work_assessed(session: AsyncSession, sa: SectionAttempt, *, updated: bool) -> None:
@@ -87,8 +102,14 @@ async def work_assessed(session: AsyncSession, sa: SectionAttempt, *, updated: b
         if updated
         else f"Your {section} has been assessed — band {sa.band_score}"
     )
-    add(session, [sa.attempt.user_id], "assessed", text, result_link(sa),
-        params={"section": sa.section.type.value, "band": str(sa.band_score), "updated": updated})
+    add(
+        session,
+        [sa.attempt.user_id],
+        "assessed",
+        text,
+        result_link(sa),
+        params={"section": sa.section.type.value, "band": str(sa.band_score), "updated": updated},
+    )
     await session.execute(delete(Notification).where(Notification.ref_key == review_key(sa)))
 
 
@@ -109,8 +130,15 @@ async def test_published(session: AsyncSession, test: IeltsTest) -> None:
             ~exists().where(Notification.user_id == User.id, Notification.ref_key == key),
         )
     )
-    add(session, students, "test_published", f"New test available: {test.title}", "/tests", key,
-        params={"title": test.title})
+    add(
+        session,
+        students,
+        "test_published",
+        f"New test available: {test.title}",
+        "/tests",
+        key,
+        params={"title": test.title},
+    )
 
 
 async def remind_waiting(session: AsyncSession, teacher: User) -> None:
@@ -120,11 +148,13 @@ async def remind_waiting(session: AsyncSession, teacher: User) -> None:
     """
     now = datetime.now(UTC)
     recent = await session.scalar(
-        select(exists().where(
-            Notification.user_id == teacher.id,
-            Notification.kind == "review_waiting",
-            Notification.created_at > now - REMIND_EVERY,
-        ))
+        select(
+            exists().where(
+                Notification.user_id == teacher.id,
+                Notification.kind == "review_waiting",
+                Notification.created_at > now - REMIND_EVERY,
+            )
+        )
     )
     if recent:
         return
@@ -142,7 +172,12 @@ async def remind_waiting(session: AsyncSession, teacher: User) -> None:
     )
     if waiting:
         works = "work has" if waiting == 1 else "works have"
-        add(session, [teacher.id], "review_waiting",
-            f"{waiting} {works} been waiting for review for more than 2 days", "/teacher/review",
-            params={"count": waiting})
+        add(
+            session,
+            [teacher.id],
+            "review_waiting",
+            f"{waiting} {works} been waiting for review for more than 2 days",
+            "/teacher/review",
+            params={"count": waiting},
+        )
         await session.commit()

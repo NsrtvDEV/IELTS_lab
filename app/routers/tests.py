@@ -12,17 +12,19 @@ router = APIRouter(prefix="/tests", tags=["Tests"])
 
 async def completed_sections(session: AsyncSession, user_id: int) -> dict[int, list]:
     """test_id → секции, которые ученик сдал хотя бы раз."""
-    rows = (await session.execute(
-        select(TestAttempt.test_id, Section.type)
-        .join(SectionAttempt.attempt)
-        .join(SectionAttempt.section)
-        .where(
-            TestAttempt.user_id == user_id,
-            TestAttempt.status != AttemptStatus.ABANDONED,
-            SectionAttempt.submitted_at.is_not(None),
+    rows = (
+        await session.execute(
+            select(TestAttempt.test_id, Section.type)
+            .join(SectionAttempt.attempt)
+            .join(SectionAttempt.section)
+            .where(
+                TestAttempt.user_id == user_id,
+                TestAttempt.status != AttemptStatus.ABANDONED,
+                SectionAttempt.submitted_at.is_not(None),
+            )
+            .distinct()
         )
-        .distinct()
-    )).all()
+    ).all()
     result: dict[int, list] = {}
     for test_id, section_type in rows:
         result.setdefault(test_id, []).append(section_type)
@@ -31,9 +33,7 @@ async def completed_sections(session: AsyncSession, user_id: int) -> dict[int, l
 
 @router.get("", response_model=list[TestResponse])
 async def list_tests(session: db_dep, current_user: current_user_dep):
-    tests = await session.scalars(
-        select(IeltsTest).where(IeltsTest.is_published).order_by(IeltsTest.id.desc())
-    )
+    tests = await session.scalars(select(IeltsTest).where(IeltsTest.is_published).order_by(IeltsTest.id.desc()))
     done = await completed_sections(session, current_user.id)
 
     return [
@@ -57,7 +57,5 @@ async def get_test(test_id: int, session: db_dep, current_user: current_user_dep
         id=test.id,
         title=test.title,
         sections=test.sections,
-        completed_sections=(await completed_sections(session, current_user.id)).get(
-            test.id, []
-        ),
+        completed_sections=(await completed_sections(session, current_user.id)).get(test.id, []),
     )

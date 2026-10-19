@@ -10,7 +10,9 @@ async def inbox(client, headers):
 
 
 async def submit_writing(client, student, test_id):
-    attempt = (await client.post("/attempts", headers=student, json={"test_id": test_id, "section_type": "writing"})).json()
+    attempt = (
+        await client.post("/attempts", headers=student, json={"test_id": test_id, "section_type": "writing"})
+    ).json()
     content = (await client.post(f"/writing/attempts/{attempt['id']}/start", headers=student)).json()
     sa = content["section_attempt_id"]
     await client.put(f"/writing/{sa}/tasks/{content['tasks'][0]['id']}", headers=student, json={"text": "Some essay"})
@@ -59,7 +61,11 @@ async def test_review_flow(client, student, teacher, make_user, published_test):
 
 
 async def test_speaking_submission_and_assessment(client, student, teacher, published_test):
-    attempt = (await client.post("/attempts", headers=student, json={"test_id": published_test["id"], "section_type": "speaking"})).json()
+    attempt = (
+        await client.post(
+            "/attempts", headers=student, json={"test_id": published_test["id"], "section_type": "speaking"}
+        )
+    ).json()
     sa = (await client.post(f"/speaking/attempts/{attempt['id']}/start", headers=student)).json()["section_attempt_id"]
     await client.post(f"/speaking/{sa}/submit", headers=student)
     assert (await inbox(client, teacher))["items"][0]["link"] == f"/teacher/review/speaking/{sa}"
@@ -71,7 +77,9 @@ async def test_speaking_submission_and_assessment(client, student, teacher, publ
 async def test_abandoned_mock_removes_review_notification(client, student, teacher, published_test):
     attempt = (await client.post("/attempts", headers=student, json={"test_id": published_test["id"]})).json()
     for section in ("listening", "reading", "writing"):
-        sa = (await client.post(f"/{section}/attempts/{attempt['id']}/start", headers=student)).json()["section_attempt_id"]
+        sa = (await client.post(f"/{section}/attempts/{attempt['id']}/start", headers=student)).json()[
+            "section_attempt_id"
+        ]
         await client.post(f"/{section}/{sa}/submit", headers=student)
     assert any(n["kind"] == "review_submitted" for n in (await inbox(client, teacher))["items"])
     await client.post(f"/attempts/{attempt['id']}/abandon", headers=student)
@@ -79,7 +87,11 @@ async def test_abandoned_mock_removes_review_notification(client, student, teach
 
 
 async def test_timed_out_section_notifies_student(client, student, teacher, published_test, sql):
-    attempt = (await client.post("/attempts", headers=student, json={"test_id": published_test["id"], "section_type": "reading"})).json()
+    attempt = (
+        await client.post(
+            "/attempts", headers=student, json={"test_id": published_test["id"], "section_type": "reading"}
+        )
+    ).json()
     sa = (await client.post(f"/reading/attempts/{attempt['id']}/start", headers=student)).json()["section_attempt_id"]
     sql("UPDATE section_attempts SET started_at = now() - interval '2 hours' WHERE id = :id", id=sa)
     await client.get(f"/attempts/{attempt['id']}", headers=student)  # сервер закрывает просроченную секцию
@@ -100,7 +112,9 @@ async def test_teacher_reminder_for_old_works(client, student, teacher, publishe
     assert len(reminders) == 1
     assert reminders[0]["text"] == "1 work has been waiting for review for more than 2 days"
     assert reminders[0]["params"] == {"count": 1}
-    assert len([n for n in (await inbox(client, teacher))["items"] if n["kind"] == "review_waiting"]) == 1  # не чаще раза в сутки
+    assert (
+        len([n for n in (await inbox(client, teacher))["items"] if n["kind"] == "review_waiting"]) == 1
+    )  # не чаще раза в сутки
 
 
 async def test_read_and_read_all(client, student, teacher, make_user, published_test):

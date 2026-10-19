@@ -2,7 +2,9 @@
 
 
 async def start_reading(client, headers, test_id):
-    attempt = (await client.post("/attempts", headers=headers, json={"test_id": test_id, "section_type": "reading"})).json()
+    attempt = (
+        await client.post("/attempts", headers=headers, json={"test_id": test_id, "section_type": "reading"})
+    ).json()
     r = await client.post(f"/reading/attempts/{attempt['id']}/start", headers=headers)
     assert r.status_code == 200, r.text
     return r.json()
@@ -34,7 +36,9 @@ async def test_reading_flow_scores_and_result(client, student, make_user, publis
     ]
     assert (await client.put(f"/reading/{sa}/answers", headers=student, json={"answers": answers})).status_code == 204
     # перезапись того же варианта не ломает сохранение
-    assert (await client.put(f"/reading/{sa}/answers", headers=student, json={"answers": answers[-1:]})).status_code == 204
+    assert (
+        await client.put(f"/reading/{sa}/answers", headers=student, json={"answers": answers[-1:]})
+    ).status_code == 204
 
     saved = (await client.get(f"/reading/{sa}", headers=student)).json()["answers"]
     assert len(saved) == 6
@@ -73,11 +77,21 @@ async def test_answer_validation(client, student, published_test):
     sa = content["section_attempt_id"]
     q = by_number(content)
     three = [option_id(*q[6], L) for L in "ABC"]
-    r = await client.put(f"/reading/{sa}/answers", headers=student, json={"answers": [{"question_id": q[6][0]["id"], "option_ids": three}]})
+    r = await client.put(
+        f"/reading/{sa}/answers",
+        headers=student,
+        json={"answers": [{"question_id": q[6][0]["id"], "option_ids": three}]},
+    )
     assert r.status_code == 400  # Choose TWO — не больше двух
-    r = await client.put(f"/reading/{sa}/answers", headers=student, json={"answers": [{"question_id": 999_999, "answer_text": "x"}]})
+    r = await client.put(
+        f"/reading/{sa}/answers", headers=student, json={"answers": [{"question_id": 999_999, "answer_text": "x"}]}
+    )
     assert r.status_code == 400
-    r = await client.put(f"/reading/{sa}/answers", headers=student, json={"answers": [{"question_id": q[3][0]["id"], "option_ids": [option_id(*q[4], "ii")]}]})
+    r = await client.put(
+        f"/reading/{sa}/answers",
+        headers=student,
+        json={"answers": [{"question_id": q[3][0]["id"], "option_ids": [option_id(*q[4], "ii")]}]},
+    )
     assert r.status_code == 400  # вариант чужого вопроса
 
 

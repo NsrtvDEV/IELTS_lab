@@ -44,9 +44,7 @@ def make_router(section_type: SectionType, about: str) -> APIRouter:
         return await question_section_content(session, sa)
 
     @router.put("/{section_attempt_id}/answers", status_code=204)
-    async def save_answers(
-        section_attempt_id: int, session: db_dep, current_user: current_user_dep, data: AnswersSave
-    ):
+    async def save_answers(section_attempt_id: int, session: db_dep, current_user: current_user_dep, data: AnswersSave):
         """Автосохранение ответов: можно присылать все ответы или только изменённые."""
         sa = await get_open_section_attempt(session, section_attempt_id, current_user, section_type)
         await save_question_answers(session, sa, data.answers)

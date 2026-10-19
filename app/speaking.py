@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app import notifications
 from app.config import settings
 from app.media import AUDIO_TYPES, audio_duration, file_type, media_path, store
 from app.models import (
@@ -27,7 +28,6 @@ from app.schemas.speaking import (
     SpeakingTaskResult,
     TeacherSpeakingTask,
 )
-from app import notifications
 from app.scoring import criteria_band, section_deadline, update_attempt_status
 from app.writing import grader_names
 
@@ -67,9 +67,7 @@ async def section_tasks(session: AsyncSession, section_id: int) -> list[Speaking
 
 
 async def responses_by_task(session: AsyncSession, sa_id: int) -> dict[int, SpeakingResponse]:
-    rows = await session.scalars(
-        select(SpeakingResponse).where(SpeakingResponse.section_attempt_id == sa_id)
-    )
+    rows = await session.scalars(select(SpeakingResponse).where(SpeakingResponse.section_attempt_id == sa_id))
     return {r.task_id: r for r in rows}
 
 
@@ -118,7 +116,7 @@ async def save_recording(
     except IntegrityError:  # тот же ответ пришёл дважды одновременно
         await session.rollback()
         await remove_recording(url)
-        raise HTTPException(status_code=409, detail="This question is already answered")
+        raise HTTPException(status_code=409, detail="This question is already answered") from None
     return SpeakingRecording(task_id=task.id, response_id=response.id, duration_sec=response.duration_sec)
 
 
@@ -192,9 +190,7 @@ async def speaking_result(session: AsyncSession, sa: SectionAttempt) -> Speaking
 async def assess(session: AsyncSession, sa: SectionAttempt, teacher: User, data: SpeakingAssessmentIn) -> None:
     """Оценка всей секции по 4 критериям; band — их среднее. Повторная оценка заменяет прежнюю."""
     updated = sa.band_score is not None  # уже оценивали — ученику «оценка изменена»
-    band = criteria_band(
-        data.fluency_coherence, data.lexical_resource, data.grammatical_range, data.pronunciation
-    )
+    band = criteria_band(data.fluency_coherence, data.lexical_resource, data.grammatical_range, data.pronunciation)
     session.add(
         SpeakingAssessment(
             section_attempt_id=sa.id,

@@ -9,7 +9,9 @@ SCORES_2 = {"task_response": 7, "coherence_cohesion": 7, "lexical_resource": 7, 
 
 
 async def start_writing(client, headers, test_id):
-    attempt = (await client.post("/attempts", headers=headers, json={"test_id": test_id, "section_type": "writing"})).json()
+    attempt = (
+        await client.post("/attempts", headers=headers, json={"test_id": test_id, "section_type": "writing"})
+    ).json()
     r = await client.post(f"/writing/attempts/{attempt['id']}/start", headers=headers)
     assert r.status_code == 200, r.text
     return r.json()
@@ -18,7 +20,7 @@ async def start_writing(client, headers, test_id):
 async def write_and_submit(client, student, test_id, texts=(TEXT_1, TEXT_2)):
     content = await start_writing(client, student, test_id)
     sa = content["section_attempt_id"]
-    for task, text in zip(content["tasks"], texts):
+    for task, text in zip(content["tasks"], texts, strict=True):
         if text is not None:
             r = await client.put(f"/writing/{sa}/tasks/{task['id']}", headers=student, json={"text": text})
             assert r.status_code == 200
@@ -45,11 +47,17 @@ async def test_teacher_writing_tasks(client, teacher, student):
 
     assert (await client.post(url, headers=teacher, json={"task_number": 1, "prompt": "x"})).status_code == 400
     assert (await client.post(url, headers=teacher, json={"task_number": 3, "prompt": "x"})).status_code == 422
-    r = await client.post(f"/teacher/sections/{sec['reading']}/writing-tasks", headers=teacher, json={"task_number": 1, "prompt": "x"})
+    r = await client.post(
+        f"/teacher/sections/{sec['reading']}/writing-tasks", headers=teacher, json={"task_number": 1, "prompt": "x"}
+    )
     assert r.status_code == 400
     assert (await client.post(url, headers=student, json={"task_number": 1, "prompt": "x"})).status_code == 403
 
-    r = await client.patch(f"/teacher/writing-tasks/{task1['id']}", headers=teacher, json={"prompt": "New", "image_url": "/media/images/x.png"})
+    r = await client.patch(
+        f"/teacher/writing-tasks/{task1['id']}",
+        headers=teacher,
+        json={"prompt": "New", "image_url": "/media/images/x.png"},
+    )
     assert r.json()["prompt"] == "New" and r.json()["image_url"] == "/media/images/x.png"
     content = (await client.get(f"/teacher/sections/{sec['writing']}", headers=teacher)).json()
     assert [t["task_number"] for t in content["writing_tasks"]] == [1, 2]
@@ -94,7 +102,9 @@ async def test_student_writes_and_teacher_assesses(client, student, teacher, pub
     assert (await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=one_task)).status_code == 400
     bad = assessment(content, s1={**SCORES_1, "task_response": 10})
     assert (await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=bad)).status_code == 422
-    assert (await client.post(f"/teacher/review/writing/{sa}", headers=student, json=assessment(content))).status_code == 403
+    assert (
+        await client.post(f"/teacher/review/writing/{sa}", headers=student, json=assessment(content))
+    ).status_code == 403
 
     r = await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=assessment(content))
     assessed = r.json()
@@ -143,7 +153,11 @@ async def test_expired_writing_goes_to_review(client, student, teacher, publishe
 
 async def test_abandoned_work_is_not_reviewed(client, student, teacher, published_test):
     content = await write_and_submit(client, student, published_test["id"])
-    attempt = (await client.post("/attempts", headers=student, json={"test_id": published_test["id"], "section_type": "writing"})).json()
+    attempt = (
+        await client.post(
+            "/attempts", headers=student, json={"test_id": published_test["id"], "section_type": "writing"}
+        )
+    ).json()
     await client.post(f"/writing/attempts/{attempt['id']}/start", headers=student)
     await client.post(f"/attempts/{attempt['id']}/abandon", headers=student)
     queue = (await client.get("/teacher/review", headers=teacher)).json()
@@ -153,7 +167,9 @@ async def test_abandoned_work_is_not_reviewed(client, student, teacher, publishe
 async def test_full_exam_reaches_speaking_after_writing(client, student, teacher, published_test):
     attempt = (await client.post("/attempts", headers=student, json={"test_id": published_test["id"]})).json()
     for section in ("listening", "reading"):
-        sa = (await client.post(f"/{section}/attempts/{attempt['id']}/start", headers=student)).json()["section_attempt_id"]
+        sa = (await client.post(f"/{section}/attempts/{attempt['id']}/start", headers=student)).json()[
+            "section_attempt_id"
+        ]
         await client.post(f"/{section}/{sa}/submit", headers=student)
     content = (await client.post(f"/writing/attempts/{attempt['id']}/start", headers=student)).json()
     await client.post(f"/writing/{content['section_attempt_id']}/submit", headers=student)
@@ -165,7 +181,9 @@ async def test_full_exam_reaches_speaking_after_writing(client, student, teacher
 
 async def test_writing_task_needs_editable_test(client, teacher, sql):
     test = await build_test(client, teacher, sql)  # опубликован
-    tasks = (await client.get(f"/teacher/sections/{test['sections']['writing']}", headers=teacher)).json()["writing_tasks"]
+    tasks = (await client.get(f"/teacher/sections/{test['sections']['writing']}", headers=teacher)).json()[
+        "writing_tasks"
+    ]
     r = await client.patch(f"/teacher/writing-tasks/{tasks[0]['id']}", headers=teacher, json={"prompt": "x"})
     assert r.status_code == 409
 
@@ -193,11 +211,13 @@ async def test_inline_comments_on_essay(client, student, teacher, published_test
     wrong_quote = {**comment, "quote": "They were"}
     r = await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([wrong_quote]))
     assert r.status_code == 400 and "doesn't match" in r.text
-    overlap = {"start": start + 2, "end": start + 9, "quote": essay[start + 2:start + 9], "text": "x"}
+    overlap = {"start": start + 2, "end": start + 9, "quote": essay[start + 2 : start + 9], "text": "x"}
     r = await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([comment, overlap]))
     assert r.status_code == 400 and "overlap" in r.text
     outside = {"start": 0, "end": len(essay) + 5, "quote": essay, "text": "x"}
-    assert (await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([outside]))).status_code == 400
+    assert (
+        await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([outside]))
+    ).status_code == 400
 
     # повторная оценка без комментариев их убирает
     await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([]))

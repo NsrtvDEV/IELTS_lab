@@ -42,9 +42,7 @@ async def get_speaking(section_attempt_id: int, session: db_dep, current_user: c
     return await speaking_content(session, sa)
 
 
-@router.post(
-    "/{section_attempt_id}/tasks/{task_id}", response_model=SpeakingRecording, status_code=201
-)
+@router.post("/{section_attempt_id}/tasks/{task_id}", response_model=SpeakingRecording, status_code=201)
 async def upload_answer(
     section_attempt_id: int,
     task_id: int,

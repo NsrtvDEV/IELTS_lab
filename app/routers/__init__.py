@@ -4,6 +4,7 @@ from .listening import router as listening_router
 from .notifications import router as notifications_router
 from .reading import router as reading_router
 from .speaking import router as speaking_router
+from .stats import router as stats_router
 from .teacher import (
     teacher_content_router,
     teacher_dashboard_router,
@@ -13,7 +14,6 @@ from .teacher import (
     teacher_tests_router,
     teacher_uploads_router,
 )
-from .stats import router as stats_router
 from .tests import router as tests_router
 from .users import router as users_router
 from .writing import router as writing_router

@@ -88,9 +88,7 @@ def short_section(sa: SectionAttempt) -> SectionAttemptShort:
 
 
 def attempt_response(attempt: TestAttempt) -> AttemptResponse:
-    sections = sorted(
-        attempt.section_attempts, key=lambda sa: SECTION_ORDER.index(sa.section.type)
-    )
+    sections = sorted(attempt.section_attempts, key=lambda sa: SECTION_ORDER.index(sa.section.type))
     return AttemptResponse(
         id=attempt.id,
         test_id=attempt.test_id,
@@ -108,13 +106,9 @@ def attempt_response(attempt: TestAttempt) -> AttemptResponse:
 # ───────────────────────── Section attempts ─────────────────────────
 
 
-async def start_section(
-    session: AsyncSession, attempt: TestAttempt, section_type: SectionType
-) -> SectionAttempt:
+async def start_section(session: AsyncSession, attempt: TestAttempt, section_type: SectionType) -> SectionAttempt:
     """Начинает секцию или возвращает уже начатую (продолжение после обрыва связи)."""
-    existing = next(
-        (sa for sa in attempt.section_attempts if sa.section.type == section_type), None
-    )
+    existing = next((sa for sa in attempt.section_attempts if sa.section.type == section_type), None)
     if existing:
         if existing.submitted_at:
             raise HTTPException(status_code=409, detail="Section already submitted")
@@ -173,17 +167,13 @@ async def submit(session: AsyncSession, sa: SectionAttempt) -> SectionAttemptSho
 # ───────────────────────── Секции с вопросами (Reading / Listening) ─────────────────────────
 
 
-async def question_section_content(
-    session: AsyncSession, sa: SectionAttempt
-) -> QuestionSectionContent:
+async def question_section_content(session: AsyncSession, sa: SectionAttempt) -> QuestionSectionContent:
     """Тексты/аудио и вопросы секции — без правильных ответов."""
     passages = await session.scalars(
         select(Passage).where(Passage.section_id == sa.section_id).order_by(Passage.position)
     )
     groups = await session.scalars(
-        select(QuestionGroup)
-        .where(QuestionGroup.section_id == sa.section_id)
-        .order_by(QuestionGroup.position)
+        select(QuestionGroup).where(QuestionGroup.section_id == sa.section_id).order_by(QuestionGroup.position)
     )
     answers = await load_answers(session, sa.id)
 
@@ -211,9 +201,7 @@ async def question_section_content(
     )
 
 
-async def save_question_answers(
-    session: AsyncSession, sa: SectionAttempt, items: list[AnswerIn]
-) -> None:
+async def save_question_answers(session: AsyncSession, sa: SectionAttempt, items: list[AnswerIn]) -> None:
     """Автосохранение: создаёт или перезаписывает ответы на вопросы секции."""
     questions = {q.id: q for q in await load_section_questions(session, sa.section_id)}
     existing = await load_answers(session, sa.id)
@@ -221,16 +209,12 @@ async def save_question_answers(
     for item in items:
         question = questions.get(item.question_id)
         if not question:
-            raise HTTPException(
-                status_code=400, detail=f"Question {item.question_id} is not in this section"
-            )
+            raise HTTPException(status_code=400, detail=f"Question {item.question_id} is not in this section")
 
         option_ids = list(dict.fromkeys(item.option_ids))  # без дублей, порядок сохраняем
         allowed = {o.id for o in question.options} | {o.id for o in question.group.options}
         if not set(option_ids) <= allowed:
-            raise HTTPException(
-                status_code=400, detail=f"Unknown option for question {question.number}"
-            )
+            raise HTTPException(status_code=400, detail=f"Unknown option for question {question.number}")
         limit = question.answers_required if question.group.type == QuestionType.MCQ_MULTI else 1
         if len(option_ids) > limit:
             raise HTTPException(
@@ -240,17 +224,13 @@ async def save_question_answers(
 
         answer = existing.get(question.id)
         if answer is None:
-            answer = UserAnswer(
-                section_attempt_id=sa.id, question_id=question.id, selected_options=[]
-            )
+            answer = UserAnswer(section_attempt_id=sa.id, question_id=question.id, selected_options=[])
             session.add(answer)
         answer.answer_text = item.answer_text
         answer.is_correct = None
         # уже выбранные варианты оставляем, иначе delete+insert одного PK конфликтуют
         current = {o.option_id: o for o in answer.selected_options}
-        answer.selected_options = [
-            current.get(o) or UserAnswerOption(option_id=o) for o in option_ids
-        ]
+        answer.selected_options = [current.get(o) or UserAnswerOption(option_id=o) for o in option_ids]
 
     await session.commit()
 
@@ -263,9 +243,8 @@ async def save_playback(session: AsyncSession, sa: SectionAttempt, new: Playback
         raise HTTPException(status_code=400, detail="Unknown part")
 
     old = PlaybackState(**sa.playback) if sa.playback else PlaybackState(part=0, position=0)
-    ahead = (
-        not old.finished
-        and (new.finished or new.part > old.part or (new.part == old.part and new.position >= old.position))
+    ahead = not old.finished and (
+        new.finished or new.part > old.part or (new.part == old.part and new.position >= old.position)
     )
     if ahead:
         sa.playback = new.model_dump()
@@ -274,9 +253,7 @@ async def save_playback(session: AsyncSession, sa: SectionAttempt, new: Playback
     return old
 
 
-async def question_section_result(
-    session: AsyncSession, sa: SectionAttempt
-) -> QuestionSectionResult:
+async def question_section_result(session: AsyncSession, sa: SectionAttempt) -> QuestionSectionResult:
     """Разбор сданной секции: ответ ученика, правильный ответ, баллы."""
     if not sa.submitted_at:
         raise HTTPException(status_code=409, detail="Section is not submitted yet")
@@ -312,9 +289,7 @@ async def question_section_result(
                 type=q.group.type,
                 passage_id=q.group.passage_id,
                 your_answer=your,
-                correct_answers=[
-                    c.option.label if c.option else c.answer_text for c in q.correct_answers
-                ],
+                correct_answers=[c.option.label if c.option else c.answer_text for c in q.correct_answers],
                 earned=grade_answer(q, answer),
                 points=q.points,
             )
