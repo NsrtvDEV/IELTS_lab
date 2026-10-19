@@ -1,7 +1,8 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, Menu, Search, X, type LucideIcon } from "lucide-react";
+import { Menu, Search, X, type LucideIcon } from "lucide-react";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 import { UserMenu } from "./UserMenu";
 
 export interface NavItem {
@@ -123,13 +124,7 @@ export function AppShell({
             />
           </form>
           <div className="ml-auto flex items-center gap-2">
-            <button
-              className="rounded-xl p-2.5 text-ink-muted hover:bg-slate-100"
-              title="No new notifications"
-              aria-label="Notifications"
-            >
-              <Bell className="h-5 w-5" />
-            </button>
+            <NotificationBell />
             <UserMenu />
           </div>
         </div>

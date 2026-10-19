@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import delete, select
 
+from app import notifications
 from app.content import (
     DEFAULT_SECTIONS,
     get_test,
@@ -85,6 +86,7 @@ async def publish_test(test_id: int, session: db_dep, teacher: teacher_dep):
     if problems:
         raise HTTPException(status_code=409, detail="Test is not complete: " + "; ".join(problems))
     test.is_published = True
+    await notifications.test_published(session, test)
     await session.commit()
     await session.refresh(test)
     return await test_response(session, test)

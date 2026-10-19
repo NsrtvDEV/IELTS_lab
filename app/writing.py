@@ -23,6 +23,7 @@ from app.schemas.writing import (
     WritingTaskOut,
     WritingTaskResult,
 )
+from app import notifications
 from app.scoring import criteria_band, section_deadline, update_attempt_status, writing_band
 from app.utils import count_words
 
@@ -144,6 +145,7 @@ async def assess(session: AsyncSession, sa: SectionAttempt, teacher: User, data:
     if set(given) != {t.id for t in tasks}:
         raise HTTPException(status_code=400, detail="Assess every task of the section")
 
+    updated = sa.band_score is not None  # уже оценивали — ученику «оценка изменена»
     task_bands = {}
     for task in tasks:
         scores = given[task.id]
@@ -167,4 +169,5 @@ async def assess(session: AsyncSession, sa: SectionAttempt, teacher: User, data:
 
     sa.band_score = writing_band(task_bands)
     await update_attempt_status(session, sa.attempt)
+    await notifications.work_assessed(session, sa, updated=updated)
     await session.commit()

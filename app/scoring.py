@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app import notifications
 from app.config import settings
 from app.models import (
     AttemptStatus,
@@ -246,8 +247,11 @@ async def update_attempt_status(session: AsyncSession, attempt: TestAttempt) -> 
         attempt.overall_band = round_band(sum(sa.band_score for sa in needed) / len(needed))
 
 
-async def submit_section(session: AsyncSession, section_attempt: SectionAttempt) -> None:
-    """Закрывает секцию: фиксирует время, проверяет ответы, обновляет попытку."""
+async def submit_section(session: AsyncSession, section_attempt: SectionAttempt, *, timed_out: bool = False) -> None:
+    """Закрывает секцию: фиксирует время, проверяет ответы, обновляет попытку.
+
+    timed_out — секцию закрыл сервер, потому что время вышло (ученику придёт уведомление).
+    """
     if section_attempt.submitted_at is not None:
         return
 
@@ -263,6 +267,7 @@ async def submit_section(session: AsyncSession, section_attempt: SectionAttempt)
         await ensure_writing_responses(session, section_attempt)  # дальше — проверка учителем
 
     await update_attempt_status(session, section_attempt.attempt)
+    await notifications.section_submitted(session, section_attempt, timed_out=timed_out)
 
 
 async def ensure_writing_responses(session: AsyncSession, section_attempt: SectionAttempt) -> None:

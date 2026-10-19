@@ -59,7 +59,7 @@ async def close_expired_sections(session: AsyncSession, attempt: TestAttempt) ->
     changed = False
     for sa in attempt.section_attempts:
         if sa.submitted_at is None and is_expired(sa):
-            await submit_section(session, sa)
+            await submit_section(session, sa, timed_out=True)
             changed = True
     if changed:
         await session.commit()
@@ -152,7 +152,7 @@ async def get_open_section_attempt(
     if sa.submitted_at:
         raise HTTPException(status_code=409, detail="Section already submitted")
     if is_expired(sa):
-        await submit_section(session, sa)
+        await submit_section(session, sa, timed_out=True)
         await session.commit()
         raise HTTPException(status_code=409, detail="Time is up, section submitted")
 

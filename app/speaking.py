@@ -28,6 +28,7 @@ from app.schemas.speaking import (
     SpeakingTaskResult,
     TeacherSpeakingTask,
 )
+from app import notifications
 from app.scoring import criteria_band, section_deadline, update_attempt_status
 from app.writing import grader_names
 
@@ -194,6 +195,7 @@ async def speaking_result(session: AsyncSession, sa: SectionAttempt) -> Speaking
 
 async def assess(session: AsyncSession, sa: SectionAttempt, teacher: User, data: SpeakingAssessmentIn) -> None:
     """Оценка всей секции по 4 критериям; band — их среднее. Повторная оценка заменяет прежнюю."""
+    updated = sa.band_score is not None  # уже оценивали — ученику «оценка изменена»
     band = criteria_band(
         data.fluency_coherence, data.lexical_resource, data.grammatical_range, data.pronunciation
     )
@@ -212,4 +214,5 @@ async def assess(session: AsyncSession, sa: SectionAttempt, teacher: User, data:
     )
     sa.band_score = band
     await update_attempt_status(session, sa.attempt)
+    await notifications.work_assessed(session, sa, updated=updated)
     await session.commit()

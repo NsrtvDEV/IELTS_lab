@@ -434,6 +434,26 @@ class SpeakingTask(Base):
     section: Mapped["Section"] = relationship(back_populates="speaking_tasks")
 
 
+class Notification(Base):
+    """Уведомление в колокольчике: ученику — об оценке, учителю — о новой работе и т.д."""
+
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    kind: Mapped[str] = mapped_column(String(40))  # assessed, review_submitted, ...
+    text: Mapped[str] = mapped_column(String(500))
+    link: Mapped[str | None] = mapped_column(String(500))  # куда ведёт клик (путь фронтенда)
+    # к чему относится: review:<section_attempt_id>, test:<id> — чтобы убрать или не дублировать
+    ref_key: Mapped[str | None] = mapped_column(String(100), index=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 # ───────────────────────── Attempts ─────────────────────────
 
 

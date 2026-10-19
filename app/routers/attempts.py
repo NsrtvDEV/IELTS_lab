@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
+from app import notifications
 from app.database import db_dep
 from app.dependencies import current_user_dep
 from app.models import AttemptStatus, IeltsTest, TestAttempt
@@ -66,5 +67,6 @@ async def abandon_attempt(attempt_id: int, session: db_dep, current_user: curren
         raise HTTPException(status_code=409, detail="Attempt is not in progress")
 
     attempt.status = AttemptStatus.ABANDONED
+    await notifications.attempt_abandoned(session, attempt)
     await session.commit()
     return attempt_response(attempt)

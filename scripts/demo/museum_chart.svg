@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="440" viewBox="0 0 720 440" font-family="Arial, sans-serif">
+<rect width="720" height="440" fill="#ffffff"/>
+<text x="300.0" y="28" font-size="16" font-weight="bold" text-anchor="middle" fill="#111">Visitors to three London museums, 2015–2020</text>
+<line x1="70" x2="540" y1="380.0" y2="380.0" stroke="#e5e7eb"/>
+<text x="60" y="384.0" font-size="12" text-anchor="end" fill="#555">0</text>
+<line x1="70" x2="540" y1="332.8571428571429" y2="332.8571428571429" stroke="#e5e7eb"/>
+<text x="60" y="336.8571428571429" font-size="12" text-anchor="end" fill="#555">100</text>
+<line x1="70" x2="540" y1="285.7142857142857" y2="285.7142857142857" stroke="#e5e7eb"/>
+<text x="60" y="289.7142857142857" font-size="12" text-anchor="end" fill="#555">200</text>
+<line x1="70" x2="540" y1="238.57142857142858" y2="238.57142857142858" stroke="#e5e7eb"/>
+<text x="60" y="242.57142857142858" font-size="12" text-anchor="end" fill="#555">300</text>
+<line x1="70" x2="540" y1="191.42857142857144" y2="191.42857142857144" stroke="#e5e7eb"/>
+<text x="60" y="195.42857142857144" font-size="12" text-anchor="end" fill="#555">400</text>
+<line x1="70" x2="540" y1="144.28571428571428" y2="144.28571428571428" stroke="#e5e7eb"/>
+<text x="60" y="148.28571428571428" font-size="12" text-anchor="end" fill="#555">500</text>
+<line x1="70" x2="540" y1="97.14285714285717" y2="97.14285714285717" stroke="#e5e7eb"/>
+<text x="60" y="101.14285714285717" font-size="12" text-anchor="end" fill="#555">600</text>
+<line x1="70" x2="540" y1="50.0" y2="50.0" stroke="#e5e7eb"/>
+<text x="60" y="54.0" font-size="12" text-anchor="end" fill="#555">700</text>
+<text x="70.0" y="402" font-size="12" text-anchor="middle" fill="#555">2015</text>
+<text x="164.0" y="402" font-size="12" text-anchor="middle" fill="#555">2016</text>
+<text x="258.0" y="402" font-size="12" text-anchor="middle" fill="#555">2017</text>
+<text x="352.0" y="402" font-size="12" text-anchor="middle" fill="#555">2018</text>
+<text x="446.0" y="402" font-size="12" text-anchor="middle" fill="#555">2019</text>
+<text x="540.0" y="402" font-size="12" text-anchor="middle" fill="#555">2020</text>
+<text x="18" y="215.0" font-size="12" fill="#555" transform="rotate(-90 18 215.0)" text-anchor="middle">Visitors (thousands)</text>
+<line x1="70" x2="70" y1="50" y2="380" stroke="#999"/><line x1="70" x2="540" y1="380" y2="380" stroke="#999"/>
+<polyline points="70.0,182.0 164.0,163.14285714285714 258.0,139.57142857142858 352.0,116.0 446.0,97.14285714285717 540.0,262.1428571428571" fill="none" stroke="#2f6bff" stroke-width="3"/>
+<circle cx="70.0" cy="182.0" r="4" fill="#2f6bff"/>
+<circle cx="164.0" cy="163.14285714285714" r="4" fill="#2f6bff"/>
+<circle cx="258.0" cy="139.57142857142858" r="4" fill="#2f6bff"/>
+<circle cx="352.0" cy="116.0" r="4" fill="#2f6bff"/>
+<circle cx="446.0" cy="97.14285714285717" r="4" fill="#2f6bff"/>
+<circle cx="540.0" cy="262.1428571428571" r="4" fill="#2f6bff"/>
+<line x1="560" x2="584" y1="70" y2="70" stroke="#2f6bff" stroke-width="3"/>
+<text x="590" y="74" font-size="13" fill="#111">Science Museum</text>
+<polyline points="70.0,200.85714285714286 164.0,205.57142857142856 258.0,215.0 352.0,224.42857142857144 446.0,229.14285714285714 540.0,314.0" fill="none" stroke="#10b981" stroke-width="3"/>
+<circle cx="70.0" cy="200.85714285714286" r="4" fill="#10b981"/>
+<circle cx="164.0" cy="205.57142857142856" r="4" fill="#10b981"/>
+<circle cx="258.0" cy="215.0" r="4" fill="#10b981"/>
+<circle cx="352.0" cy="224.42857142857144" r="4" fill="#10b981"/>
+<circle cx="446.0" cy="229.14285714285714" r="4" fill="#10b981"/>
+<circle cx="540.0" cy="314.0" r="4" fill="#10b981"/>
+<line x1="560" x2="584" y1="96" y2="96" stroke="#10b981" stroke-width="3"/>
+<text x="590" y="100" font-size="13" fill="#111">History Museum</text>
+<polyline points="70.0,285.7142857142857 164.0,266.8571428571429 258.0,238.57142857142858 352.0,200.85714285714286 446.0,167.85714285714283 540.0,290.42857142857144" fill="none" stroke="#e8590c" stroke-width="3"/>
+<circle cx="70.0" cy="285.7142857142857" r="4" fill="#e8590c"/>
+<circle cx="164.0" cy="266.8571428571429" r="4" fill="#e8590c"/>
+<circle cx="258.0" cy="238.57142857142858" r="4" fill="#e8590c"/>
+<circle cx="352.0" cy="200.85714285714286" r="4" fill="#e8590c"/>
+<circle cx="446.0" cy="167.85714285714283" r="4" fill="#e8590c"/>
+<circle cx="540.0" cy="290.42857142857144" r="4" fill="#e8590c"/>
+<line x1="560" x2="584" y1="122" y2="122" stroke="#e8590c" stroke-width="3"/>
+<text x="590" y="126" font-size="13" fill="#111">Art Gallery</text>
+</svg>
