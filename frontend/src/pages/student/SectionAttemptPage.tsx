@@ -17,6 +17,7 @@ import { ListeningWorkspace } from "../../components/listening/ListeningWorkspac
 import { Logo } from "../../components/Logo";
 import { ReadingWorkspace } from "../../components/reading/ReadingWorkspace";
 import { isAnswered, type Answer } from "../../lib/answers";
+import { afterSubmitPath } from "../../lib/attempts";
 import { Button, ErrorBox, Modal, Spinner } from "../../components/ui";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 
@@ -51,7 +52,7 @@ export function SectionAttemptPage({ section }: { section: QuestionSection }) {
   const submittedRef = useRef(false);
 
   const goToResult = useCallback(
-    () => navigate(`/${section}/${saId}/result`, { replace: true }),
+    () => afterSubmitPath(section, saId).then((path) => navigate(path, { replace: true })),
     [navigate, section, saId]
   );
 

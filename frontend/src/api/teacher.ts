@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import type {
   CriteriaScores,
+  InlineComment,
   SectionResult,
   SpeakingResult,
   SpeakingScores,
@@ -423,6 +424,7 @@ export interface ReviewDetail extends WritingResult {
 export interface TaskAssessmentInput extends CriteriaScores {
   task_id: number;
   feedback: string | null;
+  comments: InlineComment[];
 }
 
 export async function listReview(status: "pending" | "assessed" | "all" = "pending") {

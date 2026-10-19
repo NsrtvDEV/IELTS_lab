@@ -184,7 +184,7 @@ function SectionCards({ summary }: { summary: Record<SectionType, SectionSummary
 function RecentTestRow({ item }: { item: RecentTest }) {
   const first = item.sections[0];
   const Icon = item.mode === "mock" ? ClipboardList : SECTION_ICONS[first.type];
-  const to = item.mode === "mock" ? "/results" : `/${first.type}/${first.sectionAttemptId}/result`;
+  const to = item.mode === "mock" ? `/mock/${item.attemptId}` : `/${first.type}/${first.sectionAttemptId}/result`;
   const autoGraded = first.type === "reading" || first.type === "listening";
   return (
     <Link to={to} className="flex items-center gap-4 rounded-xl px-2 py-3 hover:bg-slate-50">

@@ -13,6 +13,7 @@ import {
 } from "../../api/student";
 import { Logo } from "../../components/Logo";
 import { Button, Card, ErrorBox, Modal, Spinner } from "../../components/ui";
+import { afterSubmitPath } from "../../lib/attempts";
 import { PARTS, formatSeconds } from "../../lib/speaking";
 
 type Phase = "question" | "prep" | "recording" | "uploading" | "upload-error" | "finishing";
@@ -120,7 +121,10 @@ export function SpeakingPage() {
   const finishing = useRef(false);
   const run = useRef(0); // номер шага: устаревшие асинхронные шаги ничего не делают
 
-  const goToResult = useCallback(() => navigate(`/speaking/${saId}/result`, { replace: true }), [navigate, saId]);
+  const goToResult = useCallback(
+    () => afterSubmitPath("speaking", saId).then((path) => navigate(path, { replace: true })),
+    [navigate, saId]
+  );
 
   useEffect(() => {
     getSpeaking(saId)

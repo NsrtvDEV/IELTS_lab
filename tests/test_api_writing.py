@@ -168,3 +168,38 @@ async def test_writing_task_needs_editable_test(client, teacher, sql):
     tasks = (await client.get(f"/teacher/sections/{test['sections']['writing']}", headers=teacher)).json()["writing_tasks"]
     r = await client.patch(f"/teacher/writing-tasks/{tasks[0]['id']}", headers=teacher, json={"prompt": "x"})
     assert r.status_code == 409
+
+
+async def test_inline_comments_on_essay(client, student, teacher, published_test):
+    essay = "The chart shows visitors. Their was a big rise in 2019."
+    content = await write_and_submit(client, student, published_test["id"], texts=(essay, TEXT_2))
+    sa = content["section_attempt_id"]
+    t1, t2 = content["tasks"]
+    start = essay.index("Their was")
+    comment = {"start": start, "end": start + len("Their was"), "quote": "Their was", "text": "There was — wrong word."}
+    second = {"start": 0, "end": 9, "quote": "The chart", "text": "Good opening."}
+
+    def body(comments):
+        return {"tasks": [{"task_id": t1["id"], **SCORES_1, "comments": comments}, {"task_id": t2["id"], **SCORES_2}]}
+
+    r = await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([comment, second]))
+    assert r.status_code == 200, r.text
+    result = (await client.get(f"/writing/{sa}/result", headers=student)).json()
+    saved = result["tasks"][0]["assessment"]["comments"]
+    assert [c["quote"] for c in saved] == ["The chart", "Their was"]  # по порядку в тексте
+    assert saved[1]["text"] == "There was — wrong word."
+    assert result["tasks"][1]["assessment"]["comments"] == []
+
+    wrong_quote = {**comment, "quote": "They were"}
+    r = await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([wrong_quote]))
+    assert r.status_code == 400 and "doesn't match" in r.text
+    overlap = {"start": start + 2, "end": start + 9, "quote": essay[start + 2:start + 9], "text": "x"}
+    r = await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([comment, overlap]))
+    assert r.status_code == 400 and "overlap" in r.text
+    outside = {"start": 0, "end": len(essay) + 5, "quote": essay, "text": "x"}
+    assert (await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([outside]))).status_code == 400
+
+    # повторная оценка без комментариев их убирает
+    await client.post(f"/teacher/review/writing/{sa}", headers=teacher, json=body([]))
+    result = (await client.get(f"/writing/{sa}/result", headers=student)).json()
+    assert result["tasks"][0]["assessment"]["comments"] == []

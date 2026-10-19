@@ -375,7 +375,7 @@ class SpeakingAssessmentInline(admin.TabularInline):
     model = SpeakingAssessment
     extra = 0
     fields = [
-        "grader_type", "grader", "fluency_coherence", "lexical_resource",
+        "grader", "fluency_coherence", "lexical_resource",
         "grammatical_range", "pronunciation", "band", "feedback",
     ]
     readonly_fields = fields
@@ -394,5 +394,4 @@ class SectionAttemptAdmin(ReadOnlyAdmin):
 
 @admin.register(WritingAssessment)
 class WritingAssessmentAdmin(ReadOnlyAdmin):
-    list_display = ["response", "grader_type", "grader", "band", "created_at"]
-    list_filter = ["grader_type"]
+    list_display = ["response", "grader", "band", "created_at"]

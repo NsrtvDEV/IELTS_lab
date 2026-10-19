@@ -11,7 +11,6 @@ from django.db.models.functions import Now
 
 from app.models import (
     AttemptStatus,
-    GraderType,
     QuestionType,
     SectionType,
     UserRole,
@@ -57,7 +56,6 @@ class UserProfile(Unmanaged):
     first_name = models.CharField("имя", max_length=100, null=True, blank=True)
     last_name = models.CharField("фамилия", max_length=100, null=True, blank=True)
     native_language = models.CharField(max_length=50, null=True, blank=True)
-    timezone = models.CharField(max_length=64, default="UTC")
 
     class Meta(Unmanaged.Meta):
         db_table = "user_profiles"
@@ -339,7 +337,6 @@ class SpeakingResponse(Unmanaged):
 
 class WritingAssessment(Unmanaged):
     response = models.ForeignKey(WritingResponse, models.CASCADE, related_name="assessments")
-    grader_type = models.CharField(max_length=20, choices=choices(GraderType))
     grader = models.ForeignKey(User, models.SET_NULL, null=True, related_name="+")
     task_response = models.SmallIntegerField()
     coherence_cohesion = models.SmallIntegerField()
@@ -359,7 +356,6 @@ class SpeakingAssessment(Unmanaged):
     section_attempt = models.ForeignKey(
         SectionAttempt, models.CASCADE, related_name="speaking_assessments"
     )
-    grader_type = models.CharField(max_length=20, choices=choices(GraderType))
     grader = models.ForeignKey(User, models.SET_NULL, null=True, related_name="+")
     fluency_coherence = models.SmallIntegerField()
     lexical_resource = models.SmallIntegerField()

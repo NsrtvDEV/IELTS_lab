@@ -12,6 +12,7 @@ import {
 } from "../../api/student";
 import { Logo } from "../../components/Logo";
 import { Button, ErrorBox, Modal, Spinner } from "../../components/ui";
+import { afterSubmitPath } from "../../lib/attempts";
 import { countWords } from "../../lib/writing";
 
 type SaveState = "saved" | "saving" | "error";
@@ -41,7 +42,10 @@ export function WritingPage() {
   const saveTimer = useRef<number | undefined>(undefined);
   const submittedRef = useRef(false);
 
-  const goToResult = useCallback(() => navigate(`/writing/${saId}/result`, { replace: true }), [navigate, saId]);
+  const goToResult = useCallback(
+    () => afterSubmitPath("writing", saId).then((path) => navigate(path, { replace: true })),
+    [navigate, saId]
+  );
 
   useEffect(() => {
     getWriting(saId)

@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import (
-    GraderType,
     SectionAttempt,
     User,
     UserProfile,
@@ -16,6 +15,7 @@ from app.models import (
 )
 from app.schemas.writing import (
     AssessmentOut,
+    InlineComment,
     WritingAssessmentIn,
     WritingContent,
     WritingDraft,
@@ -76,8 +76,8 @@ async def save_draft(session: AsyncSession, sa: SectionAttempt, task_id: int, te
 
 
 def latest_teacher_assessment(response: WritingResponse) -> WritingAssessment | None:
-    own = [a for a in response.assessments if a.grader_type == GraderType.TEACHER]
-    return max(own, key=lambda a: (a.created_at, a.id)) if own else None
+    """Действует последняя оценка: повторная оценка заменяет прежнюю."""
+    return max(response.assessments, key=lambda a: (a.created_at, a.id), default=None)
 
 
 async def grader_names(session: AsyncSession, ids: set[int]) -> dict[int, str]:
@@ -109,6 +109,7 @@ async def writing_result(session: AsyncSession, sa: SectionAttempt) -> WritingRe
             grammatical_range=a.grammatical_range,
             band=a.band,
             feedback=a.feedback,
+            comments=[InlineComment(**c) for c in a.comments or []],
             grader_name=names.get(a.grader_id),
             created_at=a.created_at,
         )
@@ -137,6 +138,17 @@ async def writing_result(session: AsyncSession, sa: SectionAttempt) -> WritingRe
     )
 
 
+def checked_comments(text: str, comments: list[InlineComment], task_number: int) -> list[dict]:
+    """Фрагменты должны совпадать с текстом эссе и не пересекаться."""
+    ordered = sorted(comments, key=lambda c: c.start)
+    for i, c in enumerate(ordered):
+        if c.end > len(text) or c.start >= c.end or text[c.start:c.end] != c.quote:
+            raise HTTPException(status_code=400, detail=f"Task {task_number}: a comment doesn't match the essay text")
+        if i and c.start < ordered[i - 1].end:
+            raise HTTPException(status_code=400, detail=f"Task {task_number}: commented fragments overlap")
+    return [c.model_dump() for c in ordered]
+
+
 async def assess(session: AsyncSession, sa: SectionAttempt, teacher: User, data: WritingAssessmentIn) -> None:
     """Оценка преподавателем: все задания секции сразу; повторная оценка заменяет прежнюю."""
     tasks = await section_tasks(session, sa.section_id)
@@ -155,7 +167,6 @@ async def assess(session: AsyncSession, sa: SectionAttempt, teacher: User, data:
         session.add(
             WritingAssessment(
                 response_id=responses[task.id].id,
-                grader_type=GraderType.TEACHER,
                 grader_id=teacher.id,
                 task_response=scores.task_response,
                 coherence_cohesion=scores.coherence_cohesion,
@@ -163,6 +174,7 @@ async def assess(session: AsyncSession, sa: SectionAttempt, teacher: User, data:
                 grammatical_range=scores.grammatical_range,
                 band=band,
                 feedback=scores.feedback or None,
+                comments=checked_comments(responses[task.id].text, scores.comments, task.task_number) or None,
             )
         )
         task_bands[task.task_number] = band

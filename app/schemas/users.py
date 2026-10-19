@@ -11,7 +11,6 @@ class ProfileResponse(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     native_language: str | None = None
-    timezone: str
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -31,7 +30,6 @@ class ProfileUpdate(BaseModel):
     first_name: Name | None = None
     last_name: Name | None = None
     native_language: str | None = Field(default=None, max_length=50)
-    timezone: str | None = Field(default=None, max_length=64)
 
 
 class ProgressPoint(BaseModel):

@@ -12,6 +12,7 @@ import {
 } from "../../api/student";
 import { UnfinishedBanner } from "../../components/UnfinishedBanner";
 import { Badge, Button, Card, ErrorBox, Spinner } from "../../components/ui";
+import { isUnfinished } from "../../lib/attempts";
 import { SECTION_LABELS } from "../../lib/questionTypes";
 import { SECTION_ICONS, SECTION_TINTS } from "../../lib/sectionStyle";
 import { SECTIONS, sectionResults, sectionSummaries, signed } from "../../lib/studentStats";
@@ -48,7 +49,7 @@ export function PracticePage() {
 
   const results = sectionResults(attempts).filter((r) => r.type === type);
   const summary = sectionSummaries(results)[type];
-  const unfinished = attempts.some((a) => a.status === "in_progress" && a.sections.some((s) => !s.submitted_at));
+  const unfinished = attempts.some(isUnfinished);
   const Icon = SECTION_ICONS[type];
   const tint = SECTION_TINTS[type];
 

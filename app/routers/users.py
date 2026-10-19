@@ -36,8 +36,6 @@ async def update_me(session: db_dep, current_user: current_user_dep, data: Profi
         current_user.profile = UserProfile()
 
     for field, value in data.model_dump(exclude_unset=True).items():
-        if field == "timezone" and value is None:
-            continue  # часовой пояс обязателен
         setattr(current_user.profile, field, value)
 
     await session.commit()

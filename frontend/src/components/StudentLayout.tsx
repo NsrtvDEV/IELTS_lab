@@ -24,7 +24,7 @@ const NAV: NavItem[] = [
   { label: "Listening", icon: Headphones, to: "/practice/listening" },
   { label: "Writing", icon: PenLine, to: "/practice/writing" },
   { label: "Speaking", icon: Mic, to: "/practice/speaking" },
-  { label: "Mock Tests", icon: ClipboardList, to: "/tests" },
+  { label: "Mock Tests", icon: ClipboardList, to: "/tests", alsoActive: (p) => p.startsWith("/mock/") },
   { label: "Results", icon: Trophy, to: "/results", alsoActive: isResult },
   { label: "Profile", icon: UserRound, to: "/profile", gapBefore: true },
   { label: "Settings", icon: Settings },

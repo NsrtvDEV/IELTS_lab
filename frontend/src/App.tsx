@@ -15,6 +15,7 @@ import { SpeakingPage } from "./pages/student/SpeakingPage";
 import { SpeakingResultPage } from "./pages/student/SpeakingResultPage";
 import { WritingPage } from "./pages/student/WritingPage";
 import { WritingResultPage } from "./pages/student/WritingResultPage";
+import { MockAttemptPage } from "./pages/student/MockAttemptPage";
 import { MockTestsPage } from "./pages/student/MockTestsPage";
 import { PracticePage } from "./pages/student/PracticePage";
 import { ProfilePage } from "./pages/student/ProfilePage";
@@ -88,6 +89,7 @@ export default function App() {
           [
             ["/practice/:section", PracticePage],
             ["/tests", MockTestsPage],
+            ["/mock/:attemptId", MockAttemptPage],
             ["/results", ResultsPage],
             ["/progress", ProgressPage],
             ["/profile", ProfilePage],

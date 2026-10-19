@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { apiErrorMessage } from "../../api/client";
-import type { CriteriaScores } from "../../api/student";
+import type { CriteriaScores, InlineComment } from "../../api/student";
 import { assessWriting, getReviewWriting, type ReviewDetail } from "../../api/teacher";
 import { WritingTaskCard } from "../../components/writing/WritingTaskCard";
 import { Button, Card, ErrorBox, Label, Spinner, textareaClass } from "../../components/ui";
 import { timeAgo } from "../../lib/format";
 import { CRITERIA, taskBand, writingBand } from "../../lib/writing";
 
-type Draft = Record<number, CriteriaScores & { feedback: string }>; // по task_id
+type Draft = Record<number, CriteriaScores & { feedback: string; comments: InlineComment[] }>; // по task_id
 const BANDS = [9, 8, 7, 6, 5, 4, 3, 2, 1, 0];
 
 function initialDraft(detail: ReviewDetail): Draft {
@@ -22,6 +22,7 @@ function initialDraft(detail: ReviewDetail): Draft {
       lexical_resource: a?.lexical_resource ?? -1,
       grammatical_range: a?.grammatical_range ?? -1,
       feedback: a?.feedback ?? "",
+      comments: a?.comments ?? [],
     };
   }
   return draft;
@@ -94,7 +95,13 @@ export function ReviewWritingPage() {
       <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="space-y-5">
           {detail.tasks.map((t) => (
-            <WritingTaskCard key={t.task_id} task={t} showAssessment={false} />
+            <WritingTaskCard
+              key={t.task_id}
+              task={t}
+              showAssessment={false}
+              comments={draft[t.task_id]?.comments ?? []}
+              onCommentsChange={(comments) => setDraft((d) => ({ ...d, [t.task_id]: { ...d[t.task_id], comments } }))}
+            />
           ))}
         </div>
 

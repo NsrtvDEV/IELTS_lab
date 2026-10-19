@@ -30,7 +30,6 @@ export interface ProfileInput {
   first_name: string;
   last_name: string;
   native_language: string | null;
-  timezone: string;
 }
 
 export async function updateProfile(input: ProfileInput) {

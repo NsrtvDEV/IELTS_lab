@@ -26,7 +26,8 @@ export function ResultsPage() {
 
   const all = sectionResults(attempts).reverse();
   const results = filter === "all" ? all : all.filter((r) => r.type === filter);
-  const mocks = attempts.filter((a) => a.section_type === null && a.overall_band !== null);
+  // полные экзамены: сданные целиком (с overall band или ждут проверки) и начатые
+  const mocks = attempts.filter((a) => a.section_type === null && a.status !== "abandoned" && a.sections.length > 0);
 
   return (
     <>
@@ -43,19 +44,25 @@ export function ResultsPage() {
       {mocks.length > 0 && (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {mocks.map((a) => (
-            <Card key={a.id} className="flex items-center gap-4 p-5">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                <Trophy className="h-6 w-6" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-semibold text-ink">{a.test_title}</div>
-                <div className="text-xs text-ink-muted">Full mock · {a.finished_at ? dateFmt.format(new Date(a.finished_at)) : ""}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-ink-muted">Overall</div>
-                <div className="text-2xl font-extrabold text-brand-600">{a.overall_band}</div>
-              </div>
-            </Card>
+            <Link key={a.id} to={`/mock/${a.id}`}>
+              <Card className="flex items-center gap-4 p-5 transition hover:border-brand-200">
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                  <Trophy className="h-6 w-6" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-semibold text-ink">{a.test_title}</div>
+                  <div className="text-xs text-ink-muted">Full mock · {dateFmt.format(new Date(a.finished_at ?? a.started_at))}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs text-ink-muted">Overall</div>
+                  {a.overall_band ? (
+                    <div className="text-2xl font-extrabold text-brand-600">{a.overall_band}</div>
+                  ) : (
+                    <Badge color="amber">{a.status === "in_progress" ? "In progress" : "Checking"}</Badge>
+                  )}
+                </div>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { CheckCircle2, Mail } from "lucide-react";
 import { updateProfile } from "../../api/auth";
 import { apiErrorMessage } from "../../api/client";
@@ -14,14 +14,9 @@ export function ProfilePage() {
   const [firstName, setFirstName] = useState(profile?.first_name ?? "");
   const [lastName, setLastName] = useState(profile?.last_name ?? "");
   const [language, setLanguage] = useState(profile?.native_language ?? "");
-  const [timezone, setTimezone] = useState(profile?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const zones = useMemo(() => {
-    const list = Intl.supportedValuesOf("timeZone");
-    return list.includes(timezone) ? list : [timezone, ...list];
-  }, [timezone]);
 
   if (!user) return null;
   const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || user.email;
@@ -38,7 +33,6 @@ export function ProfilePage() {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           native_language: language.trim() || null,
-          timezone,
         })
       );
       setSaved(true);
@@ -86,16 +80,6 @@ export function ProfilePage() {
                 placeholder="e.g. Uzbek"
                 maxLength={50}
               />
-            </div>
-            <div>
-              <Label htmlFor="timezone">Time zone</Label>
-              <select id="timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} className={inputClass}>
-                {zones.map((z) => (
-                  <option key={z} value={z}>
-                    {z.replaceAll("_", " ")}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
           <ErrorBox message={error} />

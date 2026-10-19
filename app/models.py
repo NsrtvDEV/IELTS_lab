@@ -99,17 +99,11 @@ class AttemptStatus(enum.StrEnum):
     ABANDONED = "abandoned"
 
 
-class GraderType(enum.StrEnum):
-    TEACHER = "teacher"
-    AI = "ai"
-
-
 # Один объект на тип — чтобы Alembic не пытался создать один ENUM дважды
 USER_ROLE = pg_enum(UserRole, "user_role")
 SECTION_TYPE = pg_enum(SectionType, "section_type")
 QUESTION_TYPE = pg_enum(QuestionType, "question_type")
 ATTEMPT_STATUS = pg_enum(AttemptStatus, "attempt_status")
-GRADER_TYPE = pg_enum(GraderType, "grader_type")
 
 
 # ───────────────────────── Users ─────────────────────────
@@ -153,9 +147,6 @@ class UserProfile(Base):
     first_name: Mapped[str | None] = mapped_column(String(100))
     last_name: Mapped[str | None] = mapped_column(String(100))
     native_language: Mapped[str | None] = mapped_column(String(50))
-    timezone: Mapped[str] = mapped_column(
-        String(64), default="UTC", server_default="UTC"
-    )
 
     user: Mapped["User"] = relationship(back_populates="profile")
 
@@ -638,8 +629,7 @@ class WritingAssessment(Base):
     response_id: Mapped[int] = mapped_column(
         ForeignKey("writing_responses.id", ondelete="CASCADE"), index=True
     )
-    grader_type: Mapped[GraderType] = mapped_column(GRADER_TYPE)
-    grader_id: Mapped[int | None] = mapped_column(  # преподаватель; NULL для AI
+    grader_id: Mapped[int | None] = mapped_column(  # преподаватель, поставивший оценку
         ForeignKey("users.id", ondelete="SET NULL")
     )
     task_response: Mapped[int] = mapped_column(SmallInteger)  # TA для Task 1, TR для Task 2
@@ -648,6 +638,8 @@ class WritingAssessment(Base):
     grammatical_range: Mapped[int] = mapped_column(SmallInteger)
     band: Mapped[Decimal] = mapped_column(Numeric(2, 1))
     feedback: Mapped[str | None] = mapped_column(Text)
+    # комментарии к фрагментам текста: [{"start", "end", "quote", "text"}], позиции — символы эссе
+    comments: Mapped[list | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -671,8 +663,7 @@ class SpeakingAssessment(Base):
     section_attempt_id: Mapped[int] = mapped_column(
         ForeignKey("section_attempts.id", ondelete="CASCADE"), index=True
     )
-    grader_type: Mapped[GraderType] = mapped_column(GRADER_TYPE)
-    grader_id: Mapped[int | None] = mapped_column(
+    grader_id: Mapped[int | None] = mapped_column(  # преподаватель, поставивший оценку
         ForeignKey("users.id", ondelete="SET NULL")
     )
     fluency_coherence: Mapped[int] = mapped_column(SmallInteger)

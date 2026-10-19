@@ -71,9 +71,19 @@ class CriteriaScores(BaseModel):
     grammatical_range: Criterion
 
 
+class InlineComment(BaseModel):
+    """Комментарий учителя к фрагменту эссе: text[start:end] == quote."""
+
+    start: int = Field(ge=0)
+    end: int = Field(gt=0)
+    quote: str = Field(min_length=1, max_length=5000)  # выделенный фрагмент — сверяется с текстом
+    text: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
+
+
 class TaskAssessmentIn(CriteriaScores):
     task_id: int
     feedback: Annotated[str, StringConstraints(strip_whitespace=True, max_length=10_000)] | None = None
+    comments: list[InlineComment] = Field(default=[], max_length=100)
 
 
 class WritingAssessmentIn(BaseModel):
@@ -83,6 +93,7 @@ class WritingAssessmentIn(BaseModel):
 class AssessmentOut(CriteriaScores):
     band: Decimal
     feedback: str | None
+    comments: list[InlineComment]  # по порядку в тексте
     grader_name: str | None
     created_at: datetime
 

@@ -4,7 +4,6 @@ export interface UserProfile {
   first_name: string | null;
   last_name: string | null;
   native_language: string | null;
-  timezone: string;
 }
 
 export interface User {

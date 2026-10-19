@@ -150,6 +150,23 @@ export async function startSectionAttempt(testId: number, section: AvailableSect
   return data;
 }
 
+/** Полный mock-экзамен: попытка без section_type, секции — по очереди */
+export async function startFullMock(testId: number) {
+  const { data } = await apiClient.post<Attempt>("/attempts", { test_id: testId });
+  return data;
+}
+
+export async function getAttempt(attemptId: number) {
+  const { data } = await apiClient.get<Attempt>(`/attempts/${attemptId}`);
+  return data;
+}
+
+/** Начать (или продолжить) секцию попытки */
+export async function startSection(attemptId: number, section: AvailableSection) {
+  const { data } = await apiClient.post<{ section_attempt_id: number }>(`/${section}/attempts/${attemptId}/start`);
+  return data;
+}
+
 export async function getSectionContent(section: QuestionSection, sectionAttemptId: number) {
   const { data } = await apiClient.get<SectionContent>(`/${section}/${sectionAttemptId}`);
   return data;
@@ -224,9 +241,18 @@ export interface CriteriaScores {
   grammatical_range: number;
 }
 
+/** Комментарий учителя к фрагменту эссе: text.slice(start, end) === quote */
+export interface InlineComment {
+  start: number;
+  end: number;
+  quote: string;
+  text: string;
+}
+
 export interface WritingAssessment extends CriteriaScores {
   band: string;
   feedback: string | null;
+  comments: InlineComment[];
   grader_name: string | null;
   created_at: string;
 }

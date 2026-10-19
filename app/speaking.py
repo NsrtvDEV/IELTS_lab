@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.media import AUDIO_TYPES, audio_duration, file_type, media_path, store
 from app.models import (
-    GraderType,
     SectionAttempt,
     SpeakingAssessment,
     SpeakingResponse,
@@ -145,10 +144,7 @@ async def recording_file(session: AsyncSession, response_id: int, user: User) ->
 async def latest_teacher_assessment(session: AsyncSession, sa_id: int) -> SpeakingAssessment | None:
     return await session.scalar(
         select(SpeakingAssessment)
-        .where(
-            SpeakingAssessment.section_attempt_id == sa_id,
-            SpeakingAssessment.grader_type == GraderType.TEACHER,
-        )
+        .where(SpeakingAssessment.section_attempt_id == sa_id)
         .order_by(SpeakingAssessment.created_at.desc(), SpeakingAssessment.id.desc())
         .limit(1)
     )
@@ -202,7 +198,6 @@ async def assess(session: AsyncSession, sa: SectionAttempt, teacher: User, data:
     session.add(
         SpeakingAssessment(
             section_attempt_id=sa.id,
-            grader_type=GraderType.TEACHER,
             grader_id=teacher.id,
             fluency_coherence=data.fluency_coherence,
             lexical_resource=data.lexical_resource,

@@ -1,12 +1,24 @@
 import { useState } from "react";
 import { ChevronDown, MessageSquareText } from "lucide-react";
 import { resolveMediaUrl } from "../../api/client";
-import type { WritingTaskResult } from "../../api/student";
+import type { InlineComment, WritingTaskResult } from "../../api/student";
 import { CRITERIA } from "../../lib/writing";
 import { Card } from "../ui";
+import { AnnotatedEssay } from "./AnnotatedEssay";
 
-/** Задание Writing с текстом ученика и (если есть) оценкой по критериям */
-export function WritingTaskCard({ task, showAssessment = true }: { task: WritingTaskResult; showAssessment?: boolean }) {
+/** Задание Writing с текстом ученика, комментариями к фрагментам и (если есть) оценкой по критериям.
+ *  onCommentsChange — учитель редактирует комментарии (comments тогда берутся из пропса). */
+export function WritingTaskCard({
+  task,
+  showAssessment = true,
+  comments,
+  onCommentsChange,
+}: {
+  task: WritingTaskResult;
+  showAssessment?: boolean;
+  comments?: InlineComment[];
+  onCommentsChange?: (comments: InlineComment[]) => void;
+}) {
   const [promptOpen, setPromptOpen] = useState(false);
   const short = task.word_count < task.min_words;
   const a = task.assessment;
@@ -41,8 +53,18 @@ export function WritingTaskCard({ task, showAssessment = true }: { task: Writing
             )}
           </div>
         )}
-        <div className="mt-4 whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-4 text-[15px] leading-7 text-ink">
-          {task.text.trim() ? task.text : <span className="italic text-ink-muted">No text was written for this task.</span>}
+        <div className="mt-4">
+          {task.text.trim() ? (
+            <AnnotatedEssay
+              text={task.text}
+              comments={comments ?? (showAssessment ? a?.comments : undefined) ?? []}
+              onChange={onCommentsChange}
+            />
+          ) : (
+            <div className="rounded-lg border border-slate-200 bg-white p-4 text-[15px] italic text-ink-muted">
+              No text was written for this task.
+            </div>
+          )}
         </div>
       </div>
 
