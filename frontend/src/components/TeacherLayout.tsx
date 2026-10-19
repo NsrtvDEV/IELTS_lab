@@ -6,6 +6,7 @@ import {
   House,
   Settings,
   ShieldCheck,
+  UserCog,
   UserRound,
   UsersRound,
 } from "lucide-react";
@@ -14,6 +15,12 @@ import { useAuth } from "../context/AuthContext";
 import { DJANGO_ADMIN_URL } from "../lib/config";
 import { AppShell, type NavItem } from "./AppShell";
 import { t } from "../i18n";
+
+// администратору — его главная и пользователи, дальше те же разделы, что у учителя
+const ADMIN_NAV: NavItem[] = [
+  { label: "Dashboard", icon: House, to: "/admin", end: true },
+  { label: "Users", icon: UserCog, to: "/admin/users" },
+];
 
 const NAV: NavItem[] = [
   { label: "Dashboard", icon: House, to: "/teacher", end: true },
@@ -59,8 +66,10 @@ function Footer() {
 }
 
 export function TeacherLayout({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const nav = user?.role === "admin" ? [...ADMIN_NAV, ...NAV.slice(1)] : NAV;
   return (
-    <AppShell nav={NAV} footer={<Footer />} searchPath="/teacher/tests">
+    <AppShell nav={nav} footer={<Footer />} searchPath="/teacher/tests">
       {children}
     </AppShell>
   );

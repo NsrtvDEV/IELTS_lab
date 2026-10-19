@@ -1,22 +1,11 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { ProgressPoint } from "../api/student";
 import type { SectionType } from "../api/teacher";
 import { SECTION_COLORS, SECTION_LABELS } from "../lib/questionTypes";
 import { locale, t } from "../i18n";
+import { useWidth } from "../lib/useWidth";
 
 const dateFmt = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" });
-
-function useWidth<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  const [width, setWidth] = useState(0);
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width));
-    ro.observe(ref.current);
-    return () => ro.disconnect();
-  }, []);
-  return [ref, width] as const;
-}
 
 type Hover = { x: number; y: number; type: SectionType; point: ProgressPoint } | null;
 

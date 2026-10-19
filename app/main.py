@@ -11,6 +11,7 @@ from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from app.config import settings
 from app.limiter import limiter
 from app.routers import (
+    admin_router,
     attempts_router,
     auth_router,
     listening_router,
@@ -94,6 +95,7 @@ for router in (
     teacher_tests_router,
     teacher_content_router,
     teacher_uploads_router,
+    admin_router,
 ):
     app.include_router(router, prefix=API_PREFIX)
 

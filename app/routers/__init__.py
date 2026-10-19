@@ -1,3 +1,4 @@
+from .admin import router as admin_router
 from .attempts import router as attempts_router
 from .auth import auth_router, password_reset_router, register_router
 from .listening import router as listening_router
@@ -19,6 +20,7 @@ from .users import router as users_router
 from .writing import router as writing_router
 
 __all__ = [
+    "admin_router",
     "attempts_router",
     "auth_router",
     "password_reset_router",

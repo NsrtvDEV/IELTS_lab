@@ -24,6 +24,8 @@ import { PracticePage } from "./pages/student/PracticePage";
 import { ProfilePage } from "./pages/student/ProfilePage";
 import { ResultsPage } from "./pages/student/ResultsPage";
 import { StudentDashboardPage } from "./pages/student/StudentDashboardPage";
+import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
+import { UsersPage } from "./pages/admin/UsersPage";
 import { DashboardPage } from "./pages/teacher/DashboardPage";
 import { SectionEditorPage } from "./pages/teacher/SectionEditorPage";
 import { ReviewQueuePage } from "./pages/teacher/ReviewQueuePage";
@@ -36,6 +38,14 @@ import { TestDetailPage } from "./pages/teacher/TestDetailPage";
 import { TeacherProfilePage } from "./pages/teacher/TeacherProfilePage";
 import { TestsPage } from "./pages/teacher/TestsPage";
 import { t } from "./i18n";
+
+function Admin({ children }: { children: ReactNode }) {
+  return (
+    <ProtectedRoute roles={["admin"]}>
+      <TeacherLayout>{children}</TeacherLayout>
+    </ProtectedRoute>
+  );
+}
 
 function Teacher({ children }: { children: ReactNode }) {
   return (
@@ -52,6 +62,7 @@ function Home() {
     return <div className="flex h-screen items-center justify-center text-ink-muted">{t("Loading…")}</div>;
   }
   if (!user) return <LandingPage />;
+  if (user.role === "admin") return <Navigate to="/admin" replace />;
   if (TEACHER_ROLES.includes(user.role)) return <Navigate to="/teacher" replace />;
   return (
     <StudentLayout>
@@ -105,6 +116,8 @@ export default function App() {
         ).map(([path, Page]) => (
           <Route key={path} path={path} element={<ProtectedRoute><StudentLayout><Page /></StudentLayout></ProtectedRoute>} />
         ))}
+        <Route path="/admin" element={<Admin><AdminDashboardPage /></Admin>} />
+        <Route path="/admin/users" element={<Admin><UsersPage /></Admin>} />
         <Route path="/teacher" element={<Teacher><DashboardPage /></Teacher>} />
         <Route path="/teacher/tests" element={<Teacher><TestsPage /></Teacher>} />
         <Route path="/teacher/tests/:testId" element={<Teacher><TestDetailPage /></Teacher>} />

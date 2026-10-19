@@ -38,3 +38,12 @@ async def get_teacher(current_user: current_user_dep) -> User:
 
 
 teacher_dep = Annotated[User, Depends(get_teacher)]
+
+
+async def get_admin(current_user: current_user_dep) -> User:
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Only administrators can do this")
+    return current_user
+
+
+admin_dep = Annotated[User, Depends(get_admin)]
