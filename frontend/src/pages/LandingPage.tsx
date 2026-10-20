@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -88,22 +88,37 @@ const primaryBtn =
 
 const HEADER_OFFSET = 120; // высота шапки с запасом: раздел активен, когда дошёл до неё
 
+/** Ближайший прокручиваемый предок (в предпросмотре админа лендинг крутится внутри окна), иначе — страница */
+function scrollParent(el: HTMLElement | null): HTMLElement | null {
+  for (let p = el?.parentElement; p; p = p.parentElement) {
+    const { overflowY } = getComputedStyle(p);
+    if ((overflowY === "auto" || overflowY === "scroll") && p.scrollHeight > p.clientHeight) return p;
+  }
+  return null;
+}
+
 /** Какой раздел меню сейчас на экране — последний, чей верх уже прокручен под шапку */
-function useActiveSection(NAV: NavEntry[]): string {
+function useActiveSection(NAV: NavEntry[], navRef: RefObject<HTMLElement | null>): string {
   const [active, setActive] = useState<string>(NAV[0][0]);
   useEffect(() => {
+    const box = scrollParent(navRef.current); // null — прокручивается вся страница
+    const target: HTMLElement | Window = box ?? window;
     let frame = 0;
     function update() {
       frame = 0;
+      const top = box ? box.getBoundingClientRect().top : 0;
+      const atBottom = box
+        ? box.scrollTop + box.clientHeight >= box.scrollHeight - 2
+        : window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
       // в самом низу страницы последний раздел может не дойти до шапки — считаем активным его
-      if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+      if (atBottom) {
         setActive(NAV[NAV.length - 1][0]);
         return;
       }
       let current: string = NAV[0][0];
       for (const [href] of NAV) {
-        const el = document.querySelector(href);
-        if (el && el.getBoundingClientRect().top <= HEADER_OFFSET) current = href;
+        const el = (box ?? document).querySelector(href);
+        if (el && el.getBoundingClientRect().top - top <= HEADER_OFFSET) current = href;
       }
       setActive(current);
     }
@@ -111,19 +126,20 @@ function useActiveSection(NAV: NavEntry[]): string {
       if (!frame) frame = requestAnimationFrame(update);
     }
     update();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    target.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      target.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       cancelAnimationFrame(frame);
     };
-  }, [NAV]);
+  }, [NAV, navRef]);
   return active;
 }
 
 function NavLinks({ nav: NAV }: { nav: NavEntry[] }) {
-  const active = useActiveSection(NAV);
+  const navRef = useRef<HTMLElement>(null);
+  const active = useActiveSection(NAV, navRef);
   const links = useRef<Record<string, HTMLAnchorElement | null>>({});
   const [bar, setBar] = useState({ left: 0, width: 0 });
 
@@ -140,7 +156,7 @@ function NavLinks({ nav: NAV }: { nav: NavEntry[] }) {
   }, [active]);
 
   return (
-    <nav className="relative hidden gap-7 md:flex" aria-label={t("Main")}>
+    <nav ref={navRef} className="relative hidden gap-7 md:flex" aria-label={t("Main")}>
       {NAV.map(([href, label]) => (
         <a
           key={href}
